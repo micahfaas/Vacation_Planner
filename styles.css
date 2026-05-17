@@ -173,9 +173,95 @@ button { font-family: inherit; }
 }
 
 .vp-cal {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.vp-week-row {
+  position: relative;
+}
+
+.vp-week-days {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 6px;
+}
+
+.vp-span-layer {
+  position: absolute;
+  top: 28px; /* below the day-number header */
+  left: 0;
+  right: 0;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-auto-rows: 38px;
+  gap: 6px;
+  pointer-events: none; /* let day clicks through */
+}
+.vp-span-layer > * { pointer-events: auto; }
+
+.vp-span-card {
+  background: var(--surface-2);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 5px 8px;
+  font-size: 12px;
+  cursor: grab;
+  line-height: 1.35;
+  position: relative;
+  border-left-width: 3px;
+  border-left-style: solid;
+  user-select: none;
+  min-height: 38px;
+  overflow: hidden;
+  z-index: 2;
+}
+.vp-span-card:active { cursor: grabbing; }
+.vp-span-card.vp-dragging { opacity: 0.4; }
+.vp-span-card .vp-card-title {
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-right: 28px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vp-span-card .vp-card-meta {
+  color: inherit;
+  opacity: 0.75;
+  font-size: 11px;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vp-span-card .vp-card-actions {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  display: none;
+  gap: 2px;
+}
+.vp-span-card:hover .vp-card-actions,
+.vp-span-card:focus-within .vp-card-actions {
+  display: flex;
+}
+.vp-span-card .vp-card-actions button {
+  all: unset;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  color: inherit;
+  opacity: 0.6;
+  font-size: 11px;
+  line-height: 1;
+}
+.vp-span-card .vp-card-actions button:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.08);
 }
 
 .vp-day {
