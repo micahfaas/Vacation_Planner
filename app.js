@@ -3,16 +3,15 @@
 
   // ---------- types ----------
   const TYPES = {
-    flight:   { label: 'Flight',    icon: 'ti-plane',           color: '#185FA5', bg: '#E6F1FB', text: '#0C447C', darkBg: '#0c447c', darkText: '#b5d4f4' },
-    hotel:    { label: 'Hotel',     icon: 'ti-bed',             color: '#534AB7', bg: '#EEEDFE', text: '#3C3489', darkBg: '#3c3489', darkText: '#cecbf6' },
-    activity: { label: 'Activity',  icon: 'ti-camera',          color: '#0F6E56', bg: '#E1F5EE', text: '#085041', darkBg: '#085041', darkText: '#9fe1cb' },
-    transit:  { label: 'Transit',   icon: 'ti-bus',             color: '#BA7517', bg: '#FAEEDA', text: '#854F0B', darkBg: '#854f0b', darkText: '#fac775' },
-    meal:     { label: 'Meal',      icon: 'ti-tools-kitchen-2', color: '#993556', bg: '#FBEAF0', text: '#72243E', darkBg: '#72243e', darkText: '#f4c0d1' },
-    note:     { label: 'Note',      icon: 'ti-note',            color: '#5F5E5A', bg: '#F1EFE8', text: '#2C2C2A', darkBg: '#2c2c2a', darkText: '#d3d1c7' }
+    flight:   { label: 'Flight',    icon: 'ti-plane',           color: '#1f7fb5', bg: '#dff0fa', text: '#0e4366' }, // sky blue
+    hotel:    { label: 'Hotel',     icon: 'ti-bed',             color: '#c7549f', bg: '#fce5f0', text: '#7a2a5d' }, // hibiscus pink
+    activity: { label: 'Activity',  icon: 'ti-camera',          color: '#2da55a', bg: '#dff5e6', text: '#1a5e34' }, // palm green
+    transit:  { label: 'Transit',   icon: 'ti-bus',             color: '#e8821e', bg: '#fce6c6', text: '#7d4509' }, // sunset orange
+    meal:     { label: 'Meal',      icon: 'ti-tools-kitchen-2', color: '#d94d3a', bg: '#fce0db', text: '#7a261a' }, // coral red
+    note:     { label: 'Note',      icon: 'ti-note',            color: '#a88a4f', bg: '#f4ead2', text: '#5e4a23' }  // sandy tan
   };
 
   const STORAGE_KEY = 'vacation_planner_v1';
-  const DARK = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 
   // ---------- state ----------
   // Multi-trip support. data = { activeTripId, trips: { id: trip } }
@@ -191,6 +190,15 @@
     const filled = days.filter(d => (t.schedule[isoDate(d)] || []).length > 0).length;
     const cityNights = {};
     let totalFlightMin = 0, totalTransitMin = 0;
+    let totalCards = 0, bookedCards = 0;
+    // count every scheduled card (including library? no - just scheduled)
+    Object.values(t.schedule).forEach(ids => {
+      ids.forEach(id => {
+        const c = t.cards[id]; if (!c) return;
+        totalCards++;
+        if (c.booked) bookedCards++;
+      });
+    });
     days.forEach(d => {
       const ids = t.schedule[isoDate(d)] || [];
       ids.forEach(id => {
@@ -207,7 +215,7 @@
         }
       });
     });
-    return { totalDays, filled, unaccounted: totalDays - filled, cityNights, totalFlightMin, totalTransitMin };
+    return { totalDays, filled, unaccounted: totalDays - filled, cityNights, totalFlightMin, totalTransitMin, totalCards, bookedCards };
   }
 
   function getConflicts() {
@@ -444,6 +452,14 @@
     panel.appendChild(statRow('Total days', String(s.totalDays)));
     panel.appendChild(statRow('Days planned', String(s.filled)));
     panel.appendChild(statRow('Open days', String(s.unaccounted)));
+    if (s.totalCards > 0) {
+      const r = el('div', { class: 'vp-stat-row' });
+      r.appendChild(el('span', {}, 'Booked'));
+      const val = el('strong', {}, s.bookedCards + ' / ' + s.totalCards);
+      if (s.bookedCards === s.totalCards) val.style.color = 'var(--booked)';
+      r.appendChild(val);
+      panel.appendChild(r);
+    }
     if (Object.keys(s.cityNights).length) {
       panel.appendChild(el('div', { style: { marginTop: '10px', fontSize: '11px', color: 'var(--text-2)' } }, 'Nights per city'));
       Object.entries(s.cityNights).forEach(([city, n]) => {
@@ -488,10 +504,10 @@
     const t = activeTrip();
     const c = t.cards[id]; if (!c) return el('span');
     const tp = TYPES[c.type] || TYPES.note;
-    const bg = DARK ? tp.darkBg : tp.bg;
-    const fg = DARK ? tp.darkText : tp.text;
+    const bg = tp.bg;
+    const fg = tp.text;
     const card = el('div', {
-      class: 'vp-span-card',
+      class: 'vp-span-card' + (c.booked ? ' vp-booked' : ''),
       draggable: 'true',
       'data-id': id,
       style: {
@@ -512,6 +528,9 @@
       title.appendChild(el('i', { class: 'ti ' + tp.icon, style: { fontSize: '13px' }, 'aria-hidden': 'true' }));
     }
     title.appendChild(el('span', {}, (continuesLeft ? '… ' : '') + (c.title || tp.label) + (continuesRight ? ' …' : '')));
+    if (c.booked && !continuesLeft) {
+      title.appendChild(el('span', { class: 'vp-booked-badge', title: 'Booked' }, '✓'));
+    }
     card.appendChild(title);
     const meta = cardMeta(c);
     if (meta && !continuesLeft) card.appendChild(el('div', { class: 'vp-card-meta' }, meta));
@@ -534,10 +553,10 @@
     const t = activeTrip();
     const c = t.cards[id]; if (!c) return el('span');
     const tp = TYPES[c.type] || TYPES.note;
-    const bg = DARK ? tp.darkBg : tp.bg;
-    const fg = DARK ? tp.darkText : tp.text;
+    const bg = tp.bg;
+    const fg = tp.text;
     const card = el('div', {
-      class: 'vp-card',
+      class: 'vp-card' + (c.booked ? ' vp-booked' : ''),
       draggable: 'true',
       'data-id': id,
       style: { background: bg, borderLeftColor: tp.color, color: fg },
@@ -546,6 +565,9 @@
     const title = el('div', { class: 'vp-card-title' });
     title.appendChild(el('i', { class: 'ti ' + tp.icon, style: { fontSize: '13px' }, 'aria-hidden': 'true' }));
     title.appendChild(el('span', {}, c.title || tp.label));
+    if (c.booked) {
+      title.appendChild(el('span', { class: 'vp-booked-badge', title: 'Booked' }, '✓'));
+    }
     card.appendChild(title);
     const meta = cardMeta(c);
     if (meta) card.appendChild(el('div', { class: 'vp-card-meta' }, meta));
@@ -656,6 +678,16 @@
     m.appendChild(el('label', {}, 'Notes'));
     m.appendChild(notesIn);
 
+    const bookedRow = el('label', {
+      class: 'vp-checkbox-row',
+      style: { display: 'flex', alignItems: 'center', gap: '8px', marginTop: '14px', cursor: 'pointer' }
+    });
+    const bookedIn = el('input', { type: 'checkbox' });
+    if (c.booked) bookedIn.checked = true;
+    bookedRow.appendChild(bookedIn);
+    bookedRow.appendChild(el('span', { style: { fontSize: '13px', color: 'var(--text)' } }, 'Booked ✓'));
+    m.appendChild(bookedRow);
+
     const actions = el('div', { class: 'vp-modal-actions' });
     const leftBtns = el('div', { style: { display: 'flex', gap: '8px' } });
     if (!isNew) {
@@ -678,7 +710,8 @@
           type: typeSel.value,
           title: titleIn.value.trim() || TYPES[typeSel.value].label,
           city: cityIn.value.trim(),
-          notes: notesIn.value.trim()
+          notes: notesIn.value.trim(),
+          booked: bookedIn.checked
         };
         const tp = typeSel.value;
         if (tp === 'flight' || tp === 'transit') {

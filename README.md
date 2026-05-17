@@ -8,12 +8,14 @@ A drag-and-drop trip planner that runs entirely in your browser. Build a card li
 - Drag cards between the library and any day, or between days
 - Card types with type-specific fields: flights and transit get depart/arrive datetimes, hotels get a nights count, activities and meals get a time
 - Library filter chips to narrow by card type
+- Multi-day cards (hotels with multiple nights, overnight flights) render as a single bar spanning the relevant days, splitting cleanly across week boundaries
 - Conflict detection: days with overlapping timed cards get an amber border + warning icon
-- Trip math panel: total days, days planned, open days, nights per city, total flight and transit time
+- Booked status: mark any card as booked and it turns green with a checkmark badge — the trip math panel shows `booked / total` so you can track progress
+- Trip math panel: total days, days planned, open days, booked count, nights per city, total flight and transit time
 - Multiple saved trips, with rename and delete
 - JSON export and import
 - Auto-saves to `localStorage`
-- Light and dark mode (follows OS setting)
+- Warm, bright vacation-themed palette
 
 ## Local use
 
