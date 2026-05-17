@@ -397,7 +397,7 @@
       onclick: e => { if (e.target.closest('.vp-card-actions')) return; openEditor(id); }
     });
     const title = el('div', { class: 'vp-card-title' });
-    title.appendChild(el('i', { class: 'ti ' + tp.icon, style: { fontSize: '12px' }, 'aria-hidden': 'true' }));
+    title.appendChild(el('i', { class: 'ti ' + tp.icon, style: { fontSize: '13px' }, 'aria-hidden': 'true' }));
     title.appendChild(el('span', {}, c.title || tp.label));
     card.appendChild(title);
     const meta = cardMeta(c);
@@ -559,6 +559,7 @@
     actions.appendChild(rightBtns);
     m.appendChild(actions);
 
+    bg.appendChild(m);
     document.body.appendChild(bg);
     setTimeout(() => titleIn.focus(), 30);
   }
@@ -641,6 +642,7 @@
     actions.appendChild(right);
     m.appendChild(actions);
 
+    bg.appendChild(m);
     document.body.appendChild(bg);
   }
 
