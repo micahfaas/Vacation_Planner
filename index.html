@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Vacation Planner</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.17.0/dist/tabler-icons.min.css" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<header class="vp-header">
+  <h1>Vacation planner</h1>
+  <div class="vp-header-actions">
+    <button id="vp-trips-btn" class="vp-btn-ghost" title="Switch trip"><i class="ti ti-map-2"></i> <span id="vp-trip-name">Trip</span></button>
+    <button id="vp-import-btn" class="vp-btn-ghost" title="Import JSON"><i class="ti ti-upload"></i></button>
+    <button id="vp-export-btn" class="vp-btn-ghost" title="Export JSON"><i class="ti ti-download"></i></button>
+    <input type="file" id="vp-import-file" accept="application/json" hidden />
+  </div>
+</header>
+
+<main id="vp-root" class="vp-wrap">
+  <div class="vp-loading">Loading planner…</div>
+</main>
+
+<footer class="vp-footer">
+  Saved locally in your browser. Export to back up or move between devices.
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
