@@ -6,6 +6,7 @@ import { addCard, removeCard, duplicateCard } from './cards.js';
 import { save } from './storage.js';
 import { render } from './render.js';
 import { createCityPicker } from './citypicker.js';
+import { createAttachmentsField } from './attachments.js';
 
 export function openEditor(id, addTarget) {
   const t = activeTrip();
@@ -83,6 +84,10 @@ export function openEditor(id, addTarget) {
   renderDynamic();
   typeSel.addEventListener('change', renderDynamic);
 
+  const attachField = createAttachmentsField(c.attachments);
+  m.appendChild(el('label', {}, 'Attachments'));
+  m.appendChild(attachField.el);
+
   m.appendChild(el('label', {}, 'Notes'));
   m.appendChild(notesIn);
 
@@ -141,6 +146,9 @@ export function openEditor(id, addTarget) {
         if (tp === 'activity' || tp === 'meal') out.time = timeIn.value;
       }
 
+      const att = attachField.getValue();
+      if (att.length) out.attachments = att;
+
       if (isNew) {
         addCard(out, addTarget || { kind: 'lib' });
       } else {
@@ -156,6 +164,7 @@ export function openEditor(id, addTarget) {
         }
         if (tp !== 'hotel') delete card.nights;
         if (tp !== 'activity' && tp !== 'meal') delete card.time;
+        if (!att.length) delete card.attachments;
         save(); render();
       }
       bg.remove();

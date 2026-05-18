@@ -276,6 +276,9 @@ function renderSpanCard(id, colStart, colSpan, continuesLeft, continuesRight) {
   if (c.booked && !continuesLeft) {
     title.appendChild(el('span', { class: 'vp-booked-badge', title: 'Booked' }, '✓'));
   }
+  if (c.attachments && c.attachments.length && !continuesLeft) {
+    title.appendChild(el('i', { class: 'ti ti-paperclip vp-attach-badge', title: c.attachments.length + ' file(s) attached' }));
+  }
   card.appendChild(title);
   const meta = cardMeta(c);
   if (meta && !continuesLeft) card.appendChild(el('div', { class: 'vp-card-meta' }, meta));
@@ -312,6 +315,9 @@ function renderCard(id) {
   title.appendChild(el('span', {}, c.title || tp.label));
   if (c.booked) {
     title.appendChild(el('span', { class: 'vp-booked-badge', title: 'Booked' }, '✓'));
+  }
+  if (c.attachments && c.attachments.length) {
+    title.appendChild(el('i', { class: 'ti ti-paperclip vp-attach-badge', title: c.attachments.length + ' file(s) attached' }));
   }
   card.appendChild(title);
   const meta = cardMeta(c);

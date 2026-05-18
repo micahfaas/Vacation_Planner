@@ -133,6 +133,8 @@ export function save() {
   scheduleFlush();
 }
 
+export function getUserId() { return userId; }
+
 export function markTripDirty(id) {
   if (id) dirty.add(id);
 }
