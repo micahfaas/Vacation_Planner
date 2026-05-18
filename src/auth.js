@@ -15,7 +15,7 @@ export function renderAuthScreen() {
 
   const card = el('div', { class: 'vp-auth-card' });
 
-  function draw() {
+  function draw(notice) {
     card.innerHTML = '';
     card.appendChild(el('h2', {}, 'Vacation Planner'));
     card.appendChild(el('p', { class: 'vp-auth-sub' },
@@ -30,6 +30,7 @@ export function renderAuthScreen() {
       autocomplete: mode === 'signin' ? 'current-password' : 'new-password'
     });
     const msg = el('div', { class: 'vp-auth-msg' });
+    if (notice) msg.textContent = notice;
     const submit = el('button', { class: 'vp-auth-submit' },
       mode === 'signin' ? 'Sign in' : 'Create account');
 
@@ -51,11 +52,18 @@ export function renderAuthScreen() {
         } else {
           const { data, error } = await supabase.auth.signUp({ email: e, password: p });
           if (error) throw error;
+          const identities = data.user && data.user.identities;
+          if (Array.isArray(identities) && identities.length === 0) {
+            // Supabase returns an obfuscated user with no identities when the
+            // email is already registered.
+            mode = 'signin';
+            draw('That email is already registered — please sign in.');
+            return;
+          }
           if (!data.session) {
             // email confirmation is enabled — no session yet
             mode = 'signin';
-            draw();
-            setMsg('Account created. Check your email to confirm, then sign in.', false);
+            draw('Account created. Check your email to confirm, then sign in.');
             return;
           }
         }
