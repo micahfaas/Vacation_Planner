@@ -7,3 +7,6 @@ export const data = {
 };
 
 export function activeTrip() { return data.trips[data.activeTripId]; }
+
+// Session-only UI state (not persisted): which view is showing, place filter.
+export const ui = { view: 'calendar', placeFilter: 'all' };

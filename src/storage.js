@@ -47,6 +47,7 @@ function ensureTripFields(t) {
   if (!t.library) t.library = [];
   if (!t.libFilter) t.libFilter = 'all';
   if (!t.nextId) t.nextId = 1;
+  if (!t.places) t.places = [];
   Object.values(t.cards).forEach(migrateCard);
 }
 

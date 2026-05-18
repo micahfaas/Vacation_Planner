@@ -9,3 +9,15 @@ export const TYPES = {
 };
 
 export const STORAGE_KEY = 'vacation_planner_v1';
+
+// Categories for the research / places library.
+export const PLACE_CATEGORIES = {
+  restaurant: { label: 'Restaurant', icon: 'ti-tools-kitchen-2' },
+  cafe:       { label: 'Café',       icon: 'ti-coffee' },
+  bar:        { label: 'Bar',        icon: 'ti-glass-full' },
+  attraction: { label: 'Attraction', icon: 'ti-camera' },
+  shop:       { label: 'Shopping',   icon: 'ti-shopping-bag' },
+  lodging:    { label: 'Lodging',    icon: 'ti-bed' },
+  blog:       { label: 'Blog / guide', icon: 'ti-article' },
+  other:      { label: 'Other',      icon: 'ti-map-pin' }
+};

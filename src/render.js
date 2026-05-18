@@ -1,5 +1,5 @@
 // Calendar grid, card rendering, sidebar panels, and drag-and-drop.
-import { activeTrip } from './state.js';
+import { activeTrip, ui } from './state.js';
 import { TYPES } from './constants.js';
 import { el } from './dom.js';
 import { isoDate, parseISO, addDays, fmtShort, fmtMin } from './dates.js';
@@ -7,6 +7,7 @@ import { getGridDays, computeStats, getConflicts } from './derived.js';
 import { save } from './storage.js';
 import { duplicateCard, removeCard, moveCard } from './cards.js';
 import { openEditor } from './editor.js';
+import { renderPlacesView } from './places.js';
 
 const root = document.getElementById('vp-root');
 
@@ -15,22 +16,38 @@ export function render() {
   document.getElementById('vp-trip-name').textContent = t.name;
   root.innerHTML = '';
 
-  // toolbar
+  // toolbar with Calendar / Places view toggle
   const tb = el('div', { class: 'vp-toolbar' });
-  tb.appendChild(el('label', {}, 'Trip dates'));
-  const sd = el('input', { type: 'date', value: t.startDate || '' });
-  sd.addEventListener('change', e => {
-    t.startDate = e.target.value;
-    if (t.endDate < t.startDate) t.endDate = t.startDate;
-    save(); render();
+  const toggle = el('div', { class: 'vp-view-toggle' });
+  [['calendar', 'Calendar'], ['places', 'Places']].forEach(([v, label]) => {
+    toggle.appendChild(el('button', {
+      class: 'vp-view-btn' + (ui.view === v ? ' vp-view-on' : ''),
+      onclick: () => { ui.view = v; render(); }
+    }, label));
   });
-  tb.appendChild(sd);
-  tb.appendChild(el('span', { style: { fontSize: '12px', color: 'var(--text-2)' } }, 'to'));
-  const ed = el('input', { type: 'date', value: t.endDate || '' });
-  ed.addEventListener('change', e => { t.endDate = e.target.value; save(); render(); });
-  tb.appendChild(ed);
-  tb.appendChild(el('button', { class: 'vp-btn-primary', onclick: () => openEditor(null, { kind: 'lib' }) }, '+ new card'));
+  tb.appendChild(toggle);
+
+  if (ui.view === 'calendar') {
+    tb.appendChild(el('label', {}, 'Trip dates'));
+    const sd = el('input', { type: 'date', value: t.startDate || '' });
+    sd.addEventListener('change', e => {
+      t.startDate = e.target.value;
+      if (t.endDate < t.startDate) t.endDate = t.startDate;
+      save(); render();
+    });
+    tb.appendChild(sd);
+    tb.appendChild(el('span', { style: { fontSize: '12px', color: 'var(--text-2)' } }, 'to'));
+    const ed = el('input', { type: 'date', value: t.endDate || '' });
+    ed.addEventListener('change', e => { t.endDate = e.target.value; save(); render(); });
+    tb.appendChild(ed);
+    tb.appendChild(el('button', { class: 'vp-btn-primary', onclick: () => openEditor(null, { kind: 'lib' }) }, '+ new card'));
+  }
   root.appendChild(tb);
+
+  if (ui.view === 'places') {
+    root.appendChild(renderPlacesView());
+    return;
+  }
 
   if (!t.startDate || !t.endDate || t.endDate < t.startDate) {
     root.appendChild(el('div', { class: 'vp-empty-cal' }, 'Pick a start and end date to begin.'));
