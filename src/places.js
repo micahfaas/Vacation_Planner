@@ -1,4 +1,6 @@
-// Research / places library: a per-trip backlog of researched spots.
+// Research / places library + an OpenStreetMap map of saved places.
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { activeTrip, ui } from './state.js';
 import { el } from './dom.js';
 import { save } from './storage.js';
@@ -16,6 +18,32 @@ const CAT_TO_TYPE = {
 function normalizeUrl(u) {
   if (!u) return '';
   return /^https?:\/\//i.test(u) ? u : 'https://' + u;
+}
+
+function isShortMapsUrl(u) {
+  return /(maps\.app\.goo\.gl|goo\.gl\/maps)/i.test(u || '');
+}
+
+// Pull a place name and coordinates out of a full Google Maps URL.
+function parseMapsUrl(u) {
+  const out = {};
+  let m = (u || '').match(/!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/);
+  if (!m) m = (u || '').match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
+  if (m) { out.lat = parseFloat(m[1]); out.lng = parseFloat(m[2]); }
+  const nm = (u || '').match(/\/maps\/place\/([^/@]+)/);
+  if (nm) {
+    try { out.name = decodeURIComponent(nm[1].replace(/\+/g, ' ')); }
+    catch { out.name = nm[1].replace(/\+/g, ' '); }
+  }
+  return out;
+}
+
+// Google Maps directions deep-link to a place.
+function navUrl(p) {
+  const dest = (typeof p.lat === 'number' && typeof p.lng === 'number')
+    ? p.lat + ',' + p.lng
+    : (p.address || p.name || '');
+  return 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(dest);
 }
 
 function addPlace(place) {
@@ -67,11 +95,39 @@ function openPlaceEditor(id) {
     if (p.category === k) opt.selected = true;
     catSel.appendChild(opt);
   });
-  const urlIn = el('input', { type: 'text', value: p.url || '', placeholder: 'Map link, review, or blog post URL' });
+  const urlIn = el('input', { type: 'text', value: p.url || '', placeholder: 'Paste a Google Maps link, review, or blog URL' });
   const siteIn = el('input', { type: 'text', value: p.website || '', placeholder: 'Official website (optional)' });
   const addrIn = el('input', { type: 'text', value: p.address || '', placeholder: 'Address (optional)' });
   const notesIn = el('textarea', { placeholder: 'Why you saved it, hours, what to order…' });
   notesIn.value = p.notes || '';
+
+  // Coordinates come from pasting a full Google Maps link into the Link field.
+  const coords = {
+    lat: typeof p.lat === 'number' ? p.lat : null,
+    lng: typeof p.lng === 'number' ? p.lng : null
+  };
+  const locCaption = el('div', { class: 'vp-place-loc' });
+  function updateLocCaption() {
+    locCaption.classList.remove('vp-place-loc-warn');
+    if (coords.lat != null && coords.lng != null) {
+      locCaption.textContent = `Pinned at ${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)} — shows on the map.`;
+    } else if (isShortMapsUrl(urlIn.value)) {
+      locCaption.textContent = 'Shortened link — open it in a browser and paste the full URL to pin this place.';
+      locCaption.classList.add('vp-place-loc-warn');
+    } else {
+      locCaption.textContent = 'Tip: paste a Google Maps link to pin this place on the map.';
+    }
+  }
+  urlIn.addEventListener('input', () => {
+    const parsed = parseMapsUrl(urlIn.value);
+    if (parsed.lat != null && parsed.lng != null) {
+      coords.lat = parsed.lat;
+      coords.lng = parsed.lng;
+    }
+    if (parsed.name && !nameIn.value.trim()) nameIn.value = parsed.name;
+    updateLocCaption();
+  });
+  updateLocCaption();
 
   m.appendChild(el('label', {}, 'Name'));
   m.appendChild(nameIn);
@@ -79,6 +135,7 @@ function openPlaceEditor(id) {
   m.appendChild(catSel);
   m.appendChild(el('label', {}, 'Link'));
   m.appendChild(urlIn);
+  m.appendChild(locCaption);
   m.appendChild(el('label', {}, 'Website'));
   m.appendChild(siteIn);
   m.appendChild(el('label', {}, 'Address'));
@@ -109,6 +166,10 @@ function openPlaceEditor(id) {
         address: addrIn.value.trim(),
         notes: notesIn.value.trim()
       };
+      if (coords.lat != null && coords.lng != null) {
+        out.lat = coords.lat;
+        out.lng = coords.lng;
+      }
       if (isNew) addPlace(out);
       else updatePlace(id, out);
       bg.remove();
@@ -140,16 +201,17 @@ function renderPlaceCard(p) {
   card.appendChild(el('div', { class: 'vp-place-cat' }, cat.label));
   if (p.address) card.appendChild(el('div', { class: 'vp-place-addr' }, p.address));
 
-  if (p.url || p.website) {
-    const links = el('div', { class: 'vp-place-links' });
-    if (p.url) links.appendChild(el('a',
-      { href: normalizeUrl(p.url), target: '_blank', rel: 'noopener', class: 'vp-place-link' },
-      el('i', { class: 'ti ti-link' }), 'Link'));
-    if (p.website) links.appendChild(el('a',
-      { href: normalizeUrl(p.website), target: '_blank', rel: 'noopener', class: 'vp-place-link' },
-      el('i', { class: 'ti ti-world' }), 'Website'));
-    card.appendChild(links);
-  }
+  const links = el('div', { class: 'vp-place-links' });
+  if (p.url) links.appendChild(el('a',
+    { href: normalizeUrl(p.url), target: '_blank', rel: 'noopener', class: 'vp-place-link' },
+    el('i', { class: 'ti ti-link' }), 'Link'));
+  if (p.website) links.appendChild(el('a',
+    { href: normalizeUrl(p.website), target: '_blank', rel: 'noopener', class: 'vp-place-link' },
+    el('i', { class: 'ti ti-world' }), 'Website'));
+  links.appendChild(el('a',
+    { href: navUrl(p), target: '_blank', rel: 'noopener', class: 'vp-place-link vp-place-nav' },
+    el('i', { class: 'ti ti-navigation' }), 'Navigate'));
+  card.appendChild(links);
 
   if (p.notes) card.appendChild(el('div', { class: 'vp-place-notes' }, p.notes));
 
@@ -163,6 +225,37 @@ function renderPlaceCard(p) {
   card.appendChild(actions);
 
   return card;
+}
+
+// ---------- map ----------
+let placesMap = null;
+
+function initPlacesMap(mapDiv, pts) {
+  if (!document.body.contains(mapDiv)) return; // view changed before the tick fired
+  if (placesMap) { placesMap.remove(); placesMap = null; }
+  const map = L.map(mapDiv, { scrollWheelZoom: false });
+  placesMap = map;
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors',
+    maxZoom: 19
+  }).addTo(map);
+
+  const latlngs = [];
+  pts.forEach(p => {
+    const ll = [p.lat, p.lng];
+    latlngs.push(ll);
+    L.circleMarker(ll, {
+      radius: 8, color: '#fff', weight: 2, fillColor: '#1d8a9c', fillOpacity: 1
+    }).addTo(map)
+      .bindTooltip(p.name || 'Place')
+      .on('click', () => openPlaceEditor(p.id));
+  });
+  if (latlngs.length) {
+    map.fitBounds(L.latLngBounds(latlngs), { padding: [30, 30], maxZoom: 15 });
+  } else {
+    map.setView([20, 0], 2);
+  }
+  setTimeout(() => map.invalidateSize(), 0);
 }
 
 // Built by render() when the Places view is active.
@@ -189,6 +282,14 @@ export function renderPlacesView() {
   panel.appendChild(filterRow);
 
   const visible = all.filter(p => ui.placeFilter === 'all' || p.category === ui.placeFilter);
+
+  const withCoords = visible.filter(p => typeof p.lat === 'number' && typeof p.lng === 'number');
+  if (withCoords.length) {
+    const mapDiv = el('div', { class: 'vp-map' });
+    panel.appendChild(mapDiv);
+    setTimeout(() => initPlacesMap(mapDiv, withCoords), 0);
+  }
+
   if (visible.length === 0) {
     panel.appendChild(el('div', { class: 'vp-places-empty' },
       all.length ? 'No places in this category.'
