@@ -1,6 +1,23 @@
 // Derived/computed views over trip state: day ranges, stats, conflicts.
 import { activeTrip } from './state.js';
 import { isoDate, parseISO, addDays, timeToMin } from './dates.js';
+import { wallClockToUTC } from './timezone.js';
+
+// Real UTC duration (ms) of a flight/transit card. depart/arrive are
+// wall-clock strings local to the origin and destination respectively.
+function legUTC(c) {
+  if (!c.depart || !c.arrive) return null;
+  let dep, arr;
+  if ((c.type === 'flight' || c.type === 'transit') && c.originTz && c.destTz) {
+    dep = wallClockToUTC(c.depart, c.originTz);
+    arr = wallClockToUTC(c.arrive, c.destTz);
+  } else {
+    dep = new Date(c.depart).getTime();
+    arr = new Date(c.arrive).getTime();
+  }
+  if (Number.isNaN(dep) || Number.isNaN(arr)) return null;
+  return { dep, arr };
+}
 
 export function getDays() {
   const t = activeTrip();
@@ -48,11 +65,14 @@ export function computeStats() {
       if (c.type === 'hotel' && c.city) {
         cityNights[c.city] = (cityNights[c.city] || 0) + (parseInt(c.nights) || 1);
       }
-      if ((c.type === 'flight' || c.type === 'transit') && c.depart && c.arrive) {
-        const m = (new Date(c.arrive) - new Date(c.depart)) / 60000;
-        if (m > 0 && m < 60 * 48) {
-          if (c.type === 'flight') totalFlightMin += m;
-          else totalTransitMin += m;
+      if (c.type === 'flight' || c.type === 'transit') {
+        const leg = legUTC(c);
+        if (leg) {
+          const m = (leg.arr - leg.dep) / 60000;
+          if (m > 0 && m < 60 * 48) {
+            if (c.type === 'flight') totalFlightMin += m;
+            else totalTransitMin += m;
+          }
         }
       }
     });
@@ -68,8 +88,9 @@ export function getConflicts() {
     const intervals = [];
     ids.forEach(id => {
       const c = t.cards[id]; if (!c) return;
-      if (c.depart && c.arrive) {
-        intervals.push([new Date(c.depart).getTime(), new Date(c.arrive).getTime(), c]);
+      const leg = legUTC(c);
+      if (leg) {
+        intervals.push([leg.dep, leg.arr, c]);
       } else if (c.time) {
         const a = parseISO(date).getTime() + timeToMin(c.time) * 60000;
         intervals.push([a, a + 60 * 60000, c]);

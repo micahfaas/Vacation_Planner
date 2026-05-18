@@ -1,6 +1,6 @@
 // JSON export and import.
 import { data, activeTrip } from './state.js';
-import { save } from './storage.js';
+import { save, migrateCard } from './storage.js';
 import { render } from './render.js';
 
 export function exportJSON() {
@@ -39,6 +39,7 @@ export function importJSON(file) {
         libFilter: 'all',
         nextId: (Math.max(0, ...Object.keys(tripData.cards || {}).map(k => parseInt(k.replace('c', '')) || 0)) + 1)
       };
+      Object.values(data.trips[id].cards).forEach(migrateCard);
       data.activeTripId = id;
       save(); render();
     } catch (e) {

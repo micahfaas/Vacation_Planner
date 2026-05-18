@@ -333,14 +333,26 @@ function renderCard(id) {
 
 function cardMeta(c) {
   const bits = [];
-  if (c.city) bits.push(c.city);
-  if (c.type === 'flight' && c.flightNo) bits.push(c.flightNo);
-  if (c.time) bits.push(c.time);
-  if (c.depart && c.arrive) {
-    const dt = c.depart.slice(11, 16), at = c.arrive.slice(11, 16);
-    if (dt && at) bits.push(dt + ' → ' + at);
+  if (c.type === 'flight' || c.type === 'transit') {
+    if (c.type === 'flight' && c.flightNo) bits.push(c.flightNo);
+    if (c.depart && c.arrive) {
+      const dt = c.depart.slice(11, 16), at = c.arrive.slice(11, 16);
+      const dDate = c.depart.slice(0, 10), aDate = c.arrive.slice(0, 10);
+      const from = c.originCity ? c.originCity + ' ' : '';
+      const to = c.destCity ? c.destCity + ' ' : '';
+      let leg = from + dt + ' → ' + to + at;
+      if (dDate && aDate && aDate > dDate) {
+        leg += ' +' + Math.round((parseISO(aDate) - parseISO(dDate)) / 86400000);
+      }
+      bits.push(leg);
+    } else if (c.originCity || c.destCity) {
+      bits.push((c.originCity || '?') + ' → ' + (c.destCity || '?'));
+    }
+  } else {
+    if (c.city) bits.push(c.city);
+    if (c.time) bits.push(c.time);
+    if (c.type === 'hotel' && c.nights) bits.push(c.nights + (c.nights == 1 ? ' night' : ' nights'));
   }
-  if (c.type === 'hotel' && c.nights) bits.push(c.nights + (c.nights == 1 ? ' night' : ' nights'));
   return bits.join(' · ');
 }
 

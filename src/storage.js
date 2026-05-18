@@ -2,6 +2,21 @@
 import { data } from './state.js';
 import { STORAGE_KEY } from './constants.js';
 import { isoDate } from './dates.js';
+import { browserTz } from './timezone.js';
+
+// Legacy flight/transit cards stored depart/arrive as plain wall-clock
+// strings with no timezone. Default both ends to the browser timezone,
+// which keeps their computed times identical to the pre-timezone behavior.
+export function migrateCard(c) {
+  if ((c.type === 'flight' || c.type === 'transit') && (c.depart || c.arrive) && !c.originTz) {
+    const tz = browserTz();
+    c.originTz = tz;
+    c.destTz = tz;
+    if (!c.originCity) c.originCity = c.city || '';
+    if (!c.destCity) c.destCity = c.city || '';
+  }
+  return c;
+}
 
 export function load() {
   try {
@@ -43,6 +58,7 @@ export function load() {
     if (!t.library) t.library = [];
     if (!t.libFilter) t.libFilter = 'all';
     if (!t.nextId) t.nextId = 1;
+    Object.values(t.cards).forEach(migrateCard);
   });
   save();
 }

@@ -5,6 +5,7 @@ import { el } from './dom.js';
 import { addCard, removeCard, duplicateCard } from './cards.js';
 import { save } from './storage.js';
 import { render } from './render.js';
+import { createCityPicker } from './citypicker.js';
 
 export function openEditor(id, addTarget) {
   const t = activeTrip();
@@ -28,9 +29,19 @@ export function openEditor(id, addTarget) {
   m.appendChild(el('label', {}, 'Title'));
   m.appendChild(titleIn);
 
+  // City is shown for non-flight types; flight/transit use origin/destination pickers.
+  const cityLabel = el('label', {}, 'City');
   const cityIn = el('input', { type: 'text', value: c.city || '', placeholder: 'e.g. Buenos Aires' });
-  m.appendChild(el('label', {}, 'City'));
-  m.appendChild(cityIn);
+  const originPicker = createCityPicker({
+    city: c.originCity, timezone: c.originTz,
+    latitude: c.originLat, longitude: c.originLng,
+    placeholder: 'Search origin city…'
+  });
+  const destPicker = createCityPicker({
+    city: c.destCity, timezone: c.destTz,
+    latitude: c.destLat, longitude: c.destLng,
+    placeholder: 'Search destination city…'
+  });
 
   const flightNoIn = el('input', { type: 'text', value: c.flightNo || '', placeholder: 'AA123' });
   const departIn = el('input', { type: 'datetime-local', value: c.depart || '' });
@@ -47,18 +58,26 @@ export function openEditor(id, addTarget) {
     dynamic.innerHTML = '';
     const tp = typeSel.value;
     if (tp === 'flight' || tp === 'transit') {
+      dynamic.appendChild(el('label', {}, 'Origin city'));
+      dynamic.appendChild(originPicker.el);
+      dynamic.appendChild(el('label', {}, 'Destination city'));
+      dynamic.appendChild(destPicker.el);
       dynamic.appendChild(el('label', {}, tp === 'flight' ? 'Flight number' : 'Carrier / reference'));
       dynamic.appendChild(flightNoIn);
-      dynamic.appendChild(el('label', {}, 'Depart'));
+      dynamic.appendChild(el('label', {}, 'Depart — local time at origin'));
       dynamic.appendChild(departIn);
-      dynamic.appendChild(el('label', {}, 'Arrive'));
+      dynamic.appendChild(el('label', {}, 'Arrive — local time at destination'));
       dynamic.appendChild(arriveIn);
-    } else if (tp === 'hotel') {
-      dynamic.appendChild(el('label', {}, 'Nights'));
-      dynamic.appendChild(nightsIn);
-    } else if (tp === 'activity' || tp === 'meal') {
-      dynamic.appendChild(el('label', {}, 'Time'));
-      dynamic.appendChild(timeIn);
+    } else {
+      dynamic.appendChild(cityLabel);
+      dynamic.appendChild(cityIn);
+      if (tp === 'hotel') {
+        dynamic.appendChild(el('label', {}, 'Nights'));
+        dynamic.appendChild(nightsIn);
+      } else if (tp === 'activity' || tp === 'meal') {
+        dynamic.appendChild(el('label', {}, 'Time'));
+        dynamic.appendChild(timeIn);
+      }
     }
   }
   renderDynamic();
@@ -95,34 +114,48 @@ export function openEditor(id, addTarget) {
   rightBtns.appendChild(el('button', {
     class: 'vp-save',
     onclick: () => {
+      const tp = typeSel.value;
       const out = {
-        type: typeSel.value,
-        title: titleIn.value.trim() || TYPES[typeSel.value].label,
-        city: cityIn.value.trim(),
+        type: tp,
+        title: titleIn.value.trim() || TYPES[tp].label,
         notes: notesIn.value.trim(),
         booked: bookedIn.checked
       };
-      const tp = typeSel.value;
       if (tp === 'flight' || tp === 'transit') {
         out.flightNo = flightNoIn.value.trim();
         out.depart = departIn.value;
         out.arrive = arriveIn.value;
+        const o = originPicker.getValue();
+        const d = destPicker.getValue();
+        out.originCity = o.name;
+        out.originTz = o.timezone;
+        out.originLat = o.latitude;
+        out.originLng = o.longitude;
+        out.destCity = d.name;
+        out.destTz = d.timezone;
+        out.destLat = d.latitude;
+        out.destLng = d.longitude;
+      } else {
+        out.city = cityIn.value.trim();
+        if (tp === 'hotel') out.nights = parseInt(nightsIn.value) || 1;
+        if (tp === 'activity' || tp === 'meal') out.time = timeIn.value;
       }
-      if (tp === 'hotel') out.nights = parseInt(nightsIn.value) || 1;
-      if (tp === 'activity' || tp === 'meal') out.time = timeIn.value;
 
       if (isNew) {
         addCard(out, addTarget || { kind: 'lib' });
       } else {
-        Object.assign(t.cards[id], out);
-        // clean stale fields that don't apply to new type
-        if (out.type !== 'flight' && out.type !== 'transit') {
-          delete t.cards[id].flightNo;
-          delete t.cards[id].depart;
-          delete t.cards[id].arrive;
+        const card = t.cards[id];
+        Object.assign(card, out);
+        // clean stale fields that don't apply to the new type
+        if (tp === 'flight' || tp === 'transit') {
+          delete card.city;
+        } else {
+          ['flightNo', 'depart', 'arrive',
+           'originCity', 'originTz', 'originLat', 'originLng',
+           'destCity', 'destTz', 'destLat', 'destLng'].forEach(k => delete card[k]);
         }
-        if (out.type !== 'hotel') delete t.cards[id].nights;
-        if (out.type !== 'activity' && out.type !== 'meal') delete t.cards[id].time;
+        if (tp !== 'hotel') delete card.nights;
+        if (tp !== 'activity' && tp !== 'meal') delete card.time;
         save(); render();
       }
       bg.remove();
