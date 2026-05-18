@@ -1,6 +1,6 @@
 // JSON export and import.
 import { data, activeTrip } from './state.js';
-import { save, migrateCard } from './storage.js';
+import { save, migrateCard, newTripId } from './storage.js';
 import { render } from './render.js';
 
 export function exportJSON() {
@@ -27,7 +27,7 @@ export function importJSON(file) {
     try {
       const parsed = JSON.parse(reader.result);
       const tripData = parsed.trip || parsed;
-      const id = 't' + Date.now();
+      const id = newTripId();
       data.trips[id] = {
         id,
         name: tripData.name || 'Imported trip',

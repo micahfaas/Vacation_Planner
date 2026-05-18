@@ -1,7 +1,7 @@
 // Trips menu: switch, rename, delete, create.
 import { data } from './state.js';
 import { el } from './dom.js';
-import { save } from './storage.js';
+import { save, markTripDirty, markTripDeleted, newTripId } from './storage.js';
 import { render } from './render.js';
 import { fmtShort, parseISO, isoDate } from './dates.js';
 
@@ -34,7 +34,7 @@ export function openTripsMenu() {
       onclick: e => {
         e.stopPropagation();
         const name = prompt('Trip name', tr.name);
-        if (name) { tr.name = name.trim(); save(); openTripsMenu(); bg.remove(); }
+        if (name) { tr.name = name.trim(); markTripDirty(tr.id); save(); openTripsMenu(); bg.remove(); }
       }
     }, el('i', { class: 'ti ti-edit' })));
     if (Object.keys(data.trips).length > 1) {
@@ -43,6 +43,7 @@ export function openTripsMenu() {
         onclick: e => {
           e.stopPropagation();
           if (confirm('Delete trip "' + tr.name + '" and all its cards?')) {
+            markTripDeleted(tr.id);
             delete data.trips[tr.id];
             if (data.activeTripId === tr.id) {
               data.activeTripId = Object.keys(data.trips)[0];
@@ -66,7 +67,7 @@ export function openTripsMenu() {
     onclick: () => {
       const name = prompt('Name for new trip', 'New trip');
       if (!name) return;
-      const id = 't' + Date.now();
+      const id = newTripId();
       const today = new Date();
       const end = new Date(today); end.setDate(end.getDate() + 13);
       data.trips[id] = {
