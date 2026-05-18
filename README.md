@@ -17,43 +17,43 @@ A drag-and-drop trip planner that runs entirely in your browser. Build a card li
 - Auto-saves to `localStorage`
 - Warm, bright vacation-themed palette
 
-## Local use
+## Local development
 
-Just open `index.html` in a browser. There's no build step. If you want to serve it locally:
+This project is built with [Vite](https://vite.dev). Install dependencies once, then
+run the dev server:
 
 ```bash
-cd vacation-planner
-python3 -m http.server 8000
-# open http://localhost:8000
+npm install
+npm run dev
+# open http://localhost:5173
 ```
 
-## Hosting on GitHub Pages
+To produce a production build in `dist/`:
 
-1. Create a new GitHub repository (e.g. `vacation-planner`).
-2. Push these three files to the repo root: `index.html`, `styles.css`, `app.js`.
+```bash
+npm run build
+npm run preview   # serve the build locally to check it
+```
 
-   ```bash
-   git init
-   git add index.html styles.css app.js README.md
-   git commit -m "Initial commit"
-   git branch -M main
-   git remote add origin git@github.com:YOUR-USERNAME/vacation-planner.git
-   git push -u origin main
-   ```
+## Hosting
 
-3. On GitHub, go to **Settings → Pages**.
-4. Under **Build and deployment**, set **Source** to `Deploy from a branch`, **Branch** to `main` and folder to `/ (root)`, then **Save**.
-5. After a minute or two, your planner will be live at `https://YOUR-USERNAME.github.io/vacation-planner/`.
+`npm run build` emits a static bundle into `dist/`. Because there is now a build step,
+deploying to GitHub Pages needs either a GitHub Action that runs the build or a host
+that builds automatically — this will be wired up as part of deployment setup.
 
-That URL is yours forever. Bookmark it on every device you want to plan from. Note that `localStorage` is per-browser, per-device — use the JSON export/import buttons in the header to sync between devices.
+`localStorage` is per-browser, per-device — use the JSON export/import buttons in the
+header to move a trip between devices.
 
-## Files
+## Project structure
 
-- `index.html` — markup and CDN-loaded icon font
-- `styles.css` — styling, light/dark mode
-- `app.js` — all planner logic in one self-contained IIFE
+- `index.html` — markup shell and CDN-loaded icon font
+- `src/main.js` — app entry point
+- `src/*.js` — planner logic split into small ES modules (state, storage, rendering,
+  editor, trips, import/export)
+- `src/styles.css` — styling
+- `vite.config.js` — build configuration
 
-No frameworks. No build. ~600 lines total.
+No UI framework — just vanilla JS modules bundled by Vite.
 
 ## License
 
