@@ -8,6 +8,7 @@ import { save } from './storage.js';
 import { duplicateCard, removeCard, moveCard } from './cards.js';
 import { openEditor } from './editor.js';
 import { renderPlacesView } from './places.js';
+import { renderPlanView } from './plan.js';
 
 const root = document.getElementById('vp-root');
 
@@ -19,7 +20,7 @@ export function render() {
   // toolbar with Calendar / Places view toggle
   const tb = el('div', { class: 'vp-toolbar' });
   const toggle = el('div', { class: 'vp-view-toggle' });
-  [['calendar', 'Calendar'], ['places', 'Places']].forEach(([v, label]) => {
+  [['calendar', 'Calendar'], ['places', 'Places'], ['plan', 'Plan']].forEach(([v, label]) => {
     toggle.appendChild(el('button', {
       class: 'vp-view-btn' + (ui.view === v ? ' vp-view-on' : ''),
       onclick: () => { ui.view = v; render(); }
@@ -46,6 +47,11 @@ export function render() {
 
   if (ui.view === 'places') {
     root.appendChild(renderPlacesView());
+    return;
+  }
+
+  if (ui.view === 'plan') {
+    root.appendChild(renderPlanView());
     return;
   }
 
