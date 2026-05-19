@@ -49,6 +49,10 @@ export function openEditor(id, addTarget) {
   const arriveIn = el('input', { type: 'datetime-local', value: c.arrive || '' });
   const timeIn = el('input', { type: 'time', value: c.time || '' });
   const nightsIn = el('input', { type: 'number', min: '1', value: c.nights || 1 });
+  const costIn = el('input', {
+    type: 'number', min: '0', step: '1',
+    value: c.cost != null ? c.cost : '', placeholder: 'Estimated cost, e.g. 250'
+  });
   const notesIn = el('textarea', { placeholder: 'Confirmation #, address, links, anything else…' });
   notesIn.value = c.notes || '';
 
@@ -87,6 +91,9 @@ export function openEditor(id, addTarget) {
   const attachField = createAttachmentsField(c.attachments);
   m.appendChild(el('label', {}, 'Attachments'));
   m.appendChild(attachField.el);
+
+  m.appendChild(el('label', {}, 'Cost (USD)'));
+  m.appendChild(costIn);
 
   m.appendChild(el('label', {}, 'Notes'));
   m.appendChild(notesIn);
@@ -148,6 +155,8 @@ export function openEditor(id, addTarget) {
 
       const att = attachField.getValue();
       if (att.length) out.attachments = att;
+      const cost = parseFloat(costIn.value);
+      if (cost > 0) out.cost = cost;
 
       if (isNew) {
         addCard(out, addTarget || { kind: 'lib' });
@@ -165,6 +174,7 @@ export function openEditor(id, addTarget) {
         if (tp !== 'hotel') delete card.nights;
         if (tp !== 'activity' && tp !== 'meal') delete card.time;
         if (!att.length) delete card.attachments;
+        if (!(cost > 0)) delete card.cost;
         save(); render();
       }
       bg.remove();

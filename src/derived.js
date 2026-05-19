@@ -58,6 +58,16 @@ export function computeStats() {
       if (c.booked) bookedCards++;
     });
   });
+  // estimated cost across every card, broken down by type
+  const costByType = {};
+  let totalCost = 0;
+  Object.values(t.cards).forEach(c => {
+    const v = parseFloat(c.cost);
+    if (v > 0) {
+      costByType[c.type] = (costByType[c.type] || 0) + v;
+      totalCost += v;
+    }
+  });
   days.forEach(d => {
     const ids = t.schedule[isoDate(d)] || [];
     ids.forEach(id => {
@@ -77,7 +87,7 @@ export function computeStats() {
       }
     });
   });
-  return { totalDays, filled, unaccounted: totalDays - filled, cityNights, totalFlightMin, totalTransitMin, totalCards, bookedCards };
+  return { totalDays, filled, unaccounted: totalDays - filled, cityNights, totalFlightMin, totalTransitMin, totalCards, bookedCards, costByType, totalCost };
 }
 
 export function getConflicts() {

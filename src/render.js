@@ -192,6 +192,8 @@ export function render() {
   const side = el('div', { class: 'vp-side' });
   side.appendChild(libraryPanel());
   side.appendChild(statsPanel());
+  const budget = budgetPanel();
+  if (budget) side.appendChild(budget);
   layout.appendChild(side);
 
   root.appendChild(layout);
@@ -259,6 +261,36 @@ function statRow(label, val) {
   r.appendChild(el('span', {}, label));
   r.appendChild(el('strong', {}, val));
   return r;
+}
+
+// Estimated-spend panel — only shown once at least one card has a cost.
+function budgetPanel() {
+  const s = computeStats();
+  if (!(s.totalCost > 0)) return null;
+  const panel = el('div', { class: 'vp-panel vp-budget' });
+  panel.appendChild(el('h3', {}, 'Budget'));
+  panel.appendChild(el('div', { class: 'vp-budget-total' },
+    '$' + Math.round(s.totalCost).toLocaleString()));
+  panel.appendChild(el('div', { class: 'vp-budget-sub' }, 'estimated total'));
+
+  Object.entries(s.costByType).sort((a, b) => b[1] - a[1]).forEach(([type, amt]) => {
+    const tp = TYPES[type] || TYPES.note;
+    const row = el('div', { class: 'vp-budget-row' });
+    const head = el('div', { class: 'vp-budget-row-head' });
+    const left = el('span', { class: 'vp-budget-label' },
+      el('i', { class: 'ti ' + tp.icon }), ' ' + tp.label);
+    head.appendChild(left);
+    head.appendChild(el('strong', {}, '$' + Math.round(amt).toLocaleString()));
+    row.appendChild(head);
+    const bar = el('div', { class: 'vp-budget-bar' });
+    bar.appendChild(el('div', {
+      class: 'vp-budget-fill',
+      style: { width: (amt / s.totalCost * 100).toFixed(1) + '%', background: tp.color }
+    }));
+    row.appendChild(bar);
+    panel.appendChild(row);
+  });
+  return panel;
 }
 
 // How many calendar days does a card occupy?
@@ -394,6 +426,7 @@ function cardMeta(c) {
     if (c.time) bits.push(c.time);
     if (c.type === 'hotel' && c.nights) bits.push(c.nights + (c.nights == 1 ? ' night' : ' nights'));
   }
+  if (c.cost > 0) bits.push('$' + Math.round(c.cost).toLocaleString());
   return bits.join(' · ');
 }
 
