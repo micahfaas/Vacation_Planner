@@ -2034,3 +2034,107 @@ a.vp-res-link-title:hover span { text-decoration: underline; }
 .vp-today-empty { padding: var(--space-6) var(--space-4); }
 .vp-today-empty button { margin-top: var(--space-3); }
 .vp-today-done { padding: var(--space-4); }
+
+/* AI co-planner */
+.vp-coplan { width: min(560px, 100%); }
+.vp-coplan-trip {
+  font-size: var(--text-sm);
+  color: var(--text-2);
+  margin-bottom: var(--space-3);
+}
+.vp-coplan-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
+}
+.vp-coplan-input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 78px;
+  resize: vertical;
+}
+.vp-coplan-out {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+.vp-coplan-out:empty { margin-top: 0; }
+.vp-coplan-status {
+  font-size: var(--text-sm);
+  color: var(--text-2);
+  text-align: center;
+  padding: var(--space-4) 0;
+}
+.vp-coplan-err { color: var(--danger); }
+.vp-coplan-reply {
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--surface-2);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+}
+.vp-coplan-sug-head {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-3);
+}
+.vp-coplan-sug-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-top: calc(-1 * var(--space-2));
+}
+.vp-coplan-sug {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  background: var(--surface-2);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) 10px;
+}
+.vp-coplan-sug > i { font-size: var(--text-lg); flex-shrink: 0; padding-top: 1px; }
+.vp-coplan-sug-main { flex: 1; min-width: 0; }
+.vp-coplan-sug-title {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text);
+}
+.vp-coplan-sug-meta {
+  font-size: var(--text-xs);
+  color: var(--text-2);
+  margin-top: 1px;
+}
+.vp-coplan-sug-notes {
+  font-size: var(--text-xs);
+  color: var(--text-3);
+  margin-top: 3px;
+  word-break: break-word;
+}
+.vp-coplan-add {
+  flex-shrink: 0;
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-family: inherit;
+  background: var(--accent);
+  color: #fff;
+  border: 0.5px solid var(--accent);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+.vp-coplan-add:hover { opacity: 0.92; }
+.vp-coplan-add:disabled {
+  background: var(--booked-bg);
+  color: var(--booked);
+  border-color: var(--booked-bg);
+  cursor: default;
+}

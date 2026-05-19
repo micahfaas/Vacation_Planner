@@ -26,7 +26,8 @@ function labelFor(type, card) {
 }
 
 // One AI card -> a review candidate { type, card, date, label, include }.
-function toCandidate(c) {
+// Shared by the import parser and the co-planner.
+export function aiCardToCandidate(c) {
   if (!c || typeof c !== 'object') return null;
   const type = TYPES.includes(c.type) ? c.type : 'note';
   const card = { type, title: (c.title || '').trim() || 'Imported item' };
@@ -73,5 +74,5 @@ export async function parseWithAI(text) {
   if (!data || data.ok !== true) {
     throw new Error((data && data.error) || 'The AI could not read that text.');
   }
-  return (Array.isArray(data.cards) ? data.cards : []).map(toCandidate).filter(Boolean);
+  return (Array.isArray(data.cards) ? data.cards : []).map(aiCardToCandidate).filter(Boolean);
 }

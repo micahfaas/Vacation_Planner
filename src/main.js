@@ -12,6 +12,7 @@ import { openTripsMenu } from './trips.js';
 import { loadSharedTrip, renderSharedTrip } from './share.js';
 import { confirmDialog } from './dialog.js';
 import { openImportModal } from './importer.js';
+import { openCoPlanner } from './coplanner.js';
 
 // Register the service worker for offline support (production builds only,
 // so it never interferes with the Vite dev server's hot reload).
@@ -56,6 +57,7 @@ function bootApp() {
   document.getElementById('vp-ics-btn').addEventListener('click', exportICS);
   document.getElementById('vp-currency-btn').addEventListener('click', openCurrencyConverter);
   document.getElementById('vp-import-btn').addEventListener('click', openImportModal);
+  document.getElementById('vp-coplan-btn').addEventListener('click', openCoPlanner);
 
   const accountBtn = document.getElementById('vp-account-btn');
   accountBtn.addEventListener('click', () => {
