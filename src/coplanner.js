@@ -172,6 +172,7 @@ function suggestionRow(aiCard) {
         name: c.title || 'Place',
         category: PLACE_CAT[c.type],
         address: address || c.city || '',
+        city: c.city || '',
         url: mapUrl || '',
         website: website || '',
         notes: c.notes || ''

@@ -14,6 +14,7 @@ import { confirmDialog } from './dialog.js';
 import { openImportModal } from './importer.js';
 import { openCoPlanner } from './coplanner.js';
 import { loadProfile, openProfileDialog } from './profile.js';
+import { loadFavorites } from './favorites.js';
 import { el } from './dom.js';
 
 // Register the service worker for offline support (production builds only,
@@ -69,7 +70,7 @@ function bootApp() {
     document.getElementById('vp-account-email').textContent = user.email || 'Account';
     accountBtn.hidden = false;
     root.innerHTML = '<div class="vp-loading">Loading your trips…</div>';
-    await Promise.all([loadTrips(user.id), loadProfile(user.id)]);
+    await Promise.all([loadTrips(user.id), loadProfile(user.id), loadFavorites(user.id)]);
     render();
     if (pendingShare) {
       const text = pendingShare;

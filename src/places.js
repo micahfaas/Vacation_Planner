@@ -12,6 +12,7 @@ import { deepLinksFor } from './deeplinks.js';
 import { confirmDialog } from './dialog.js';
 import { openPlacesImport } from './places-import.js';
 import { geocodePlace } from './geocoding.js';
+import { getFavorites, addFavorite, removeFavorite, isFavoriteId } from './favorites.js';
 
 // category -> card type, for turning a researched place into a trip card
 const CAT_TO_TYPE = {
@@ -41,6 +42,21 @@ function parseMapsUrl(u) {
     catch { out.name = nm[1].replace(/\+/g, ' '); }
   }
   return out;
+}
+
+// Best-effort city for a place — prefers an explicit field, otherwise the
+// second-to-last comma-separated chunk of the address (after stripping a
+// leading postal code). Returns '' when nothing usable is available.
+export function placeCity(p) {
+  const explicit = (p.city || '').trim();
+  if (explicit) return explicit;
+  const addr = (p.address || '').trim();
+  if (!addr) return '';
+  const parts = addr.split(/,\s*/).map(s => s.trim()).filter(Boolean);
+  if (!parts.length) return '';
+  const candidate = parts.length >= 2 ? parts[parts.length - 2] : parts[0];
+  // Strip a leading postal code, numeric ("06700 ...") or alphanumeric ("C1043ABO ...").
+  return candidate.replace(/^(\d{4,7}|[A-Z]\d{3,5}[A-Z]*)\s+/, '').trim();
 }
 
 // Google Maps directions deep-link to a place.
@@ -203,7 +219,8 @@ function renderPlaceCard(p) {
   const card = el('div', {
     class: 'vp-place' + (p.category === 'staying' ? ' vp-place-staying' : ''),
     onclick: e => {
-      if (e.target.closest('.vp-place-actions') || e.target.closest('a')) return;
+      if (e.target.closest('.vp-place-actions') || e.target.closest('a') ||
+          e.target.closest('.vp-place-star')) return;
       openPlaceEditor(p.id);
     }
   });
@@ -211,6 +228,31 @@ function renderPlaceCard(p) {
   const top = el('div', { class: 'vp-place-top' });
   top.appendChild(el('i', { class: 'ti ' + cat.icon + ' vp-place-icon' }));
   top.appendChild(el('div', { class: 'vp-place-name' }, p.name || 'Untitled place'));
+
+  // Favorite toggle — copies the place into the cross-trip favorites pool.
+  const starred = isFavoriteId(p.favoriteId);
+  const starBtn = el('button', {
+    class: 'vp-place-star' + (starred ? ' vp-place-star-on' : ''),
+    title: starred ? 'Remove from favorites' : 'Save to favorites',
+    'aria-label': starred ? 'Remove from favorites' : 'Save to favorites'
+  }, el('i', { class: 'ti ' + (starred ? 'ti-star-filled' : 'ti-star') }));
+  starBtn.addEventListener('click', async e => {
+    e.stopPropagation();
+    starBtn.disabled = true;
+    try {
+      if (starred) {
+        await removeFavorite(p.favoriteId);
+        updatePlace(p.id, { favoriteId: '' });
+      } else {
+        const fid = await addFavorite(p);
+        updatePlace(p.id, { favoriteId: fid });
+      }
+    } catch (err) {
+      console.warn('Favorite toggle failed.', err);
+      starBtn.disabled = false;
+    }
+  });
+  top.appendChild(starBtn);
   card.appendChild(top);
 
   card.appendChild(el('div', { class: 'vp-place-cat' }, cat.label));
@@ -280,6 +322,94 @@ function renderPlaceCard(p) {
   return card;
 }
 
+// ---------- favorites picker ----------
+function openFavoritesPicker() {
+  const t = activeTrip();
+  const already = new Set((t.places || []).map(p => p.favoriteId).filter(Boolean));
+  const favs = getFavorites().filter(f => !already.has(f.id));
+
+  const bg = el('div', { class: 'vp-modal-bg', onclick: e => { if (e.target === bg) bg.remove(); } });
+  const m = el('div', { class: 'vp-modal' });
+  m.appendChild(el('h3', {}, 'Add from favorites'));
+
+  if (!favs.length) {
+    m.appendChild(el('p', { class: 'vp-dialog-msg' },
+      getFavorites().length
+        ? 'All of your favorites are already in this trip.'
+        : 'You have no favorites yet. Star a place on any trip to save it for next time.'));
+    const actions = el('div', { class: 'vp-modal-actions' });
+    actions.appendChild(el('div', {}));
+    const right = el('div', { class: 'vp-right' });
+    right.appendChild(el('button', { onclick: () => bg.remove() }, 'Close'));
+    actions.appendChild(right);
+    m.appendChild(actions);
+    bg.appendChild(m);
+    document.body.appendChild(bg);
+    return;
+  }
+
+  m.appendChild(el('p', { class: 'vp-dialog-msg' },
+    'Pick favorites to add to this trip’s research.'));
+
+  // Group by city for scannability.
+  const byCity = new Map();
+  favs.forEach(f => {
+    const c = placeCity(f) || '— no city —';
+    if (!byCity.has(c)) byCity.set(c, []);
+    byCity.get(c).push(f);
+  });
+
+  const selected = new Set();
+  const list = el('div', { class: 'vp-fav-list' });
+  Array.from(byCity.keys()).sort().forEach(city => {
+    list.appendChild(el('div', { class: 'vp-fav-city' }, city));
+    byCity.get(city).forEach(f => {
+      const cat = PLACE_CATEGORIES[f.category] || PLACE_CATEGORIES.other;
+      const row = el('label', { class: 'vp-fav-row' });
+      const cb = el('input', { type: 'checkbox' });
+      cb.addEventListener('change', () => {
+        if (cb.checked) selected.add(f.id); else selected.delete(f.id);
+        addBtn.disabled = selected.size === 0;
+        addBtn.textContent = selected.size
+          ? 'Add ' + selected.size + (selected.size === 1 ? ' place' : ' places')
+          : 'Add';
+      });
+      row.appendChild(cb);
+      row.appendChild(el('i', { class: 'ti ' + cat.icon + ' vp-fav-icon' }));
+      const mainCol = el('div', { class: 'vp-fav-main' });
+      mainCol.appendChild(el('div', { class: 'vp-fav-name' }, f.name || 'Place'));
+      if (f.address) mainCol.appendChild(el('div', { class: 'vp-fav-addr' }, f.address));
+      row.appendChild(mainCol);
+      list.appendChild(row);
+    });
+  });
+  m.appendChild(list);
+
+  const addBtn = el('button', { class: 'vp-save' }, 'Add');
+  addBtn.disabled = true;
+  addBtn.addEventListener('click', () => {
+    favs.filter(f => selected.has(f.id)).forEach(f => {
+      const copy = Object.assign({}, f);
+      delete copy.id;        // addPlace will assign a fresh trip-level id
+      delete copy.savedAt;
+      copy.favoriteId = f.id;
+      addPlace(copy);
+    });
+    bg.remove();
+  });
+
+  const actions = el('div', { class: 'vp-modal-actions' });
+  actions.appendChild(el('div', {}));
+  const right = el('div', { class: 'vp-right' });
+  right.appendChild(el('button', { onclick: () => bg.remove() }, 'Close'));
+  right.appendChild(addBtn);
+  actions.appendChild(right);
+  m.appendChild(actions);
+
+  bg.appendChild(m);
+  document.body.appendChild(bg);
+}
+
 // ---------- map ----------
 let placesMap = null;
 
@@ -326,6 +456,11 @@ export function renderPlacesView() {
   headBtns.appendChild(el('button', {
     class: 'vp-btn-primary', onclick: () => openPlacesImport()
   }, 'Import places'));
+  if (getFavorites().length) {
+    headBtns.appendChild(el('button', {
+      class: 'vp-btn-primary', onclick: () => openFavoritesPicker()
+    }, 'From favorites'));
+  }
   headBtns.appendChild(el('button', {
     class: 'vp-btn-primary', onclick: () => openPlaceEditor(null)
   }, '+ new place'));
@@ -340,9 +475,32 @@ export function renderPlacesView() {
       onclick: () => { ui.placeFilter = k; render(); }
     }, label));
   });
+
+  // City dropdown — only shown when the saved places span at least two cities.
+  const cities = Array.from(new Set(all.map(placeCity).filter(Boolean))).sort();
+  if (cities.length >= 2) {
+    if (ui.placeCityFilter !== 'all' && !cities.includes(ui.placeCityFilter)) {
+      ui.placeCityFilter = 'all';
+    }
+    const citySel = el('select', { class: 'vp-place-city-sel' });
+    citySel.appendChild(el('option', { value: 'all' }, 'All cities'));
+    cities.forEach(c => {
+      const opt = el('option', { value: c }, c);
+      if (c === ui.placeCityFilter) opt.selected = true;
+      citySel.appendChild(opt);
+    });
+    citySel.addEventListener('change', () => { ui.placeCityFilter = citySel.value; render(); });
+    filterRow.appendChild(citySel);
+  } else if (ui.placeCityFilter !== 'all') {
+    ui.placeCityFilter = 'all';
+  }
+
   panel.appendChild(filterRow);
 
-  const visible = all.filter(p => ui.placeFilter === 'all' || p.category === ui.placeFilter);
+  const visible = all.filter(p =>
+    (ui.placeFilter === 'all' || p.category === ui.placeFilter) &&
+    (ui.placeCityFilter === 'all' || placeCity(p) === ui.placeCityFilter)
+  );
   // Surface accommodation first for quick access to where you're staying.
   visible.sort((a, b) => (b.category === 'staying' ? 1 : 0) - (a.category === 'staying' ? 1 : 0));
 
