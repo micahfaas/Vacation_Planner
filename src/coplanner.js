@@ -9,6 +9,7 @@ import { getDays } from './derived.js';
 import { isoDate } from './dates.js';
 import { TYPES } from './constants.js';
 import { aiCardToCandidate } from './import-ai.js';
+import { addPlace } from './places.js';
 
 // ---------- trip context sent to the model ----------
 function describeCard(c) {
@@ -60,6 +61,10 @@ function tripSummary() {
 }
 
 // ---------- suggestion rendering ----------
+
+// Card types that can also be saved as a Place, with their Place category.
+const PLACE_CAT = { meal: 'restaurant', activity: 'attraction', hotel: 'lodging', note: 'other' };
+
 function suggestionMeta(card, date) {
   const bits = [];
   if (date) bits.push(date);
@@ -76,6 +81,7 @@ function suggestionRow(aiCard) {
   if (!cand) return null;
   const c = cand.card;
   const tp = TYPES[c.type] || TYPES.note;
+  const timed = c.type === 'activity' || c.type === 'meal';
 
   const row = el('div', { class: 'vp-coplan-sug' });
   row.appendChild(el('i', { class: 'ti ' + tp.icon, style: { color: tp.color } }));
@@ -85,18 +91,52 @@ function suggestionRow(aiCard) {
   const meta = suggestionMeta(c, cand.date);
   if (meta) main.appendChild(el('div', { class: 'vp-coplan-sug-meta' }, meta));
   if (c.notes) main.appendChild(el('div', { class: 'vp-coplan-sug-notes' }, c.notes));
-  row.appendChild(main);
 
-  const addBtn = el('button', { class: 'vp-coplan-add' }, 'Add');
-  addBtn.addEventListener('click', () => {
+  const controls = el('div', { class: 'vp-coplan-sug-controls' });
+
+  // Start-time picker for activities and meals.
+  let timeInput = null;
+  if (timed) {
+    timeInput = el('input', { type: 'time', class: 'vp-coplan-time', value: c.time || '', title: 'Start time' });
+    controls.appendChild(timeInput);
+  }
+
+  // Add as a trip card — onto its date when dated and in range, else the library.
+  const cardBtn = el('button', { type: 'button', class: 'vp-coplan-add' }, '+ Card');
+  cardBtn.addEventListener('click', () => {
+    if (timeInput) {
+      if (timeInput.value) c.time = timeInput.value;
+      else delete c.time;
+    }
     const t = activeTrip();
-    const inRange = cand.date && t.startDate && t.endDate &&
+    const onDay = cand.date && t.startDate && t.endDate &&
       cand.date >= t.startDate && cand.date <= t.endDate;
-    addCard(c, inRange ? { kind: 'day', date: cand.date } : { kind: 'lib' });
-    addBtn.textContent = inRange ? 'Added to ' + cand.date : 'Added to library';
-    addBtn.disabled = true;
+    addCard(c, onDay ? { kind: 'day', date: cand.date } : { kind: 'lib' });
+    cardBtn.textContent = '✓ Card';
+    cardBtn.title = onDay ? 'Added to ' + cand.date : 'Added to the card library';
+    cardBtn.disabled = true;
   });
-  row.appendChild(addBtn);
+  controls.appendChild(cardBtn);
+
+  // Add as a saved place — for venue-like suggestions only.
+  if (PLACE_CAT[c.type]) {
+    const placeBtn = el('button', { type: 'button', class: 'vp-coplan-add vp-coplan-add-alt' }, '+ Place');
+    placeBtn.addEventListener('click', () => {
+      addPlace({
+        name: c.title || 'Place',
+        category: PLACE_CAT[c.type],
+        address: c.city || '',
+        notes: c.notes || ''
+      });
+      placeBtn.textContent = '✓ Place';
+      placeBtn.title = 'Added to your saved places';
+      placeBtn.disabled = true;
+    });
+    controls.appendChild(placeBtn);
+  }
+
+  main.appendChild(controls);
+  row.appendChild(main);
   return row;
 }
 

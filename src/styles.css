@@ -2138,3 +2138,26 @@ a.vp-res-link-title:hover span { text-decoration: underline; }
   border-color: var(--booked-bg);
   cursor: default;
 }
+.vp-coplan-sug-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.vp-coplan-time {
+  height: 28px;
+  font-family: inherit;
+  font-size: 12px;
+  padding: 0 6px;
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+}
+.vp-coplan-add-alt {
+  background: var(--surface);
+  color: var(--link);
+  border-color: var(--border-strong);
+}
+.vp-coplan-add-alt:hover { background: var(--accent-bg); opacity: 1; }

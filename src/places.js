@@ -49,7 +49,7 @@ function navUrl(p) {
   return 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(dest);
 }
 
-function addPlace(place) {
+export function addPlace(place) {
   const t = activeTrip();
   if (!t.places) t.places = [];
   t.places.push(Object.assign({ id: crypto.randomUUID(), category: 'other', name: 'New place' }, place));

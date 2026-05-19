@@ -279,7 +279,7 @@ export function renderResourcesView() {
   const head = el('div', { class: 'vp-places-head' });
   head.appendChild(el('h3', {}, 'Resources'));
   const headBtns = el('div', { class: 'vp-res-headbtns' });
-  headBtns.appendChild(el('button', { class: 'vp-btn-primary', onclick: () => openLinkEditor(null) }, '+ blog link'));
+  headBtns.appendChild(el('button', { class: 'vp-btn-primary', onclick: () => openLinkEditor(null) }, '+ Resources'));
   headBtns.appendChild(el('button', { class: 'vp-btn-primary', onclick: () => openTicketEditor(null) }, '+ ticket'));
   head.appendChild(headBtns);
   panel.appendChild(head);
