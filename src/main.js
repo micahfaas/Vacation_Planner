@@ -5,12 +5,13 @@ import { supabase } from './supabase.js';
 import { renderAuthScreen, signOut } from './auth.js';
 import { loadTrips } from './storage.js';
 import { render } from './render.js';
-import { exportJSON, importJSON } from './io.js';
+import { exportJSON } from './io.js';
 import { exportICS } from './ics.js';
 import { openCurrencyConverter } from './currency.js';
 import { openTripsMenu } from './trips.js';
 import { loadSharedTrip, renderSharedTrip } from './share.js';
 import { confirmDialog } from './dialog.js';
+import { openImportModal } from './importer.js';
 
 // Register the service worker for offline support (production builds only,
 // so it never interferes with the Vite dev server's hot reload).
@@ -48,13 +49,7 @@ function bootApp() {
   document.getElementById('vp-export-btn').addEventListener('click', exportJSON);
   document.getElementById('vp-ics-btn').addEventListener('click', exportICS);
   document.getElementById('vp-currency-btn').addEventListener('click', openCurrencyConverter);
-  document.getElementById('vp-import-btn').addEventListener('click',
-    () => document.getElementById('vp-import-file').click());
-  document.getElementById('vp-import-file').addEventListener('change', e => {
-    const f = e.target.files[0];
-    if (f) importJSON(f);
-    e.target.value = '';
-  });
+  document.getElementById('vp-import-btn').addEventListener('click', openImportModal);
 
   const accountBtn = document.getElementById('vp-account-btn');
   accountBtn.addEventListener('click', () => {

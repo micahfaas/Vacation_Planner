@@ -622,6 +622,79 @@ a:focus-visible,
   font-weight: 500;
 }
 .vp-dialog { width: min(380px, 100%); }
+
+/* import modal */
+.vp-imp-methods { display: flex; flex-direction: column; gap: var(--space-2); }
+.vp-imp-method {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  text-align: left;
+  padding: var(--space-3);
+  background: var(--surface-2);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-family: inherit;
+}
+.vp-imp-method:hover { border-color: var(--accent); background: var(--accent-bg); }
+.vp-imp-method > i { font-size: 22px; color: var(--accent); flex-shrink: 0; }
+.vp-imp-method-title { font-size: var(--text-sm); font-weight: 600; color: var(--text); }
+.vp-imp-method-desc { font-size: var(--text-xs); color: var(--text-2); margin-top: 1px; }
+.vp-imp-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 160px;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  padding: var(--space-2);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+  resize: vertical;
+}
+.vp-imp-textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.vp-imp-msg { font-size: var(--text-sm); color: var(--text-2); margin: 0 0 var(--space-3); }
+.vp-imp-review {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-height: 340px;
+  overflow-y: auto;
+}
+.vp-imp-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  background: var(--surface-2);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+.vp-imp-item input { flex-shrink: 0; accent-color: var(--accent); }
+.vp-imp-item > i { font-size: var(--text-lg); flex-shrink: 0; }
+.vp-imp-item-label {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-sm);
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.vp-imp-target {
+  flex-shrink: 0;
+  font-size: var(--text-xs);
+  color: var(--accent);
+  background: var(--accent-bg);
+  padding: 2px var(--space-2);
+  border-radius: 999px;
+}
+.vp-imp-target-lib { color: var(--text-2); background: var(--surface-3); }
+.vp-imp-status { font-size: var(--text-sm); color: var(--text-2); padding: var(--space-4) 0; text-align: center; }
 .vp-dialog-msg {
   margin: 0;
   font-size: var(--text-base);
