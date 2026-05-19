@@ -116,3 +116,29 @@ export function getConflicts() {
   });
   return out;
 }
+
+// How many calendar days does a card occupy? Hotels span their nights;
+// flights/transit span the days between their depart and arrive dates.
+export function cardSpan(c) {
+  if (!c) return 1;
+  if (c.type === 'hotel') {
+    const n = parseInt(c.nights) || 1;
+    return Math.max(1, n);
+  }
+  if ((c.type === 'flight' || c.type === 'transit') && c.depart && c.arrive) {
+    const d = c.depart.slice(0, 10), a = c.arrive.slice(0, 10);
+    if (d && a) {
+      const days = Math.round((parseISO(a) - parseISO(d)) / 86400000) + 1;
+      return Math.max(1, days);
+    }
+  }
+  return 1;
+}
+
+// Is the current date within the active trip's start/end window?
+export function todayInTrip() {
+  const t = activeTrip();
+  if (!t || !t.startDate || !t.endDate) return false;
+  const today = isoDate(new Date());
+  return today >= t.startDate && today <= t.endDate;
+}

@@ -1,7 +1,13 @@
 // Service worker for offline support. Same-origin app-shell requests are
-// cached as they are fetched; cross-origin calls (Supabase, weather, rates,
-// the icon CDN) are left to the network untouched.
-const CACHE = 'vacation-planner-v1';
+// cached as they are fetched, along with the Tabler icon webfont from
+// jsDelivr so the UI still renders its glyphs offline. Other cross-origin
+// calls (Supabase, weather, rates, map tiles) are left to the network —
+// trip data itself survives offline through the localStorage cache in
+// storage.js, not this cache.
+const CACHE = 'vacation-planner-v2';
+
+// Cross-origin hosts whose GET responses are safe to cache for offline use.
+const CACHEABLE_CDN = ['cdn.jsdelivr.net'];
 
 self.addEventListener('install', () => self.skipWaiting());
 
@@ -16,7 +22,11 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
-  if (new URL(req.url).origin !== self.location.origin) return;
+
+  const url = new URL(req.url);
+  const sameOrigin = url.origin === self.location.origin;
+  const cdnCacheable = CACHEABLE_CDN.includes(url.hostname);
+  if (!sameOrigin && !cdnCacheable) return; // network-only: Supabase, tiles, etc.
 
   // Navigations: network-first so a new deploy shows immediately; fall back
   // to the cached shell when offline.
@@ -33,7 +43,8 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Static assets: serve from cache, refresh in the background.
+  // Static assets and cacheable CDN files: serve from cache, refresh in the
+  // background.
   e.respondWith(
     caches.match(req).then(cached => {
       const network = fetch(req)

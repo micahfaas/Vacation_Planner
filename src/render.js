@@ -3,10 +3,11 @@ import { activeTrip, ui } from './state.js';
 import { TYPES } from './constants.js';
 import { el } from './dom.js';
 import { isoDate, parseISO, addDays, fmtShort, fmtMin } from './dates.js';
-import { getDays, getGridDays, computeStats, getConflicts } from './derived.js';
+import { getDays, getGridDays, computeStats, getConflicts, cardSpan, todayInTrip } from './derived.js';
 import { save } from './storage.js';
 import { duplicateCard, removeCard, moveCard } from './cards.js';
 import { openEditor } from './editor.js';
+import { renderTodayView, stopTodayTimer } from './today.js';
 import { renderPlacesView } from './places.js';
 import { renderPlanView } from './plan.js';
 import { renderResourcesView } from './resources.js';
@@ -15,15 +16,30 @@ import { confirmDialog } from './dialog.js';
 
 const root = document.getElementById('vp-root');
 
+// One-time: land on the Today view at boot when the trip is already underway.
+let viewPicked = false;
+
 export function render() {
+  stopTodayTimer(); // drop any countdown timer before the view is rebuilt
   const t = activeTrip();
   document.getElementById('vp-trip-name').textContent = t.name;
   root.innerHTML = '';
 
-  // toolbar with Calendar / Places view toggle
+  // Today is only offered while the current date is inside the trip.
+  const canToday = todayInTrip();
+  if (ui.view === 'today' && !canToday) ui.view = 'calendar';
+  if (!viewPicked) {
+    viewPicked = true;
+    if (canToday) ui.view = 'today';
+  }
+
+  // toolbar with the view toggle
   const tb = el('div', { class: 'vp-toolbar' });
   const toggle = el('div', { class: 'vp-view-toggle' });
-  [['calendar', 'Calendar'], ['places', 'Places'], ['plan', 'Plan'], ['resources', 'Resources'], ['reminders', 'Reminders']].forEach(([v, label]) => {
+  const tabs = [];
+  if (canToday) tabs.push(['today', 'Today']);
+  tabs.push(['calendar', 'Calendar'], ['places', 'Places'], ['plan', 'Plan'], ['resources', 'Resources'], ['reminders', 'Reminders']);
+  tabs.forEach(([v, label]) => {
     toggle.appendChild(el('button', {
       class: 'vp-view-btn' + (ui.view === v ? ' vp-view-on' : ''),
       onclick: () => { ui.view = v; render(); }
@@ -47,6 +63,11 @@ export function render() {
     tb.appendChild(el('button', { class: 'vp-btn-primary', onclick: () => openEditor(null, { kind: 'lib' }) }, '+ new card'));
   }
   root.appendChild(tb);
+
+  if (ui.view === 'today') {
+    root.appendChild(renderTodayView());
+    return;
+  }
 
   if (ui.view === 'places') {
     root.appendChild(renderPlacesView());
@@ -338,23 +359,6 @@ function budgetPanel() {
     panel.appendChild(row);
   });
   return panel;
-}
-
-// How many calendar days does a card occupy?
-function cardSpan(c) {
-  if (!c) return 1;
-  if (c.type === 'hotel') {
-    const n = parseInt(c.nights) || 1;
-    return Math.max(1, n);
-  }
-  if ((c.type === 'flight' || c.type === 'transit') && c.depart && c.arrive) {
-    const d = c.depart.slice(0, 10), a = c.arrive.slice(0, 10);
-    if (d && a) {
-      const days = Math.round((parseISO(a) - parseISO(d)) / 86400000) + 1;
-      return Math.max(1, days);
-    }
-  }
-  return 1;
 }
 
 // Render a card that spans multiple day columns within a single week row.
