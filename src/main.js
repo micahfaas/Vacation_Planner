@@ -29,7 +29,12 @@ document.addEventListener('keydown', e => {
 });
 
 const root = document.getElementById('vp-root');
-const shareToken = new URLSearchParams(location.search).get('share');
+const params = new URLSearchParams(location.search);
+const shareToken = params.get('share');
+
+// PWA share target — text or a link shared into the app from another app.
+let pendingShare = [params.get('shared_title'), params.get('shared_text'), params.get('shared_url')]
+  .filter(Boolean).join('\n') || null;
 
 if (shareToken) {
   document.body.classList.add('vp-shared');
@@ -41,6 +46,7 @@ if (shareToken) {
         'or sharing was turned off.</div>';
     });
 } else {
+  if (pendingShare) history.replaceState({}, '', location.pathname);
   bootApp();
 }
 
@@ -64,6 +70,11 @@ function bootApp() {
     root.innerHTML = '<div class="vp-loading">Loading your trips…</div>';
     await loadTrips(user.id);
     render();
+    if (pendingShare) {
+      const text = pendingShare;
+      pendingShare = null;
+      openImportModal({ text });
+    }
   }
 
   function showSignedOut() {
