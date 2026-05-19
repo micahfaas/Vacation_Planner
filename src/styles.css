@@ -977,25 +977,31 @@ body.vp-shared .vp-footer { display: none; }
   overflow-x: auto;
   max-width: 100%;
   scrollbar-width: none;
+  background: var(--surface-2);
+  padding: 2px;
+  gap: 2px;
 }
 .vp-view-toggle::-webkit-scrollbar { display: none; }
 .vp-view-btn {
   flex: 0 0 auto;
-  height: 32px;
+  height: 28px;
   padding: 0 12px;
   font-size: var(--text-sm);
   font-family: inherit;
-  background: var(--surface);
+  background: transparent;
   color: var(--text-2);
   border: none;
+  border-radius: var(--radius-sm);
   cursor: pointer;
+  transition: background 0.12s, color 0.12s;
 }
-.vp-view-btn + .vp-view-btn { border-left: 0.5px solid var(--border); }
-.vp-view-btn:hover { background: var(--surface-2); }
+.vp-view-btn:hover { background: var(--surface); color: var(--text); }
 .vp-view-on,
 .vp-view-on:hover {
   background: var(--accent);
   color: #fff;
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
 }
 
 /* places view */
