@@ -13,8 +13,11 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.0",
+    "@zxing/browser": "^0.2.0",
+    "@zxing/library": "^0.22.0",
     "fflate": "^0.8.3",
     "leaflet": "^1.9.4",
-    "pdfjs-dist": "^5.7.284"
+    "pdfjs-dist": "^5.7.284",
+    "tesseract.js": "^7.0.0"
   }
 }

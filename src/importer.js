@@ -8,7 +8,7 @@ import { render } from './render.js';
 import { TYPES } from './constants.js';
 import { isoDate, parseISO, addDays, fmtShort } from './dates.js';
 import { importJSON } from './io.js';
-import { parseText, parseICS, parsePkpass } from './import-formats.js';
+import { parseText, parseICS, parsePkpass, parseBCBP } from './import-formats.js';
 import { alertDialog } from './dialog.js';
 
 export function openImportModal() {
@@ -46,8 +46,10 @@ export function openImportModal() {
       method('ti-clipboard-text', 'Paste text',
         'A confirmation email or itinerary — anything', showPaste),
       method('ti-file-upload', 'Upload a file',
-        'PDF e-ticket, calendar invite (.ics), Wallet pass (.pkpass), or trip backup (.json)',
-        () => pickFile('.pdf,.ics,.pkpass,.json,application/pdf,text/calendar,application/json')));
+        'PDF e-ticket, a screenshot, calendar invite (.ics), Wallet pass (.pkpass), or trip backup',
+        () => pickFile('.pdf,.ics,.pkpass,.json,image/*,application/pdf,text/calendar,application/json')),
+      method('ti-barcode', 'Scan a boarding pass',
+        'A photo of the barcode on a boarding pass', pickBarcode));
     setBody(el('h3', {}, 'Import into this trip'), list, actions([cancelBtn()]));
   }
 
@@ -100,6 +102,12 @@ export function openImportModal() {
         showStatus('Reading the PDF…');
         const { extractPdfText } = await import('./import-pdf.js');
         review(parseText(await extractPdfText(await file.arrayBuffer())));
+        return;
+      }
+      if (file.type.startsWith('image/')) {
+        showStatus('Reading the image — OCR can take a moment…');
+        const { ocrImage } = await import('./import-ocr.js');
+        review(parseText(await ocrImage(file)));
         return;
       }
       showMessage('That file type is not supported yet.');
@@ -182,6 +190,28 @@ export function openImportModal() {
 
   function showStatus(msg) {
     setBody(el('h3', {}, 'Import'), el('div', { class: 'vp-imp-status' }, msg));
+  }
+
+  // ---------- boarding-pass barcode photo ----------
+  function pickBarcode() {
+    const input = el('input', { type: 'file', accept: 'image/*', style: { display: 'none' } });
+    input.addEventListener('change', async () => {
+      const f = input.files[0];
+      if (!f) return;
+      showStatus('Reading the barcode…');
+      try {
+        const { decodeBarcode } = await import('./import-barcode.js');
+        const text = await decodeBarcode(f);
+        const cand = parseBCBP(text);
+        review(cand ? [cand] : parseText(text));
+      } catch {
+        showMessage('Could not read a barcode there. Try a clearer, straight-on photo of just ' +
+          'the barcode — or upload the Wallet pass (.pkpass) instead.');
+      }
+    });
+    document.body.appendChild(input);
+    input.click();
+    setTimeout(() => input.remove(), 0);
   }
 
   showPicker();
