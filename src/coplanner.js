@@ -65,10 +65,11 @@ function tripSummary() {
 // Card types that can also be saved as a Place, with their Place category.
 const PLACE_CAT = { meal: 'restaurant', activity: 'attraction', hotel: 'lodging', note: 'other' };
 
-function suggestionMeta(card, date) {
+function suggestionMeta(card, date, address) {
   const bits = [];
   if (date) bits.push(date);
-  if (card.city) bits.push(card.city);
+  if (address) bits.push(address);
+  else if (card.city) bits.push(card.city);
   if (card.originCity || card.destCity) bits.push((card.originCity || '?') + ' → ' + (card.destCity || '?'));
   if (card.type === 'hotel' && card.nights) bits.push(card.nights + (card.nights === 1 ? ' night' : ' nights'));
   if (card.flightNo) bits.push(card.flightNo);
@@ -80,6 +81,7 @@ function suggestionRow(aiCard) {
   const cand = aiCardToCandidate(aiCard);
   if (!cand) return null;
   const c = cand.card;
+  const address = (aiCard.address || '').trim();
   const tp = TYPES[c.type] || TYPES.note;
   const timed = c.type === 'activity' || c.type === 'meal';
 
@@ -88,7 +90,7 @@ function suggestionRow(aiCard) {
 
   const main = el('div', { class: 'vp-coplan-sug-main' });
   main.appendChild(el('div', { class: 'vp-coplan-sug-title' }, c.title));
-  const meta = suggestionMeta(c, cand.date);
+  const meta = suggestionMeta(c, cand.date, address);
   if (meta) main.appendChild(el('div', { class: 'vp-coplan-sug-meta' }, meta));
   if (c.notes) main.appendChild(el('div', { class: 'vp-coplan-sug-notes' }, c.notes));
 
@@ -104,14 +106,16 @@ function suggestionRow(aiCard) {
   // Add as a trip card — onto its date when dated and in range, else the library.
   const cardBtn = el('button', { type: 'button', class: 'vp-coplan-add' }, '+ Card');
   cardBtn.addEventListener('click', () => {
+    const card = Object.assign({}, c);
     if (timeInput) {
-      if (timeInput.value) c.time = timeInput.value;
-      else delete c.time;
+      if (timeInput.value) card.time = timeInput.value;
+      else delete card.time;
     }
+    if (address) card.notes = [card.notes, address].filter(Boolean).join('\n');
     const t = activeTrip();
     const onDay = cand.date && t.startDate && t.endDate &&
       cand.date >= t.startDate && cand.date <= t.endDate;
-    addCard(c, onDay ? { kind: 'day', date: cand.date } : { kind: 'lib' });
+    addCard(card, onDay ? { kind: 'day', date: cand.date } : { kind: 'lib' });
     cardBtn.textContent = '✓ Card';
     cardBtn.title = onDay ? 'Added to ' + cand.date : 'Added to the card library';
     cardBtn.disabled = true;
@@ -125,7 +129,7 @@ function suggestionRow(aiCard) {
       addPlace({
         name: c.title || 'Place',
         category: PLACE_CAT[c.type],
-        address: c.city || '',
+        address: address || c.city || '',
         notes: c.notes || ''
       });
       placeBtn.textContent = '✓ Place';

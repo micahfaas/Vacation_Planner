@@ -34,6 +34,7 @@ Each suggestion card has ALL of these fields; use "" / 0 / false when a field do
 - originCity / destCity: origin and destination city names, for flights and transit. "" otherwise.
 - flightNo: a flight number or carrier reference. "" otherwise.
 - depart / arrive: departure and arrival as local wall-clock "YYYY-MM-DDTHH:MM", for flights and transit. "" otherwise.
+- address: the venue's real street address, for activities / meals / hotels — only when you genuinely know it for a well-known place. "" otherwise.
 - notes: a one-line reason or tip for this suggestion.
 - booked: always false for suggestions — they are proposals.
 
@@ -41,6 +42,7 @@ Rules:
 - Suggest real, specific, well-regarded places and experiences — never generic placeholders like "a local restaurant".
 - Set "date" only when the request implies a specific day; otherwise leave it "" so the card goes to the trip's card library for the user to place.
 - Keep any dates within the trip's date range.
+- Fill "address" only with a real, correct street address for a well-known venue; if you are not confident, leave it "". Never invent an address.
 - Do not suggest something the trip already contains.`;
 
 const CARD = {
@@ -57,12 +59,13 @@ const CARD = {
     flightNo: { type: 'string' },
     depart: { type: 'string' },
     arrive: { type: 'string' },
+    address: { type: 'string' },
     notes: { type: 'string' },
     booked: { type: 'boolean' },
   },
   required: [
     'type', 'title', 'date', 'time', 'city', 'nights',
-    'originCity', 'destCity', 'flightNo', 'depart', 'arrive', 'notes', 'booked',
+    'originCity', 'destCity', 'flightNo', 'depart', 'arrive', 'address', 'notes', 'booked',
   ],
   additionalProperties: false,
 };
@@ -106,9 +109,8 @@ Deno.serve(async (req) => {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-opus-4-7',
+        model: 'claude-haiku-4-5',
         max_tokens: 20000,
-        thinking: { type: 'adaptive' },
         system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }],
         output_config: { format: { type: 'json_schema', schema: SCHEMA } },
         messages: [{ role: 'user', content: userMessage }],
