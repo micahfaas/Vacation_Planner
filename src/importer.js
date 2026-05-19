@@ -9,6 +9,7 @@ import { TYPES } from './constants.js';
 import { isoDate, parseISO, addDays, fmtShort } from './dates.js';
 import { importJSON } from './io.js';
 import { parseText, parseICS, parsePkpass, parseBCBP, parseGCalEvents } from './import-formats.js';
+import { parseWithAI } from './import-ai.js';
 import { gcalEnabled, connectGoogleCalendar, preloadGIS } from './gcal.js';
 import { alertDialog } from './dialog.js';
 
@@ -86,7 +87,7 @@ export function openImportModal(opts = {}) {
         backBtn(),
         el('button', {
           class: 'vp-save',
-          onclick: () => { const text = ta.value.trim(); if (text) review(parseText(text)); }
+          onclick: () => { const text = ta.value.trim(); if (text) reviewSmart(text); }
         }, 'Find bookings')
       ])
     );
@@ -121,13 +122,13 @@ export function openImportModal(opts = {}) {
       if (name.endsWith('.pdf') || file.type === 'application/pdf') {
         showStatus('Reading the PDF…');
         const { extractPdfText } = await import('./import-pdf.js');
-        review(parseText(await extractPdfText(await file.arrayBuffer())));
+        await reviewSmart(await extractPdfText(await file.arrayBuffer()));
         return;
       }
       if (file.type.startsWith('image/')) {
         showStatus('Reading the image — OCR can take a moment…');
         const { ocrImage } = await import('./import-ocr.js');
-        review(parseText(await ocrImage(file)));
+        await reviewSmart(await ocrImage(file));
         return;
       }
       showMessage('That file type is not supported yet.');
@@ -244,6 +245,17 @@ export function openImportModal(opts = {}) {
 
   function showStatus(msg) {
     setBody(el('h3', {}, 'Import'), el('div', { class: 'vp-imp-status' }, msg));
+  }
+
+  // Parse free text with the AI parser, falling back to the rule-based
+  // parser when the AI is unavailable or finds nothing.
+  async function reviewSmart(text) {
+    showStatus('Reading your text with AI…');
+    try {
+      const cands = await parseWithAI(text);
+      if (cands.length) { review(cands); return; }
+    } catch { /* fall back to the rule-based parser below */ }
+    review(parseText(text));
   }
 
   // ---------- boarding-pass barcode photo ----------
