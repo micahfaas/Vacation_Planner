@@ -9,6 +9,8 @@ import { duplicateCard, removeCard, moveCard } from './cards.js';
 import { openEditor } from './editor.js';
 import { renderPlacesView } from './places.js';
 import { renderPlanView } from './plan.js';
+import { renderResourcesView } from './resources.js';
+import { renderRemindersView } from './reminders.js';
 
 const root = document.getElementById('vp-root');
 
@@ -20,7 +22,7 @@ export function render() {
   // toolbar with Calendar / Places view toggle
   const tb = el('div', { class: 'vp-toolbar' });
   const toggle = el('div', { class: 'vp-view-toggle' });
-  [['calendar', 'Calendar'], ['places', 'Places'], ['plan', 'Plan']].forEach(([v, label]) => {
+  [['calendar', 'Calendar'], ['places', 'Places'], ['plan', 'Plan'], ['resources', 'Resources'], ['reminders', 'Reminders']].forEach(([v, label]) => {
     toggle.appendChild(el('button', {
       class: 'vp-view-btn' + (ui.view === v ? ' vp-view-on' : ''),
       onclick: () => { ui.view = v; render(); }
@@ -52,6 +54,16 @@ export function render() {
 
   if (ui.view === 'plan') {
     root.appendChild(renderPlanView());
+    return;
+  }
+
+  if (ui.view === 'resources') {
+    root.appendChild(renderResourcesView());
+    return;
+  }
+
+  if (ui.view === 'reminders') {
+    root.appendChild(renderRemindersView());
     return;
   }
 

@@ -26,7 +26,7 @@ async function uploadFile(file) {
 
 // Open a private file. A blank tab is opened synchronously so it survives
 // popup blockers, then pointed at a short-lived signed URL.
-async function openAttachment(path) {
+export async function openAttachment(path) {
   const tab = window.open('about:blank', '_blank');
   try {
     const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, 120);

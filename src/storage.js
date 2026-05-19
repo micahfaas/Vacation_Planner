@@ -49,6 +49,9 @@ function ensureTripFields(t) {
   if (!t.nextId) t.nextId = 1;
   if (!t.places) t.places = [];
   if (!t.plan) t.plan = { drafts: [] };
+  if (!t.resources) t.resources = { links: [], tickets: [] };
+  if (!t.reminders) t.reminders = [];
+  if (!t.packing) t.packing = [];
   Object.values(t.cards).forEach(migrateCard);
 }
 

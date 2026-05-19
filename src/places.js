@@ -10,9 +10,9 @@ import { addCard } from './cards.js';
 
 // category -> card type, for turning a researched place into a trip card
 const CAT_TO_TYPE = {
-  restaurant: 'meal', cafe: 'meal', bar: 'meal',
+  restaurant: 'meal', cafe: 'meal', bar: 'meal', cocktail: 'meal',
   attraction: 'activity', shop: 'activity', other: 'activity',
-  lodging: 'hotel', blog: 'note'
+  lodging: 'hotel', staying: 'hotel', blog: 'note'
 };
 
 function normalizeUrl(u) {
@@ -186,7 +186,7 @@ function openPlaceEditor(id) {
 function renderPlaceCard(p) {
   const cat = PLACE_CATEGORIES[p.category] || PLACE_CATEGORIES.other;
   const card = el('div', {
-    class: 'vp-place',
+    class: 'vp-place' + (p.category === 'staying' ? ' vp-place-staying' : ''),
     onclick: e => {
       if (e.target.closest('.vp-place-actions') || e.target.closest('a')) return;
       openPlaceEditor(p.id);
@@ -233,7 +233,8 @@ let placesMap = null;
 function initPlacesMap(mapDiv, pts) {
   if (!document.body.contains(mapDiv)) return; // view changed before the tick fired
   if (placesMap) { placesMap.remove(); placesMap = null; }
-  const map = L.map(mapDiv, { scrollWheelZoom: false });
+  // scrollWheelZoom enables two-finger trackpad scroll-to-zoom and pinch-zoom.
+  const map = L.map(mapDiv, { scrollWheelZoom: true });
   placesMap = map;
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors',
@@ -244,10 +245,12 @@ function initPlacesMap(mapDiv, pts) {
   pts.forEach(p => {
     const ll = [p.lat, p.lng];
     latlngs.push(ll);
+    const staying = p.category === 'staying';
     L.circleMarker(ll, {
-      radius: 8, color: '#fff', weight: 2, fillColor: '#1d8a9c', fillOpacity: 1
+      radius: staying ? 10 : 8, color: '#fff', weight: 2,
+      fillColor: staying ? '#c7549f' : '#1d8a9c', fillOpacity: 1
     }).addTo(map)
-      .bindTooltip(p.name || 'Place')
+      .bindTooltip((staying ? '🏠 ' : '') + (p.name || 'Place'))
       .on('click', () => openPlaceEditor(p.id));
   });
   if (latlngs.length) {
@@ -282,6 +285,8 @@ export function renderPlacesView() {
   panel.appendChild(filterRow);
 
   const visible = all.filter(p => ui.placeFilter === 'all' || p.category === ui.placeFilter);
+  // Surface accommodation first for quick access to where you're staying.
+  visible.sort((a, b) => (b.category === 'staying' ? 1 : 0) - (a.category === 'staying' ? 1 : 0));
 
   const withCoords = visible.filter(p => typeof p.lat === 'number' && typeof p.lng === 'number');
   if (withCoords.length) {

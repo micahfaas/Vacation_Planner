@@ -129,20 +129,59 @@ function starsView(val) {
 }
 
 // ---------- send a draft to the calendar ----------
+// Schedules each stop's transport + lodging onto real calendar dates, walking
+// a cursor from the draft's start date (or the trip start) by each stop's
+// nights. The trip window is widened so every placed card stays visible.
 function sendDraftToCalendar(d) {
+  const t = activeTrip();
+  const startISO = d.startDate || t.startDate;
+  if (!startISO) {
+    alert('Set a start date on this draft (Edit draft) so its stops can be placed on the calendar.');
+    return;
+  }
+  const stops = d.stops || [];
+  if (!stops.length) return;
+  if (!confirm('Add this draft’s stops to the calendar? Your existing cards are kept.')) return;
+
   ui.view = 'calendar';
-  (d.stops || []).forEach(s => {
+  let cursor = parseISO(startISO);
+  const firstISO = isoDate(cursor);
+  let prevCity = '';
+
+  stops.forEach(s => {
+    const iso = isoDate(cursor);
+    const nights = parseInt(s.nights, 10) || 0;
     if (s.transport && s.transport.label) {
-      addCard({ type: 'transit', title: s.transport.label, city: '' }, { kind: 'lib' });
+      const cost = costLabel(s.transport);
+      addCard({
+        type: 'transit',
+        title: s.transport.label,
+        originCity: prevCity,
+        destCity: s.city || '',
+        notes: cost ? 'Est. cost: ' + cost : ''
+      }, { kind: 'day', date: iso });
     }
     if (s.lodging && s.lodging.label) {
+      const cost = costLabel(s.lodging);
       addCard({
-        type: 'hotel', title: s.lodging.label, city: s.city || '',
-        nights: parseInt(s.nights, 10) || 1,
-        notes: s.lodging.url || ''
-      }, { kind: 'lib' });
+        type: 'hotel',
+        title: s.lodging.label,
+        city: s.city || '',
+        nights: nights || 1,
+        notes: [s.lodging.url, cost ? 'Est. cost: ' + cost : '']
+          .filter(Boolean).join('\n')
+      }, { kind: 'day', date: iso });
     }
+    prevCity = s.city || prevCity;
+    cursor = addDays(cursor, nights);
   });
+
+  // Widen the trip window so every placed card is on a visible day.
+  if (!t.startDate || firstISO < t.startDate) t.startDate = firstISO;
+  const lastISO = isoDate(cursor);
+  if (!t.endDate || lastISO > t.endDate) t.endDate = lastISO;
+  save();
+  render();
 }
 
 // ---------- editors ----------
