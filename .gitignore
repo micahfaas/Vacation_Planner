@@ -4,3 +4,5 @@ dist
 .claude
 .env*
 !.env.example
+supabase/.temp
+supabase/.branches
