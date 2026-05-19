@@ -42,6 +42,14 @@ function showSignedOut() {
   renderAuthScreen();
 }
 
+// Register the service worker for offline support (production builds only,
+// so it never interferes with the Vite dev server's hot reload).
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => { /* offline support is optional */ });
+  });
+}
+
 // onAuthStateChange fires immediately with the current session, then again on
 // sign-in/out. Dedupe by user id so token refreshes don't re-fetch trips.
 let currentUserId;
