@@ -255,7 +255,8 @@ function renderPlaceCard(p) {
     title: 'Add as a trip card', onclick: e => { e.stopPropagation(); makeCardFromPlace(p); }
   }, '+ card'));
   actions.appendChild(el('button', {
-    title: 'Delete', onclick: e => { e.stopPropagation(); if (confirm('Delete this place?')) removePlace(p.id); }
+    title: 'Delete', 'aria-label': 'Delete place',
+    onclick: e => { e.stopPropagation(); if (confirm('Delete this place?')) removePlace(p.id); }
   }, '×'));
   card.appendChild(actions);
 

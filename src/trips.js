@@ -31,11 +31,11 @@ export function openTripsMenu() {
 
     const itemActions = el('div', { class: 'vp-trip-item-actions' });
     itemActions.appendChild(el('button', {
-      title: 'Share a read-only link',
+      title: 'Share a read-only link', 'aria-label': 'Share a read-only link',
       onclick: e => { e.stopPropagation(); openShareDialog(tr); }
-    }, el('i', { class: 'ti ti-share' })));
+    }, el('i', { class: 'ti ti-share', 'aria-hidden': 'true' })));
     itemActions.appendChild(el('button', {
-      title: 'Rename',
+      title: 'Rename', 'aria-label': 'Rename trip',
       onclick: e => {
         e.stopPropagation();
         const name = prompt('Trip name', tr.name);
@@ -44,7 +44,7 @@ export function openTripsMenu() {
     }, el('i', { class: 'ti ti-edit' })));
     if (Object.keys(data.trips).length > 1) {
       itemActions.appendChild(el('button', {
-        title: 'Delete',
+        title: 'Delete', 'aria-label': 'Delete trip',
         onclick: e => {
           e.stopPropagation();
           if (confirm('Delete trip "' + tr.name + '" and all its cards?')) {

@@ -32,8 +32,8 @@ export function openCurrencyConverter() {
   const toSel = el('select', {});
   const result = el('div', { class: 'vp-cc-result' }, '—');
   const dateNote = el('div', { class: 'vp-cc-date' });
-  const swap = el('button', { type: 'button', class: 'vp-cc-swap', title: 'Swap currencies' },
-    el('i', { class: 'ti ti-arrows-exchange' }));
+  const swap = el('button', { type: 'button', class: 'vp-cc-swap', title: 'Swap currencies', 'aria-label': 'Swap currencies' },
+    el('i', { class: 'ti ti-arrows-exchange', 'aria-hidden': 'true' }));
 
   m.appendChild(el('label', {}, 'Amount'));
   m.appendChild(amountIn);

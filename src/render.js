@@ -351,8 +351,8 @@ function renderSpanCard(id, colStart, colSpan, continuesLeft, continuesRight) {
   if (meta && !continuesLeft) card.appendChild(el('div', { class: 'vp-card-meta' }, meta));
 
   const actions = el('div', { class: 'vp-card-actions' });
-  actions.appendChild(el('button', { title: 'Duplicate', onclick: e => { e.stopPropagation(); duplicateCard(id); } }, '⧉'));
-  actions.appendChild(el('button', { title: 'Delete', onclick: e => { e.stopPropagation(); if (confirm('Delete this card?')) removeCard(id); } }, '×'));
+  actions.appendChild(el('button', { title: 'Duplicate', 'aria-label': 'Duplicate card', onclick: e => { e.stopPropagation(); duplicateCard(id); } }, '⧉'));
+  actions.appendChild(el('button', { title: 'Delete', 'aria-label': 'Delete card', onclick: e => { e.stopPropagation(); if (confirm('Delete this card?')) removeCard(id); } }, '×'));
   card.appendChild(actions);
 
   card.addEventListener('dragstart', e => {
@@ -391,8 +391,8 @@ function renderCard(id) {
   if (meta) card.appendChild(el('div', { class: 'vp-card-meta' }, meta));
 
   const actions = el('div', { class: 'vp-card-actions' });
-  actions.appendChild(el('button', { title: 'Duplicate', onclick: e => { e.stopPropagation(); duplicateCard(id); } }, '⧉'));
-  actions.appendChild(el('button', { title: 'Delete', onclick: e => { e.stopPropagation(); if (confirm('Delete this card?')) removeCard(id); } }, '×'));
+  actions.appendChild(el('button', { title: 'Duplicate', 'aria-label': 'Duplicate card', onclick: e => { e.stopPropagation(); duplicateCard(id); } }, '⧉'));
+  actions.appendChild(el('button', { title: 'Delete', 'aria-label': 'Delete card', onclick: e => { e.stopPropagation(); if (confirm('Delete this card?')) removeCard(id); } }, '×'));
   card.appendChild(actions);
 
   card.addEventListener('dragstart', e => {

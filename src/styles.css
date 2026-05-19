@@ -6,11 +6,12 @@
   --surface-3: #f3eadb;
   --text: #2a2620;          /* warm dark brown rather than pure black */
   --text-2: #6b6357;
-  --text-3: #9a9285;
+  --text-3: #807868;        /* darkened for WCAG-readable secondary text */
   --border: rgba(120, 95, 60, 0.18);
   --border-strong: rgba(120, 95, 60, 0.35);
-  --accent: #1d8a9c;        /* sea-glass teal */
+  --accent: #1d8a9c;        /* sea-glass teal — fills, borders */
   --accent-bg: #d8eff3;
+  --link: #1a7e8d;          /* darker teal for link TEXT — passes WCAG AA */
   --warning: #d4810a;       /* sun-bleached amber */
   --warning-bg: #fff0d6;
   --danger: #c4452f;
@@ -19,6 +20,9 @@
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;
+  --shadow-sm: 0 1px 2px rgba(120, 95, 60, 0.05);
+  --shadow-md: 0 2px 8px rgba(60, 40, 20, 0.08);
+  --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.25);
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
@@ -38,6 +42,15 @@ html, body {
 }
 
 button { font-family: inherit; }
+
+/* Keyboard focus ring — restores visibility on buttons/links that use
+   `all: unset`, which strips the default outline. */
+button:focus-visible,
+a:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
 
 .vp-header {
   display: flex;
@@ -74,6 +87,23 @@ button { font-family: inherit; }
 }
 .vp-btn-ghost:hover { background: var(--surface-2); color: var(--text); }
 .vp-btn-ghost i { font-size: 16px; }
+
+/* Primary action button — single definition for every view. The
+   `.vp-toolbar button.vp-btn-primary` selector outranks `.vp-toolbar button`. */
+.vp-btn-primary,
+.vp-toolbar button.vp-btn-primary {
+  height: 32px;
+  padding: 0 12px;
+  font-family: inherit;
+  font-size: 13px;
+  background: var(--accent);
+  color: #fff;
+  border: 0.5px solid var(--accent);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+.vp-btn-primary:hover,
+.vp-toolbar button.vp-btn-primary:hover { opacity: 0.92; }
 
 .vp-footer {
   text-align: center;
@@ -132,12 +162,6 @@ button { font-family: inherit; }
   transition: background 0.12s;
 }
 .vp-toolbar button:hover { background: var(--surface-2); }
-.vp-toolbar button.vp-btn-primary {
-  background: var(--accent);
-  color: white;
-  border-color: var(--accent);
-}
-.vp-toolbar button.vp-btn-primary:hover { opacity: 0.9; }
 
 .vp-layout {
   display: grid;
@@ -265,7 +289,7 @@ button { font-family: inherit; }
   gap: 5px;
   position: relative;
   transition: background 0.12s, border-color 0.12s, box-shadow 0.12s;
-  box-shadow: 0 1px 2px rgba(120, 95, 60, 0.04);
+  box-shadow: var(--shadow-sm);
 }
 .vp-day.vp-out {
   background: var(--surface-2);
@@ -537,7 +561,7 @@ button { font-family: inherit; }
   max-height: 90vh;
   overflow-y: auto;
   border: 0.5px solid var(--border);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--shadow-lg);
 }
 .vp-modal h3 {
   margin: 0 0 16px;
@@ -777,7 +801,7 @@ body.vp-shared .vp-footer { display: none; }
   padding: 4px;
   background: none;
   border: none;
-  color: var(--accent);
+  color: var(--link);
   font-size: 12px;
   cursor: pointer;
   font-family: inherit;
@@ -821,7 +845,7 @@ body.vp-shared .vp-footer { display: none; }
   padding: 0;
   font: inherit;
   font-size: 13px;
-  color: var(--accent);
+  color: var(--link);
   cursor: pointer;
   text-align: left;
 }
@@ -889,9 +913,13 @@ body.vp-shared .vp-footer { display: none; }
   display: inline-flex;
   border: 0.5px solid var(--border);
   border-radius: var(--radius-md);
-  overflow: hidden;
+  overflow-x: auto;
+  max-width: 100%;
+  scrollbar-width: none;
 }
+.vp-view-toggle::-webkit-scrollbar { display: none; }
 .vp-view-btn {
+  flex: 0 0 auto;
   height: 32px;
   padding: 0 12px;
   font-size: 13px;
@@ -929,18 +957,6 @@ body.vp-shared .vp-footer { display: none; }
   font-weight: 600;
   color: var(--text);
 }
-.vp-places-head .vp-btn-primary {
-  height: 32px;
-  padding: 0 12px;
-  font-size: 13px;
-  font-family: inherit;
-  background: var(--accent);
-  color: #fff;
-  border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-}
-.vp-places-head .vp-btn-primary:hover { opacity: 0.92; }
 .vp-places-empty {
   padding: 40px 16px;
   text-align: center;
@@ -963,13 +979,13 @@ body.vp-shared .vp-footer { display: none; }
 }
 .vp-place:hover {
   border-color: var(--border-strong);
-  box-shadow: 0 2px 8px rgba(60, 40, 20, 0.08);
+  box-shadow: var(--shadow-md);
 }
 .vp-place-staying {
   background: var(--accent-bg);
   border-color: var(--accent);
 }
-.vp-place-staying .vp-place-icon { color: var(--accent); }
+.vp-place-staying .vp-place-icon { color: var(--link); }
 .vp-place-top {
   display: flex;
   align-items: center;
@@ -1009,7 +1025,7 @@ body.vp-shared .vp-footer { display: none; }
   align-items: center;
   gap: 3px;
   font-size: 12px;
-  color: var(--accent);
+  color: var(--link);
   text-decoration: none;
 }
 .vp-place-link:hover { text-decoration: underline; }
@@ -1035,7 +1051,7 @@ body.vp-shared .vp-footer { display: none; }
   color: var(--text-2);
   text-decoration: none;
 }
-.vp-place-deeplink:hover { color: var(--accent); text-decoration: underline; }
+.vp-place-deeplink:hover { color: var(--link); text-decoration: underline; }
 .vp-place-deeplink i { font-size: 12px; }
 .vp-place-actions {
   position: absolute;
@@ -1058,7 +1074,7 @@ body.vp-shared .vp-footer { display: none; }
   background: var(--accent-bg);
   color: var(--text);
 }
-.vp-place-nav { color: var(--teal, var(--accent)); }
+.vp-place-nav { color: var(--link); }
 .vp-place-loc {
   font-size: 11px;
   color: var(--text-3);
@@ -1074,7 +1090,7 @@ body.vp-shared .vp-footer { display: none; }
   font-size: 12px;
   color: var(--text-2);
 }
-.vp-place-weather i { font-size: 15px; color: var(--accent); }
+.vp-place-weather i { font-size: 15px; color: var(--link); }
 
 /* places map */
 .vp-map {
@@ -1123,7 +1139,7 @@ body.vp-shared .vp-footer { display: none; }
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.vp-draft-title:hover { color: var(--accent); }
+.vp-draft-title:hover { color: var(--link); }
 .vp-draft-actions { display: flex; gap: 2px; flex-shrink: 0; }
 .vp-draft-actions button {
   all: unset;
@@ -1336,7 +1352,7 @@ body.vp-shared .vp-footer { display: none; }
 }
 .vp-res-link:hover {
   border-color: var(--border-strong);
-  box-shadow: 0 2px 8px rgba(60, 40, 20, 0.08);
+  box-shadow: var(--shadow-md);
 }
 .vp-res-link-main { flex: 1; min-width: 0; }
 .vp-res-link-title {
@@ -1345,7 +1361,7 @@ body.vp-shared .vp-footer { display: none; }
   gap: 6px;
   font-size: 13px;
   font-weight: 500;
-  color: var(--accent);
+  color: var(--link);
   text-decoration: none;
 }
 .vp-res-link-title span {
@@ -1395,7 +1411,7 @@ a.vp-res-link-title:hover span { text-decoration: underline; }
   padding: 5px 8px;
   font: inherit;
   font-size: 12px;
-  color: var(--accent);
+  color: var(--link);
   cursor: pointer;
   text-align: left;
 }
@@ -1544,7 +1560,7 @@ a.vp-res-link-title:hover span { text-decoration: underline; }
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  color: var(--accent);
+  color: var(--link);
   background: var(--accent-bg);
   border-radius: var(--radius-md);
   padding: 8px 12px;

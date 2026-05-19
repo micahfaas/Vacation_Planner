@@ -58,7 +58,7 @@ export function createAttachmentsField(initial) {
         type: 'button', class: 'vp-attach-name', onclick: () => openAttachment(a.path)
       }, el('i', { class: 'ti ti-file' }), el('span', {}, a.name));
       const rm = el('button', {
-        type: 'button', class: 'vp-attach-rm', title: 'Remove',
+        type: 'button', class: 'vp-attach-rm', title: 'Remove', 'aria-label': 'Remove file',
         onclick: () => { const i = items.indexOf(a); if (i > -1) items.splice(i, 1); renderList(); }
       }, '×');
       list.appendChild(el('div', { class: 'vp-attach-row' },

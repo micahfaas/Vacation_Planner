@@ -102,7 +102,7 @@ function renderReminderRow(r, todayISO) {
   row.appendChild(date);
 
   row.appendChild(el('button', {
-    type: 'button', class: 'vp-rem-rm', title: 'Delete',
+    type: 'button', class: 'vp-rem-rm', title: 'Delete', 'aria-label': 'Delete reminder',
     onclick: () => removeReminder(r.id)
   }, '×'));
   return row;
@@ -134,7 +134,7 @@ function renderPackingRow(it) {
   row.appendChild(text);
 
   row.appendChild(el('button', {
-    type: 'button', class: 'vp-pack-rm', title: 'Delete',
+    type: 'button', class: 'vp-pack-rm', title: 'Delete', 'aria-label': 'Delete packing item',
     onclick: () => removePackingItem(it.id)
   }, '×'));
   return row;

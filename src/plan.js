@@ -378,7 +378,7 @@ function renderStopBlock(draft, stop, dayCursor) {
   }
 
   block.appendChild(el('button', {
-    class: 'vp-stop-rm', title: 'Remove stop',
+    class: 'vp-stop-rm', title: 'Remove stop', 'aria-label': 'Remove stop',
     onclick: e => { e.stopPropagation(); if (confirm('Remove this stop?')) removeStop(draft.id, stop.id); }
   }, '×'));
   return block;
@@ -395,10 +395,11 @@ function renderDraftColumn(draft) {
   head.appendChild(titleBtn);
   const headActions = el('div', { class: 'vp-draft-actions' });
   headActions.appendChild(el('button', {
-    title: 'Duplicate', onclick: () => duplicateDraft(draft.id)
+    title: 'Duplicate', 'aria-label': 'Duplicate draft', onclick: () => duplicateDraft(draft.id)
   }, '⧉'));
   headActions.appendChild(el('button', {
-    title: 'Delete', onclick: () => { if (confirm('Delete this draft?')) removeDraft(draft.id); }
+    title: 'Delete', 'aria-label': 'Delete draft',
+    onclick: () => { if (confirm('Delete this draft?')) removeDraft(draft.id); }
   }, '×'));
   head.appendChild(headActions);
   col.appendChild(head);

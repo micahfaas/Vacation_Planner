@@ -206,7 +206,7 @@ function renderLinkRow(l) {
 
   const actions = el('div', { class: 'vp-res-link-actions' });
   actions.appendChild(el('button', {
-    title: 'Delete',
+    title: 'Delete', 'aria-label': 'Delete link',
     onclick: e => { e.stopPropagation(); if (confirm('Delete this link?')) removeLink(l.id); }
   }, '×'));
   row.appendChild(actions);
@@ -249,7 +249,7 @@ function renderTicketCard(tk) {
 
   const actions = el('div', { class: 'vp-place-actions' });
   actions.appendChild(el('button', {
-    title: 'Delete',
+    title: 'Delete', 'aria-label': 'Delete ticket',
     onclick: e => { e.stopPropagation(); if (confirm('Delete this ticket?')) removeTicket(tk.id); }
   }, '×'));
   card.appendChild(actions);

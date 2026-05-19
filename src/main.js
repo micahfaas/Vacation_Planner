@@ -19,6 +19,13 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   });
 }
 
+// Escape closes the top-most open modal.
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  const modals = document.querySelectorAll('.vp-modal-bg');
+  if (modals.length) modals[modals.length - 1].remove();
+});
+
 const root = document.getElementById('vp-root');
 const shareToken = new URLSearchParams(location.search).get('share');
 
