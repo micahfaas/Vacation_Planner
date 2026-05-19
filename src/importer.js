@@ -63,8 +63,10 @@ export function openImportModal(opts = {}) {
     showStatus('Opening Google sign-in…');
     try {
       const events = await connectGoogleCalendar();
-      review(parseGCalEvents(events),
-        'No flights or hotels found in your Google Calendar for the year ahead.');
+      review(parseGCalEvents(events), {
+        emptyMsg: 'No flights or hotels found in your Google Calendar for the year ahead.',
+        dateScope: true
+      });
     } catch (e) {
       showMessage(e.message || 'Could not connect to Google Calendar.');
     }
@@ -135,67 +137,101 @@ export function openImportModal(opts = {}) {
   }
 
   // ---------- step: review ----------
-  function review(cands, emptyMsg) {
+  // opts: { emptyMsg, dateScope }. dateScope adds a From/To filter (used by
+  // the calendar import) so a long event list narrows to the trip window.
+  function review(cands, opts = {}) {
     if (!cands || !cands.length) {
-      showMessage(emptyMsg || 'No bookings found there. Try pasting the text, or add a card manually.');
+      showMessage(opts.emptyMsg || 'No bookings found there. Try pasting the text, or add a card manually.');
       return;
     }
-    const list = el('div', { class: 'vp-imp-review' });
-    cands.forEach(c => {
-      const tp = TYPES[c.type] || TYPES.note;
-      const cb = el('input', { type: 'checkbox' });
-      cb.checked = c.include !== false;
-      cb.addEventListener('change', () => { c.include = cb.checked; updateCount(); });
-      const target = c.date
-        ? el('span', { class: 'vp-imp-target' }, fmtShort(parseISO(c.date)))
-        : el('span', { class: 'vp-imp-target vp-imp-target-lib' }, 'Library');
-      list.appendChild(el('label', { class: 'vp-imp-item' },
-        cb,
-        el('i', { class: 'ti ' + tp.icon, style: { color: tp.color } }),
-        el('span', { class: 'vp-imp-item-label' }, c.label || tp.label),
-        target));
-    });
+    const scope = { from: '', to: '' };
+    if (opts.dateScope) {
+      const t = activeTrip();
+      scope.from = t.startDate || '';
+      scope.to = t.endDate || '';
+    }
+    const inScope = c => {
+      if (!opts.dateScope || !c.date) return true;
+      if (scope.from && c.date < scope.from) return false;
+      if (scope.to && c.date > scope.to) return false;
+      return true;
+    };
 
-    const commitBtn = el('button', { class: 'vp-save', onclick: () => commit(cands) });
+    const list = el('div', { class: 'vp-imp-review' });
+    const commitBtn = el('button', { class: 'vp-save' });
+
     function updateCount() {
-      const n = cands.filter(c => c.include !== false).length;
+      const n = cands.filter(c => c.include !== false && inScope(c)).length;
       commitBtn.textContent = n ? 'Add ' + n + (n === 1 ? ' item' : ' items') : 'Nothing selected';
       commitBtn.disabled = !n;
     }
 
-    setBody(
-      el('h3', {}, 'Review — ' + cands.length + (cands.length === 1 ? ' item' : ' items') + ' found'),
-      el('p', { class: 'vp-imp-msg' }, 'Dated items go on the calendar; the rest go to your card library.'),
-      list,
-      actions([backBtn(), commitBtn])
-    );
-    updateCount();
-  }
-
-  function commit(cands) {
-    const t = activeTrip();
-    let count = 0, minD = null, maxD = null;
-    cands.forEach(c => {
-      if (c.include === false) return;
-      if (c.date) {
-        addCard(c.card, { kind: 'day', date: c.date });
-        if (!minD || c.date < minD) minD = c.date;
-        let end = c.date;
-        if (c.type === 'hotel') {
-          end = isoDate(addDays(parseISO(c.date), parseInt(c.card.nights, 10) || 1));
-        }
-        if (!maxD || end > maxD) maxD = end;
-      } else {
-        addCard(c.card, { kind: 'lib' });
+    function renderList() {
+      list.innerHTML = '';
+      const visible = cands.filter(inScope);
+      if (!visible.length) {
+        list.appendChild(el('div', { class: 'vp-imp-status' }, 'No travel events in this date range.'));
       }
-      count++;
+      visible.forEach(c => {
+        const tp = TYPES[c.type] || TYPES.note;
+        const cb = el('input', { type: 'checkbox' });
+        cb.checked = c.include !== false;
+        cb.addEventListener('change', () => { c.include = cb.checked; updateCount(); });
+        const target = c.date
+          ? el('span', { class: 'vp-imp-target' }, fmtShort(parseISO(c.date)))
+          : el('span', { class: 'vp-imp-target vp-imp-target-lib' }, 'Library');
+        list.appendChild(el('label', { class: 'vp-imp-item' },
+          cb,
+          el('i', { class: 'ti ' + tp.icon, style: { color: tp.color } }),
+          el('span', { class: 'vp-imp-item-label' }, c.label || tp.label),
+          target));
+      });
+      updateCount();
+    }
+
+    commitBtn.addEventListener('click', () => {
+      const t = activeTrip();
+      let count = 0, minD = null, maxD = null;
+      cands.forEach(c => {
+        if (c.include === false || !inScope(c)) return;
+        if (c.date) {
+          addCard(c.card, { kind: 'day', date: c.date });
+          if (!minD || c.date < minD) minD = c.date;
+          let end = c.date;
+          if (c.type === 'hotel') {
+            end = isoDate(addDays(parseISO(c.date), parseInt(c.card.nights, 10) || 1));
+          }
+          if (!maxD || end > maxD) maxD = end;
+        } else {
+          addCard(c.card, { kind: 'lib' });
+        }
+        count++;
+      });
+      if (minD && (!t.startDate || minD < t.startDate)) t.startDate = minD;
+      if (maxD && (!t.endDate || maxD > t.endDate)) t.endDate = maxD;
+      save();
+      render();
+      close();
+      alertDialog(count + (count === 1 ? ' item was' : ' items were') + ' added to your trip.');
     });
-    if (minD && (!t.startDate || minD < t.startDate)) t.startDate = minD;
-    if (maxD && (!t.endDate || maxD > t.endDate)) t.endDate = maxD;
-    save();
-    render();
-    close();
-    alertDialog(count + (count === 1 ? ' item was' : ' items were') + ' added to your trip.');
+
+    const header = [el('h3', {}, 'Review — ' + cands.length +
+      (cands.length === 1 ? ' item' : ' items') + ' found')];
+    if (opts.dateScope) {
+      const fromIn = el('input', { type: 'date', value: scope.from });
+      const toIn = el('input', { type: 'date', value: scope.to });
+      fromIn.addEventListener('change', () => { scope.from = fromIn.value; renderList(); });
+      toIn.addEventListener('change', () => { scope.to = toIn.value; renderList(); });
+      header.push(el('p', { class: 'vp-imp-msg' },
+        'Only travel events are shown. Narrow the dates to this trip, or widen them to catch more.'));
+      header.push(el('div', { class: 'vp-imp-scope' },
+        el('span', {}, 'Dates'), fromIn, el('span', {}, 'to'), toIn));
+    } else {
+      header.push(el('p', { class: 'vp-imp-msg' },
+        'Dated items go on the calendar; the rest go to your card library.'));
+    }
+    setBody(header, list, actions([backBtn(), commitBtn]));
+    renderList();
   }
 
   function showMessage(msg) {
