@@ -1,7 +1,9 @@
-// Today / day-of mode: the day's scheduled cards in time order, a live
-// "next up" countdown, and quick tap-through to maps and attachments.
+// Today / day-of mode: a day's scheduled cards in time order, with quick
+// tap-through to map directions and to attachments / notes. On the real
+// current date it adds a live "next up" countdown; the date stepper lets
+// you scrub to any other trip day to preview it (countdown-free).
 // Shown only while the current date falls inside the active trip.
-import { activeTrip } from './state.js';
+import { activeTrip, ui } from './state.js';
 import { TYPES } from './constants.js';
 import { el } from './dom.js';
 import { isoDate, parseISO, addDays, timeToMin } from './dates.js';
@@ -10,6 +12,13 @@ import { wallClockToUTC } from './timezone.js';
 import { openEditor } from './editor.js';
 import { openAttachment } from './attachments.js';
 import { render } from './render.js';
+
+// The day currently being shown (YYYY-MM-DD), set at the top of each render.
+let viewISO = '';
+
+function isLive() {
+  return viewISO === isoDate(new Date());
+}
 
 // ---------- formatting ----------
 function fmtHM(hm) {
@@ -53,12 +62,11 @@ function instant(wall, tz) {
   return Number.isNaN(ms) ? null : ms;
 }
 
-// Build a today-entry: { id, c, anchor, startMs, endMs, state }.
-// state is 'upcoming' | 'enroute' | 'done' | 'allday'.
+// Build a day-entry: { id, c, anchor, startMs, endMs, state }.
+// state is 'upcoming' | 'enroute' | 'done' | 'allday' (only used live).
 function buildEntry(id, anchorISO) {
   const c = activeTrip().cards[id];
   const now = Date.now();
-  const todayISO = isoDate(new Date());
   let startMs = null, endMs = null, state = 'allday';
 
   if (c.type === 'flight' || c.type === 'transit') {
@@ -70,36 +78,35 @@ function buildEntry(id, anchorISO) {
       else state = 'done';
     }
   } else if ((c.type === 'activity' || c.type === 'meal') && c.time) {
-    startMs = parseISO(todayISO).getTime() + timeToMin(c.time) * 60000;
+    startMs = parseISO(viewISO).getTime() + timeToMin(c.time) * 60000;
     state = now < startMs ? 'upcoming' : 'done';
   }
   return { id, c, anchor: anchorISO, startMs, endMs, state };
 }
 
-// Every card relevant to today: anchored on today, plus multi-day cards
-// (hotels, overnight flights) anchored earlier that still cover today.
+// Every card relevant to the viewed day: anchored on it, plus multi-day
+// cards (hotels, overnight flights) anchored earlier that still cover it.
 function collectEntries() {
   const t = activeTrip();
-  const todayISO = isoDate(new Date());
-  const todayMid = parseISO(todayISO);
+  const dayMid = parseISO(viewISO);
   const entries = [];
   const seen = new Set();
 
-  (t.schedule[todayISO] || []).forEach(id => {
+  (t.schedule[viewISO] || []).forEach(id => {
     if (seen.has(id) || !t.cards[id]) return;
     seen.add(id);
-    entries.push(buildEntry(id, todayISO));
+    entries.push(buildEntry(id, viewISO));
   });
 
   Object.keys(t.schedule).forEach(anchor => {
-    if (anchor >= todayISO) return;
+    if (anchor >= viewISO) return;
     (t.schedule[anchor] || []).forEach(id => {
       if (seen.has(id)) return;
       const c = t.cards[id];
       if (!c) return;
       const span = cardSpan(c);
       if (span <= 1) return;
-      if (addDays(parseISO(anchor), span - 1) >= todayMid) {
+      if (addDays(parseISO(anchor), span - 1) >= dayMid) {
         seen.add(id);
         entries.push(buildEntry(id, anchor));
       }
@@ -113,16 +120,15 @@ function collectEntries() {
     if (b.startMs == null) return -1;
     return a.startMs - b.startMs;
   });
-  return { entries, todayISO };
+  return entries;
 }
 
 // ---------- per-item rendering ----------
 function timeLabel(entry) {
   const c = entry.c;
-  const todayISO = isoDate(new Date());
   if (c.type === 'flight' || c.type === 'transit') {
-    if (c.depart && c.depart.slice(0, 10) === todayISO) return fmtHM(c.depart.slice(11, 16));
-    if (c.arrive && c.arrive.slice(0, 10) === todayISO) return fmtHM(c.arrive.slice(11, 16));
+    if (c.depart && c.depart.slice(0, 10) === viewISO) return fmtHM(c.depart.slice(11, 16));
+    if (c.arrive && c.arrive.slice(0, 10) === viewISO) return fmtHM(c.arrive.slice(11, 16));
     if (c.depart) return fmtHM(c.depart.slice(11, 16));
     return 'all day';
   }
@@ -134,7 +140,7 @@ function timeLabel(entry) {
 function nightLabel(entry) {
   const n = parseInt(entry.c.nights, 10) || 1;
   if (n <= 1) return '1 night';
-  const which = Math.round((parseISO(isoDate(new Date())) - parseISO(entry.anchor)) / 86400000) + 1;
+  const which = Math.round((parseISO(viewISO) - parseISO(entry.anchor)) / 86400000) + 1;
   return (which >= 1 && which <= n) ? 'night ' + which + ' of ' + n : n + ' nights';
 }
 
@@ -196,9 +202,11 @@ function itemEl(entry, opts) {
   opts = opts || {};
   const c = entry.c;
   const tp = TYPES[c.type] || TYPES.note;
+  // Past styling only on the live day — a previewed day is not "done".
+  const past = isLive() && entry.state === 'done';
   const row = el('div', {
     class: 'vp-today-item'
-      + (entry.state === 'done' ? ' vp-today-past' : '')
+      + (past ? ' vp-today-past' : '')
       + (opts.hero ? ' vp-today-hero' : ''),
     style: { borderLeftColor: tp.color },
     onclick: e => {
@@ -221,9 +229,9 @@ function itemEl(entry, opts) {
   const meta = itemMeta(entry);
   if (meta) body.appendChild(el('div', { class: 'vp-today-item-meta' }, meta));
 
-  // Quick tap-through (notes carry confirmation numbers / addresses) — past
-  // items drop it to stay tidy.
-  if (entry.state !== 'done') {
+  // Quick tap-through (notes carry confirmation numbers / addresses) —
+  // dropped only for items already done on the live day, to stay tidy.
+  if (!past) {
     if (c.notes) body.appendChild(el('div', { class: 'vp-today-item-notes' }, c.notes));
     const actions = buildActions(c);
     if (actions) body.appendChild(actions);
@@ -249,14 +257,62 @@ function heroBlock(hero) {
   return block;
 }
 
-function tripContext(entries, todayISO) {
+// ---------- header / date stepper ----------
+function stepDay(delta) {
   const t = activeTrip();
-  const dayNum = Math.round((parseISO(todayISO) - parseISO(t.startDate)) / 86400000) + 1;
+  let d = isoDate(addDays(parseISO(viewISO), delta));
+  if (d < t.startDate) d = t.startDate;
+  if (d > t.endDate) d = t.endDate;
+  // Landing back on the real today reverts to live mode (dayDate = null).
+  ui.dayDate = (d === isoDate(new Date())) ? null : d;
+  render();
+}
+
+function backToToday() {
+  ui.dayDate = null;
+  render();
+}
+
+function tripContext(t, entries) {
+  const dayNum = Math.round((parseISO(viewISO) - parseISO(t.startDate)) / 86400000) + 1;
   const totalDays = Math.round((parseISO(t.endDate) - parseISO(t.startDate)) / 86400000) + 1;
   const bits = ['Day ' + dayNum + ' of ' + totalDays];
   const hotel = entries.find(e => e.c.type === 'hotel' && e.c.city);
   if (hotel) bits.push(hotel.c.city);
   return bits.join(' · ');
+}
+
+function buildHeader(t, entries, live) {
+  const head = el('div', { class: 'vp-today-head' });
+  const nav = el('div', { class: 'vp-today-nav' });
+
+  const steps = el('div', { class: 'vp-today-steps' });
+  steps.appendChild(el('button', {
+    class: 'vp-today-step', 'aria-label': 'Previous day', title: 'Previous day',
+    disabled: viewISO <= t.startDate,
+    onclick: () => stepDay(-1)
+  }, el('i', { class: 'ti ti-chevron-left' })));
+  steps.appendChild(el('button', {
+    class: 'vp-today-step', 'aria-label': 'Next day', title: 'Next day',
+    disabled: viewISO >= t.endDate,
+    onclick: () => stepDay(1)
+  }, el('i', { class: 'ti ti-chevron-right' })));
+  nav.appendChild(steps);
+
+  const dateWrap = el('div', { class: 'vp-today-datewrap' });
+  dateWrap.appendChild(el('div', { class: 'vp-today-date' },
+    parseISO(viewISO).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })));
+  dateWrap.appendChild(el('div', { class: 'vp-today-sub' }, tripContext(t, entries)));
+  nav.appendChild(dateWrap);
+
+  if (!live) {
+    nav.appendChild(el('button', {
+      class: 'vp-today-todaybtn', onclick: backToToday
+    }, 'Today'));
+  }
+
+  head.appendChild(nav);
+  return head;
 }
 
 // ---------- live countdown timer ----------
@@ -293,47 +349,53 @@ function tick() {
 // ---------- view ----------
 // Built by render() when the Today view is active.
 export function renderTodayView() {
-  const { entries, todayISO } = collectEntries();
-  const panel = el('div', { class: 'vp-today' });
+  const t = activeTrip();
+  const realToday = isoDate(new Date());
+  // A stored scrub date is honored only while it stays inside the trip.
+  viewISO = (ui.dayDate && ui.dayDate >= t.startDate && ui.dayDate <= t.endDate)
+    ? ui.dayDate : realToday;
+  const live = isLive();
 
-  const head = el('div', { class: 'vp-today-head' });
-  head.appendChild(el('div', { class: 'vp-today-date' },
-    new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })));
-  head.appendChild(el('div', { class: 'vp-today-sub' }, tripContext(entries, todayISO)));
-  panel.appendChild(head);
+  const entries = collectEntries();
+  const panel = el('div', { class: 'vp-today' });
+  panel.appendChild(buildHeader(t, entries, live));
 
   if (!entries.length) {
     const empty = el('div', { class: 'vp-today-empty' });
-    empty.appendChild(el('div', {}, 'Nothing scheduled for today.'));
+    empty.appendChild(el('div', {},
+      live ? 'Nothing scheduled for today.' : 'Nothing scheduled for this day.'));
     empty.appendChild(el('button', {
       class: 'vp-btn-primary',
-      onclick: () => openEditor(null, { kind: 'day', date: todayISO })
-    }, '+ Add something to today'));
+      onclick: () => openEditor(null, { kind: 'day', date: viewISO })
+    }, live ? '+ Add something to today' : '+ Add something to this day'));
     panel.appendChild(empty);
-    startTodayTimer();
+    if (live) startTodayTimer();
     return panel;
   }
 
-  const hero = entries.find(e => e.state === 'enroute') || entries.find(e => e.state === 'upcoming') || null;
+  const hero = live
+    ? (entries.find(e => e.state === 'enroute') || entries.find(e => e.state === 'upcoming') || null)
+    : null;
   if (hero) panel.appendChild(heroBlock(hero));
 
-  panel.appendChild(el('div', { class: 'vp-today-section' }, 'Today’s schedule'));
+  panel.appendChild(el('div', { class: 'vp-today-section' }, live ? 'Today’s schedule' : 'Schedule'));
   const timeline = el('div', { class: 'vp-today-timeline' });
   let nowMarked = false;
   entries.forEach(e => {
-    if (!nowMarked && (e.state === 'upcoming' || e.state === 'enroute')) {
+    if (live && !nowMarked && (e.state === 'upcoming' || e.state === 'enroute')) {
       timeline.appendChild(el('div', { class: 'vp-today-now' }, 'now'));
       nowMarked = true;
     }
-    const chip = e.state === 'enroute' ? 'enroute' : (e === hero ? 'next' : null);
+    const chip = !live ? null
+      : (e.state === 'enroute' ? 'enroute' : (e === hero ? 'next' : null));
     timeline.appendChild(itemEl(e, { chip }));
   });
   panel.appendChild(timeline);
 
-  if (!hero && entries.some(e => e.startMs != null)) {
+  if (live && !hero && entries.some(e => e.startMs != null)) {
     panel.appendChild(el('div', { class: 'vp-today-done' }, 'Nothing left on today’s schedule.'));
   }
 
-  startTodayTimer();
+  if (live) startTodayTimer();
   return panel;
 }

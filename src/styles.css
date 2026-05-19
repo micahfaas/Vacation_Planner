@@ -1801,6 +1801,47 @@ a.vp-res-link-title:hover span { text-decoration: underline; }
   padding: var(--space-4);
 }
 .vp-today-head { margin-bottom: var(--space-4); }
+.vp-today-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.vp-today-steps {
+  display: flex;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+.vp-today-step {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-2);
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.12s, color 0.12s;
+}
+.vp-today-step:hover:not(:disabled) { background: var(--surface-2); color: var(--text); }
+.vp-today-step:disabled { opacity: 0.35; cursor: default; }
+.vp-today-step i { font-size: var(--text-lg); }
+.vp-today-datewrap { flex: 1; min-width: 0; }
+.vp-today-todaybtn {
+  flex-shrink: 0;
+  height: 30px;
+  padding: 0 12px;
+  font-size: var(--text-sm);
+  font-family: inherit;
+  background: var(--accent);
+  color: #fff;
+  border: 0.5px solid var(--accent);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+.vp-today-todaybtn:hover { opacity: 0.92; }
 .vp-today-date {
   font-size: var(--text-xl);
   font-weight: 600;

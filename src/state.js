@@ -8,5 +8,6 @@ export const data = {
 
 export function activeTrip() { return data.trips[data.activeTripId]; }
 
-// Session-only UI state (not persisted): which view is showing, place filter.
-export const ui = { view: 'calendar', placeFilter: 'all' };
+// Session-only UI state (not persisted): which view is showing, place filter,
+// and the day the Today view is scrubbed to (null = the real current date).
+export const ui = { view: 'calendar', placeFilter: 'all', dayDate: null };

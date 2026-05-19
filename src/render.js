@@ -42,7 +42,11 @@ export function render() {
   tabs.forEach(([v, label]) => {
     toggle.appendChild(el('button', {
       class: 'vp-view-btn' + (ui.view === v ? ' vp-view-on' : ''),
-      onclick: () => { ui.view = v; render(); }
+      onclick: () => {
+        if (v === 'today') ui.dayDate = null; // the Today tab always lands on today
+        ui.view = v;
+        render();
+      }
     }, label));
   });
   tb.appendChild(toggle);
