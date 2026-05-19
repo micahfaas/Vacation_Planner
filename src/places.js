@@ -11,6 +11,7 @@ import { weatherSummary } from './weather.js';
 import { deepLinksFor } from './deeplinks.js';
 import { confirmDialog } from './dialog.js';
 import { openPlacesImport } from './places-import.js';
+import { geocodePlace } from './geocoding.js';
 
 // category -> card type, for turning a researched place into a trip card
 const CAT_TO_TYPE = {
@@ -162,9 +163,9 @@ function openPlaceEditor(id) {
 
   const rightBtns = el('div', { class: 'vp-right' });
   rightBtns.appendChild(el('button', { onclick: () => bg.remove() }, 'Cancel'));
-  rightBtns.appendChild(el('button', {
+  const saveBtn = el('button', {
     class: 'vp-save',
-    onclick: () => {
+    onclick: async () => {
       const out = {
         name: nameIn.value.trim() || 'Untitled place',
         category: catSel.value,
@@ -176,12 +177,19 @@ function openPlaceEditor(id) {
       if (coords.lat != null && coords.lng != null) {
         out.lat = coords.lat;
         out.lng = coords.lng;
+      } else if (out.address) {
+        // Try to pin the place from its address so the map and Navigate work.
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving…';
+        const found = await geocodePlace([out.name, out.address].filter(Boolean).join(', '));
+        if (found) { out.lat = found.lat; out.lng = found.lng; }
       }
       if (isNew) addPlace(out);
       else updatePlace(id, out);
       bg.remove();
     }
-  }, 'Save'));
+  }, 'Save');
+  rightBtns.appendChild(saveBtn);
   actions.appendChild(rightBtns);
   m.appendChild(actions);
 

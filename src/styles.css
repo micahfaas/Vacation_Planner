@@ -2161,3 +2161,86 @@ a.vp-res-link-title:hover span { text-decoration: underline; }
   border-color: var(--border-strong);
 }
 .vp-coplan-add-alt:hover { background: var(--accent-bg); opacity: 1; }
+.vp-coplan-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 8px;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--link);
+  background: var(--surface);
+  border: 0.5px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  cursor: pointer;
+}
+.vp-coplan-link:hover { background: var(--accent-bg); }
+.vp-coplan-link > i { font-size: 13px; }
+
+/* account menu (anchored popover) */
+.vp-menu-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: transparent;
+}
+.vp-menu {
+  position: fixed;
+  min-width: 180px;
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+}
+.vp-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 0;
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  color: var(--text);
+  text-align: left;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.vp-menu-item:hover { background: var(--surface-2); }
+.vp-menu-item > i { font-size: var(--text-md); color: var(--text-2); }
+
+/* about-me profile editor */
+.vp-profile-sub {
+  margin: -8px 0 14px;
+  font-size: var(--text-sm);
+  color: var(--text-2);
+}
+.vp-profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.vp-profile-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.vp-profile-row > label {
+  font-size: var(--text-xs);
+  color: var(--text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.vp-profile-status {
+  font-size: var(--text-xs);
+  color: var(--text-2);
+  flex: 1;
+  min-width: 0;
+  padding-right: 12px;
+}
+.vp-profile-status-err { color: var(--danger, #c53030); }

@@ -13,6 +13,8 @@ import { loadSharedTrip, renderSharedTrip } from './share.js';
 import { confirmDialog } from './dialog.js';
 import { openImportModal } from './importer.js';
 import { openCoPlanner } from './coplanner.js';
+import { loadProfile, openProfileDialog } from './profile.js';
+import { el } from './dom.js';
 
 // Register the service worker for offline support (production builds only,
 // so it never interferes with the Vite dev server's hot reload).
@@ -60,17 +62,14 @@ function bootApp() {
   document.getElementById('vp-coplan-btn').addEventListener('click', openCoPlanner);
 
   const accountBtn = document.getElementById('vp-account-btn');
-  accountBtn.addEventListener('click', () => {
-    confirmDialog('Sign out of Vacation Planner?', { confirmText: 'Sign out' })
-      .then(ok => { if (ok) signOut(); });
-  });
+  accountBtn.addEventListener('click', () => openAccountMenu(accountBtn));
 
   async function showApp(user) {
     document.body.classList.remove('vp-signed-out');
     document.getElementById('vp-account-email').textContent = user.email || 'Account';
     accountBtn.hidden = false;
     root.innerHTML = '<div class="vp-loading">Loading your trips…</div>';
-    await loadTrips(user.id);
+    await Promise.all([loadTrips(user.id), loadProfile(user.id)]);
     render();
     if (pendingShare) {
       const text = pendingShare;
@@ -83,6 +82,34 @@ function bootApp() {
     document.body.classList.add('vp-signed-out');
     accountBtn.hidden = true;
     renderAuthScreen();
+  }
+
+  function openAccountMenu(anchor) {
+    const rect = anchor.getBoundingClientRect();
+    const bg = el('div', {
+      class: 'vp-menu-bg',
+      onclick: e => { if (e.target === bg) bg.remove(); }
+    });
+    const menu = el('div', {
+      class: 'vp-menu',
+      style: {
+        top: (rect.bottom + 6) + 'px',
+        right: (window.innerWidth - rect.right) + 'px'
+      }
+    });
+    function item(label, icon, fn) {
+      const b = el('button', { class: 'vp-menu-item' },
+        el('i', { class: 'ti ' + icon }), el('span', {}, label));
+      b.addEventListener('click', () => { bg.remove(); fn(); });
+      return b;
+    }
+    menu.appendChild(item('About me', 'ti-user', openProfileDialog));
+    menu.appendChild(item('Sign out', 'ti-logout', () => {
+      confirmDialog('Sign out of Vacation Planner?', { confirmText: 'Sign out' })
+        .then(ok => { if (ok) signOut(); });
+    }));
+    bg.appendChild(menu);
+    document.body.appendChild(bg);
   }
 
   // onAuthStateChange fires immediately with the current session, then again on

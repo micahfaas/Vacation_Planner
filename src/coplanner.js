@@ -10,6 +10,8 @@ import { isoDate } from './dates.js';
 import { TYPES } from './constants.js';
 import { aiCardToCandidate } from './import-ai.js';
 import { addPlace } from './places.js';
+import { profileSummary } from './profile.js';
+import { geocodePlace } from './geocoding.js';
 
 // ---------- trip context sent to the model ----------
 function describeCard(c) {
@@ -27,7 +29,10 @@ function describeCard(c) {
 // A compact text snapshot of the trip for the model to plan against.
 function tripSummary() {
   const t = activeTrip();
-  const lines = ['Trip: ' + (t.name || 'Untitled trip')];
+  const lines = [];
+  const prof = profileSummary();
+  if (prof) lines.push(prof, '');
+  lines.push('Trip: ' + (t.name || 'Untitled trip'));
 
   if (t.startDate && t.endDate) {
     const days = getDays();
@@ -65,6 +70,21 @@ function tripSummary() {
 // Card types that can also be saved as a Place, with their Place category.
 const PLACE_CAT = { meal: 'restaurant', activity: 'attraction', hotel: 'lodging', note: 'other' };
 
+// Google Maps search link built from whatever venue info we have.
+function mapsSearchUrl(card, address) {
+  const parts = [card.title, address, !address ? card.city : ''].filter(Boolean);
+  const query = parts.join(', ').trim();
+  if (!query) return '';
+  return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(query);
+}
+
+// Accept the model's website only if it looks like a real http(s) URL.
+function safeWebsite(raw) {
+  const u = String(raw || '').trim();
+  if (!/^https?:\/\//i.test(u)) return '';
+  try { return new URL(u).toString(); } catch { return ''; }
+}
+
 function suggestionMeta(card, date, address) {
   const bits = [];
   if (date) bits.push(date);
@@ -82,8 +102,11 @@ function suggestionRow(aiCard) {
   if (!cand) return null;
   const c = cand.card;
   const address = (aiCard.address || '').trim();
+  const website = safeWebsite(aiCard.website);
   const tp = TYPES[c.type] || TYPES.note;
   const timed = c.type === 'activity' || c.type === 'meal';
+  const venueLike = !!PLACE_CAT[c.type] && c.type !== 'note';
+  const mapUrl = venueLike ? mapsSearchUrl(c, address) : '';
 
   const row = el('div', { class: 'vp-coplan-sug' });
   row.appendChild(el('i', { class: 'ti ' + tp.icon, style: { color: tp.color } }));
@@ -95,6 +118,20 @@ function suggestionRow(aiCard) {
   if (c.notes) main.appendChild(el('div', { class: 'vp-coplan-sug-notes' }, c.notes));
 
   const controls = el('div', { class: 'vp-coplan-sug-controls' });
+
+  // Map and website links, so the user can vet a place before adding it.
+  if (mapUrl) {
+    controls.appendChild(el('a', {
+      href: mapUrl, target: '_blank', rel: 'noopener noreferrer',
+      class: 'vp-coplan-link', title: 'Open in Google Maps'
+    }, [el('i', { class: 'ti ti-map-pin' }), 'Map']));
+  }
+  if (website) {
+    controls.appendChild(el('a', {
+      href: website, target: '_blank', rel: 'noopener noreferrer',
+      class: 'vp-coplan-link', title: website
+    }, [el('i', { class: 'ti ti-external-link' }), 'Site']));
+  }
 
   // Start-time picker for activities and meals.
   let timeInput = null;
@@ -111,7 +148,8 @@ function suggestionRow(aiCard) {
       if (timeInput.value) card.time = timeInput.value;
       else delete card.time;
     }
-    if (address) card.notes = [card.notes, address].filter(Boolean).join('\n');
+    const extras = [address, website].filter(Boolean);
+    if (extras.length) card.notes = [card.notes, ...extras].filter(Boolean).join('\n');
     const t = activeTrip();
     const onDay = cand.date && t.startDate && t.endDate &&
       cand.date >= t.startDate && cand.date <= t.endDate;
@@ -125,16 +163,24 @@ function suggestionRow(aiCard) {
   // Add as a saved place — for venue-like suggestions only.
   if (PLACE_CAT[c.type]) {
     const placeBtn = el('button', { type: 'button', class: 'vp-coplan-add vp-coplan-add-alt' }, '+ Place');
-    placeBtn.addEventListener('click', () => {
-      addPlace({
+    placeBtn.addEventListener('click', async () => {
+      placeBtn.disabled = true;
+      placeBtn.textContent = 'Adding…';
+      // Geocode so the map pin and Navigate button work — the address from the
+      // co-planner is rarely wrong but never carries coordinates of its own.
+      const place = {
         name: c.title || 'Place',
         category: PLACE_CAT[c.type],
         address: address || c.city || '',
+        website: website || '',
         notes: c.notes || ''
-      });
+      };
+      const query = [place.name, place.address].filter(Boolean).join(', ');
+      const coords = query ? await geocodePlace(query) : null;
+      if (coords) { place.lat = coords.lat; place.lng = coords.lng; }
+      addPlace(place);
       placeBtn.textContent = '✓ Place';
       placeBtn.title = 'Added to your saved places';
-      placeBtn.disabled = true;
     });
     controls.appendChild(placeBtn);
   }

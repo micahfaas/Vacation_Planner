@@ -35,6 +35,7 @@ Each suggestion card has ALL of these fields; use "" / 0 / false when a field do
 - flightNo: a flight number or carrier reference. "" otherwise.
 - depart / arrive: departure and arrival as local wall-clock "YYYY-MM-DDTHH:MM", for flights and transit. "" otherwise.
 - address: the venue's real street address, for activities / meals / hotels — only when you genuinely know it for a well-known place. "" otherwise.
+- website: the venue's real official website URL (homepage), for activities / meals / hotels — only when you genuinely know it for a well-known place. Must start with "https://". "" otherwise. Never invent a URL or link to a search engine, directory, or social profile.
 - notes: a one-line reason or tip for this suggestion.
 - booked: always false for suggestions — they are proposals.
 
@@ -43,7 +44,8 @@ Rules:
 - Set "date" only when the request implies a specific day; otherwise leave it "" so the card goes to the trip's card library for the user to place.
 - Keep any dates within the trip's date range.
 - Fill "address" only with a real, correct street address for a well-known venue; if you are not confident, leave it "". Never invent an address.
-- The user's existing scheduled cards, unscheduled library cards, and saved research places are listed above. Never recommend a specific place that already appears in any of those lists — always provide fresh alternatives. If the user already has many places in a category, dig deeper into less obvious options.`;
+- The user's existing scheduled cards, unscheduled library cards, and saved research places are listed above. Never recommend a specific place that already appears in any of those lists — always provide fresh alternatives. If the user already has many places in a category, dig deeper into less obvious options.
+- A "Traveler profile" block may appear at the top of the context — pace, walking tolerance, lodging style, who they travel with, dietary needs, interests, and free-text. Treat it as the user's standing preferences and let it shape every suggestion: respect dietary needs absolutely, match the pace and walking tolerance, lean into their stated interests, and prefer lodging that fits their style. Do not mention the profile back to them; just plan in line with it.`;
 
 const CARD = {
   type: 'object',
@@ -60,12 +62,13 @@ const CARD = {
     depart: { type: 'string' },
     arrive: { type: 'string' },
     address: { type: 'string' },
+    website: { type: 'string' },
     notes: { type: 'string' },
     booked: { type: 'boolean' },
   },
   required: [
     'type', 'title', 'date', 'time', 'city', 'nights',
-    'originCity', 'destCity', 'flightNo', 'depart', 'arrive', 'address', 'notes', 'booked',
+    'originCity', 'destCity', 'flightNo', 'depart', 'arrive', 'address', 'website', 'notes', 'booked',
   ],
   additionalProperties: false,
 };
