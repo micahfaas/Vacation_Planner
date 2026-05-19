@@ -1,11 +1,6 @@
-// Flight lookup via AeroDataBox (RapidAPI). The key is read from the
-// VITE_AERODATABOX_KEY env var; when it is absent the lookup UI stays hidden.
-const KEY = import.meta.env.VITE_AERODATABOX_KEY;
-const HOST = 'aerodatabox.p.rapidapi.com';
-
-export function flightLookupEnabled() {
-  return !!KEY;
-}
+// Flight lookup via the flight-lookup Supabase Edge Function, which proxies
+// AeroDataBox (RapidAPI) with the API key held server-side.
+import { supabase } from './supabase.js';
 
 // AeroDataBox times look like "2024-06-01 14:30-04:00" (local) — pull out
 // just the date and HH:MM for a datetime-local input.
@@ -30,24 +25,23 @@ function endpoint(side) {
 // Look up a flight by number and date ("YYYY-MM-DD").
 // Resolves to { flightNo, airline, origin, dest } or throws a friendly error.
 export async function lookupFlight(flightNumber, date) {
-  if (!KEY) throw new Error('Flight lookup is not configured.');
   const num = flightNumber.replace(/\s+/g, '').toUpperCase();
-  const url = 'https://' + HOST + '/flights/number/' +
-    encodeURIComponent(num) + '/' + encodeURIComponent(date);
 
   let res;
   try {
-    res = await fetch(url, { headers: { 'X-RapidAPI-Key': KEY, 'X-RapidAPI-Host': HOST } });
+    res = await supabase.functions.invoke('flight-lookup', {
+      body: { flightNumber: num, date }
+    });
   } catch {
     throw new Error('Network error during flight lookup.');
   }
-  if (res.status === 404) throw new Error('No flight found for that number and date.');
-  if (res.status === 401 || res.status === 403) throw new Error('Flight API key was rejected.');
-  if (res.status === 429) throw new Error('Flight API rate limit reached — try again later.');
-  if (!res.ok) throw new Error('Flight lookup failed (' + res.status + ').');
+  if (res.error) throw new Error('Flight lookup failed — try again.');
 
-  const data = await res.json();
-  const flights = Array.isArray(data) ? data : (data && data.flights) || [];
+  const data = res.data;
+  if (!data || data.ok !== true) {
+    throw new Error((data && data.error) || 'Flight lookup failed.');
+  }
+  const flights = Array.isArray(data.flights) ? data.flights : [];
   if (!flights.length) throw new Error('No flight found for that number and date.');
 
   const f = flights[0];

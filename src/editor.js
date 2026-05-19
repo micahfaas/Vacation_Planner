@@ -7,7 +7,7 @@ import { save } from './storage.js';
 import { render } from './render.js';
 import { createCityPicker } from './citypicker.js';
 import { createAttachmentsField } from './attachments.js';
-import { lookupFlight, flightLookupEnabled } from './flightlookup.js';
+import { lookupFlight } from './flightlookup.js';
 import { confirmDialog } from './dialog.js';
 
 export function openEditor(id, addTarget) {
@@ -111,7 +111,7 @@ export function openEditor(id, addTarget) {
       dynamic.appendChild(departIn);
       dynamic.appendChild(el('label', {}, 'Arrive — local time at destination'));
       dynamic.appendChild(arriveIn);
-      if (tp === 'flight' && flightLookupEnabled()) {
+      if (tp === 'flight') {
         setLookupMsg('', false);
         dynamic.appendChild(el('div', { class: 'vp-flight-lookup-row' }, lookupBtn, lookupMsg));
       }
