@@ -3,7 +3,7 @@ import { activeTrip, ui } from './state.js';
 import { TYPES } from './constants.js';
 import { el } from './dom.js';
 import { isoDate, parseISO, addDays, fmtShort, fmtMin } from './dates.js';
-import { getGridDays, computeStats, getConflicts } from './derived.js';
+import { getDays, getGridDays, computeStats, getConflicts } from './derived.js';
 import { save } from './storage.js';
 import { duplicateCard, removeCard, moveCard } from './cards.js';
 import { openEditor } from './editor.js';
@@ -75,11 +75,35 @@ export function render() {
 
   const layout = el('div', { class: 'vp-layout' });
 
-  // calendar
   const calCol = el('div', {});
+  calCol.appendChild(isNarrow() ? agendaList() : calendarGrid());
+  layout.appendChild(calCol);
+
+  // sidebar
+  const side = el('div', { class: 'vp-side' });
+  side.appendChild(libraryPanel());
+  side.appendChild(statsPanel());
+  const budget = budgetPanel();
+  if (budget) side.appendChild(budget);
+  layout.appendChild(side);
+
+  root.appendChild(layout);
+}
+
+// Below this width the calendar swaps its 7-column grid for an agenda list.
+const NARROW = window.matchMedia('(max-width: 640px)');
+function isNarrow() { return NARROW.matches; }
+NARROW.addEventListener('change', () => {
+  if (activeTrip() && ui.view === 'calendar') render();
+});
+
+// The month grid: weeks of 7 day cells with a multi-day span layer.
+function calendarGrid() {
+  const t = activeTrip();
+  const wrap = el('div', {});
   const calHead = el('div', { class: 'vp-cal-head' });
   ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'].forEach(d => calHead.appendChild(el('div', {}, d)));
-  calCol.appendChild(calHead);
+  wrap.appendChild(calHead);
 
   const cal = el('div', { class: 'vp-cal' });
   const conflicts = getConflicts();
@@ -186,18 +210,40 @@ export function render() {
 
     cal.appendChild(weekRow);
   });
-  calCol.appendChild(cal);
-  layout.appendChild(calCol);
+  wrap.appendChild(cal);
+  return wrap;
+}
 
-  // sidebar
-  const side = el('div', { class: 'vp-side' });
-  side.appendChild(libraryPanel());
-  side.appendChild(statsPanel());
-  const budget = budgetPanel();
-  if (budget) side.appendChild(budget);
-  layout.appendChild(side);
-
-  root.appendChild(layout);
+// The mobile agenda: one stacked card per trip day, fully interactive.
+function agendaList() {
+  const t = activeTrip();
+  const conflicts = getConflicts();
+  const wrap = el('div', { class: 'vp-agenda' });
+  getDays().forEach(d => {
+    const iso = isoDate(d);
+    const day = el('div', {
+      class: 'vp-agenda-day' + (conflicts[iso] ? ' vp-conflict' : ''),
+      'data-date': iso
+    });
+    const head = el('div', { class: 'vp-agenda-day-head' });
+    head.appendChild(el('span', {},
+      d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })));
+    if (conflicts[iso]) {
+      head.appendChild(el('i', {
+        class: 'ti ti-alert-triangle vp-conflict-ico', title: 'Time overlap on this day'
+      }));
+    }
+    day.appendChild(head);
+    attachDropZone(day, { kind: 'day', date: iso });
+    const ids = t.schedule[iso] || [];
+    ids.forEach(id => { if (t.cards[id]) day.appendChild(renderCard(id)); });
+    if (!ids.length) day.appendChild(el('div', { class: 'vp-agenda-empty' }, 'Nothing planned'));
+    day.appendChild(el('button', {
+      class: 'vp-add-btn', onclick: () => openEditor(null, { kind: 'day', date: iso })
+    }, '+ add card'));
+    wrap.appendChild(day);
+  });
+  return wrap;
 }
 
 function libraryPanel() {
