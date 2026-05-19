@@ -92,12 +92,12 @@ function icsWhen(v) {
   return { date: m[1] + '-' + m[2] + '-' + m[3], time: m[4] ? m[4] + ':' + m[5] : '' };
 }
 
-function eventToCandidate(ev) {
-  const summary = icsUnescape(ev.SUMMARY) || 'Imported event';
-  const loc = icsUnescape(ev.LOCATION);
-  const desc = icsUnescape(ev.DESCRIPTION);
-  const start = icsWhen(ev.DTSTART);
-  const end = icsWhen(ev.DTEND);
+// Classify an event from any source and build a card candidate.
+// `start` / `end` are { date, time } objects, or null.
+function classifyAndBuild(summary, loc, desc, start, end) {
+  summary = (summary || 'Imported event').trim();
+  loc = loc || '';
+  desc = desc || '';
   if (!start) {
     return { type: 'note', date: null, card: { type: 'note', title: summary, notes: desc }, label: summary, include: true };
   }
@@ -141,6 +141,13 @@ function eventToCandidate(ev) {
     card: { type, title: summary, city: loc, time: start.time, notes: desc },
     label: summary, include: true
   };
+}
+
+function eventToCandidate(ev) {
+  return classifyAndBuild(
+    icsUnescape(ev.SUMMARY), icsUnescape(ev.LOCATION), icsUnescape(ev.DESCRIPTION),
+    icsWhen(ev.DTSTART), icsWhen(ev.DTEND)
+  );
 }
 
 export function parseICS(text) {
@@ -254,4 +261,20 @@ export function parsePkpass(arrayBuffer) {
   try { pass = JSON.parse(strFromU8(passFile)); }
   catch { return []; }
   return [passToCandidate(pass)].filter(Boolean);
+}
+
+// ---------- Google Calendar API events ----------
+function gcalWhen(point) {
+  if (!point) return null;
+  if (point.date) return { date: point.date, time: '' };
+  const m = (point.dateTime || '').match(/(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})/);
+  return m ? { date: m[1], time: m[2] + ':' + m[3] } : null;
+}
+
+// Keep only travel-relevant events, so ordinary calendar clutter
+// (meetings, birthdays) does not flood the review screen.
+export function parseGCalEvents(events) {
+  return (events || [])
+    .map(ev => classifyAndBuild(ev.summary, ev.location, ev.description, gcalWhen(ev.start), gcalWhen(ev.end)))
+    .filter(c => c && ['flight', 'hotel', 'transit', 'meal'].includes(c.type));
 }

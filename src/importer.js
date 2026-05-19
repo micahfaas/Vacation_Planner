@@ -8,15 +8,17 @@ import { render } from './render.js';
 import { TYPES } from './constants.js';
 import { isoDate, parseISO, addDays, fmtShort } from './dates.js';
 import { importJSON } from './io.js';
-import { parseText, parseICS, parsePkpass, parseBCBP } from './import-formats.js';
+import { parseText, parseICS, parsePkpass, parseBCBP, parseGCalEvents } from './import-formats.js';
+import { gcalEnabled, connectGoogleCalendar, preloadGIS } from './gcal.js';
 import { alertDialog } from './dialog.js';
 
-export function openImportModal() {
+export function openImportModal(opts = {}) {
   const bg = el('div', { class: 'vp-modal-bg', onclick: e => { if (e.target === bg) bg.remove(); } });
   const m = el('div', { class: 'vp-modal vp-imp' });
   bg.appendChild(m);
   document.body.appendChild(bg);
   const close = () => bg.remove();
+  if (gcalEnabled()) preloadGIS();
 
   function setBody(...nodes) {
     m.innerHTML = '';
@@ -42,23 +44,39 @@ export function openImportModal() {
         el('div', { class: 'vp-imp-method-text' },
           el('div', { class: 'vp-imp-method-title' }, title),
           el('div', { class: 'vp-imp-method-desc' }, desc)));
-    const list = el('div', { class: 'vp-imp-methods' },
-      method('ti-clipboard-text', 'Paste text',
-        'A confirmation email or itinerary — anything', showPaste),
-      method('ti-file-upload', 'Upload a file',
-        'PDF e-ticket, a screenshot, calendar invite (.ics), Wallet pass (.pkpass), or trip backup',
-        () => pickFile('.pdf,.ics,.pkpass,.json,image/*,application/pdf,text/calendar,application/json')),
-      method('ti-barcode', 'Scan a boarding pass',
-        'A photo of the barcode on a boarding pass', pickBarcode));
+    const list = el('div', { class: 'vp-imp-methods' });
+    list.appendChild(method('ti-clipboard-text', 'Paste text',
+      'A confirmation email or itinerary — anything', () => showPaste()));
+    if (gcalEnabled()) {
+      list.appendChild(method('ti-calendar', 'Connect Google Calendar',
+        'Pull in flights and hotels your calendar already has', connectCalendar));
+    }
+    list.appendChild(method('ti-file-upload', 'Upload a file',
+      'PDF e-ticket, a screenshot, calendar invite (.ics), Wallet pass (.pkpass), or trip backup',
+      () => pickFile('.pdf,.ics,.pkpass,.json,image/*,application/pdf,text/calendar,application/json')));
+    list.appendChild(method('ti-barcode', 'Scan a boarding pass',
+      'A photo of the barcode on a boarding pass', pickBarcode));
     setBody(el('h3', {}, 'Import into this trip'), list, actions([cancelBtn()]));
   }
 
+  async function connectCalendar() {
+    showStatus('Opening Google sign-in…');
+    try {
+      const events = await connectGoogleCalendar();
+      review(parseGCalEvents(events),
+        'No flights or hotels found in your Google Calendar for the year ahead.');
+    } catch (e) {
+      showMessage(e.message || 'Could not connect to Google Calendar.');
+    }
+  }
+
   // ---------- step: paste ----------
-  function showPaste() {
+  function showPaste(initial) {
     const ta = el('textarea', {
       class: 'vp-imp-textarea',
       placeholder: 'Paste a confirmation email, an itinerary, flight details…'
     });
+    if (initial) ta.value = initial;
     setBody(
       el('h3', {}, 'Paste text'),
       ta,
@@ -117,9 +135,9 @@ export function openImportModal() {
   }
 
   // ---------- step: review ----------
-  function review(cands) {
+  function review(cands, emptyMsg) {
     if (!cands || !cands.length) {
-      showMessage('No bookings found there. Try pasting the text, or add a card manually.');
+      showMessage(emptyMsg || 'No bookings found there. Try pasting the text, or add a card manually.');
       return;
     }
     const list = el('div', { class: 'vp-imp-review' });
@@ -214,5 +232,6 @@ export function openImportModal() {
     setTimeout(() => input.remove(), 0);
   }
 
-  showPicker();
+  if (opts && opts.text) showPaste(opts.text);
+  else showPicker();
 }
