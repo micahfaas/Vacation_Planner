@@ -144,10 +144,13 @@ function classifyAndBuild(summary, loc, desc, start, end) {
 }
 
 function eventToCandidate(ev) {
-  return classifyAndBuild(
+  const c = classifyAndBuild(
     icsUnescape(ev.SUMMARY), icsUnescape(ev.LOCATION), icsUnescape(ev.DESCRIPTION),
     icsWhen(ev.DTSTART), icsWhen(ev.DTEND)
   );
+  // A calendar invite represents something already confirmed.
+  if (c.type !== 'note') c.card.booked = true;
+  return c;
 }
 
 export function parseICS(text) {
@@ -202,7 +205,8 @@ export function parseBCBP(str) {
       flightNo,
       originCity: from,
       destCity: to,
-      notes: notes.join('\n')
+      notes: notes.join('\n'),
+      booked: true
     },
     label: (flightNo ? flightNo + ' · ' : '') + (from || '?') + ' → ' + (to || '?'),
     include: true
@@ -233,14 +237,14 @@ function passToCandidate(pass) {
     }
     return {
       type: 'flight', date: relDate,
-      card: { type: 'flight', title: org ? org + ' flight' : 'Flight', notes: desc },
+      card: { type: 'flight', title: org ? org + ' flight' : 'Flight', notes: desc, booked: true },
       label: (org ? org + ' — ' : '') + 'boarding pass', include: true
     };
   }
   if (pass.eventTicket) {
     return {
       type: 'activity', date: relDate,
-      card: { type: 'activity', title: desc || org || 'Event', notes: org },
+      card: { type: 'activity', title: desc || org || 'Event', notes: org, booked: true },
       label: desc || org || 'Event ticket', include: true
     };
   }
@@ -276,5 +280,6 @@ function gcalWhen(point) {
 export function parseGCalEvents(events) {
   return (events || [])
     .map(ev => classifyAndBuild(ev.summary, ev.location, ev.description, gcalWhen(ev.start), gcalWhen(ev.end)))
-    .filter(c => c && ['flight', 'hotel', 'transit', 'meal'].includes(c.type));
+    .filter(c => c && ['flight', 'hotel', 'transit', 'meal'].includes(c.type))
+    .map(c => { c.card.booked = true; return c; });
 }
