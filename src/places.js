@@ -10,6 +10,7 @@ import { addCard } from './cards.js';
 import { weatherSummary } from './weather.js';
 import { deepLinksFor } from './deeplinks.js';
 import { confirmDialog } from './dialog.js';
+import { openPlacesImport } from './places-import.js';
 
 // category -> card type, for turning a researched place into a trip card
 const CAT_TO_TYPE = {
@@ -313,9 +314,14 @@ export function renderPlacesView() {
 
   const head = el('div', { class: 'vp-places-head' });
   head.appendChild(el('h3', {}, 'Research — places'));
-  head.appendChild(el('button', {
+  const headBtns = el('div', { class: 'vp-res-headbtns' });
+  headBtns.appendChild(el('button', {
+    class: 'vp-btn-primary', onclick: () => openPlacesImport()
+  }, 'Import places'));
+  headBtns.appendChild(el('button', {
     class: 'vp-btn-primary', onclick: () => openPlaceEditor(null)
   }, '+ new place'));
+  head.appendChild(headBtns);
   panel.appendChild(head);
 
   const filterRow = el('div', { class: 'vp-lib-filter' });
