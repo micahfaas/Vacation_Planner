@@ -26,7 +26,7 @@ Fill "suggestions" with cards WHENEVER the user asks for any specific recommenda
 Each suggestion card has ALL of these fields; use "" / 0 / false when a field does not apply:
 
 - type: one of "flight", "hotel", "activity", "transit", "meal", "note"
-- title: a short human label, e.g. "Walk through Recoleta", "Dinner at Central"
+- title: the bare name of the place or activity — "Central", "Recoleta Cemetery", "Café Tortoni". Never prefix with a meal or verb like "Lunch at", "Dinner at", "Visit", "Walk through". The card's icon and time field already convey those.
 - date: the day it happens or starts, as "YYYY-MM-DD". "" to leave it unplaced.
 - time: start time as 24-hour "HH:MM", for activities and meals. "" otherwise.
 - city: the city, for hotels / activities / meals / notes. "" otherwise.
