@@ -703,9 +703,11 @@ button { font-family: inherit; }
 }
 
 /* auth screen */
-body.vp-signed-out .vp-header-actions {
+body.vp-signed-out .vp-header-actions,
+body.vp-shared .vp-header-actions {
   display: none;
 }
+body.vp-shared .vp-footer { display: none; }
 .vp-auth-wrap {
   display: flex;
   justify-content: center;
@@ -1529,3 +1531,98 @@ a.vp-res-link-title:hover span { text-decoration: underline; }
   min-height: 14px;
 }
 .vp-flight-msg-err { color: var(--danger); }
+
+/* share dialog */
+.vp-share-status { font-size: 12px; color: var(--text-2); margin: 8px 0; }
+.vp-share-status-err { color: var(--danger); }
+.vp-share-note { font-size: 12px; color: var(--text-2); margin: 4px 0 10px; }
+
+/* shared read-only trip view */
+.vp-shared-wrap { max-width: 720px; margin: 0 auto; }
+.vp-shared-banner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--accent);
+  background: var(--accent-bg);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  margin-bottom: 18px;
+}
+.vp-shared-title {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0 0 2px;
+  color: var(--text);
+}
+.vp-shared-dates { font-size: 13px; color: var(--text-2); margin-bottom: 18px; }
+.vp-shared-agenda { display: flex; flex-direction: column; }
+.vp-shared-day {
+  display: grid;
+  grid-template-columns: 104px 1fr;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 0.5px solid var(--border);
+}
+.vp-shared-day-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-2);
+  padding-top: 3px;
+}
+.vp-shared-empty { font-size: 12px; color: var(--text-3); padding-top: 3px; }
+.vp-shared-card {
+  border-left: 3px solid;
+  border-radius: var(--radius-sm);
+  padding: 6px 9px;
+  margin-bottom: 5px;
+}
+.vp-shared-card:last-child { margin-bottom: 0; }
+.vp-shared-card-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.vp-shared-card-meta { font-size: 11px; opacity: 0.8; margin-top: 2px; }
+.vp-shared-card-notes {
+  font-size: 11px;
+  opacity: 0.85;
+  margin-top: 3px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.vp-shared-section {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 26px 0 10px;
+}
+.vp-shared-places {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+}
+.vp-shared-place {
+  background: var(--surface-2);
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 9px 11px;
+}
+.vp-shared-place-name { font-size: 13px; font-weight: 500; color: var(--text); }
+.vp-shared-place-addr { font-size: 11px; color: var(--text-2); margin-top: 3px; }
+.vp-shared-place-notes {
+  font-size: 11px;
+  color: var(--text-2);
+  margin-top: 4px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.vp-shared-foot {
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-3);
+  margin-top: 30px;
+}

@@ -4,6 +4,7 @@ import { el } from './dom.js';
 import { save, markTripDirty, markTripDeleted, newTripId } from './storage.js';
 import { render } from './render.js';
 import { fmtShort, parseISO, isoDate } from './dates.js';
+import { openShareDialog } from './share.js';
 
 export function openTripsMenu() {
   const bg = el('div', { class: 'vp-modal-bg', onclick: e => { if (e.target === bg) bg.remove(); } });
@@ -29,6 +30,10 @@ export function openTripsMenu() {
     item.appendChild(left);
 
     const itemActions = el('div', { class: 'vp-trip-item-actions' });
+    itemActions.appendChild(el('button', {
+      title: 'Share a read-only link',
+      onclick: e => { e.stopPropagation(); openShareDialog(tr); }
+    }, el('i', { class: 'ti ti-share' })));
     itemActions.appendChild(el('button', {
       title: 'Rename',
       onclick: e => {
