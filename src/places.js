@@ -205,13 +205,16 @@ function renderPlaceCard(p) {
 
   const links = el('div', { class: 'vp-place-links' });
   if (p.url) links.appendChild(el('a',
-    { href: normalizeUrl(p.url), target: '_blank', rel: 'noopener', class: 'vp-place-link' },
+    { href: normalizeUrl(p.url), target: '_blank', rel: 'noopener', class: 'vp-place-link',
+      title: normalizeUrl(p.url) },
     el('i', { class: 'ti ti-link' }), 'Link'));
   if (p.website) links.appendChild(el('a',
-    { href: normalizeUrl(p.website), target: '_blank', rel: 'noopener', class: 'vp-place-link' },
+    { href: normalizeUrl(p.website), target: '_blank', rel: 'noopener', class: 'vp-place-link',
+      title: normalizeUrl(p.website) },
     el('i', { class: 'ti ti-world' }), 'Website'));
   links.appendChild(el('a',
-    { href: navUrl(p), target: '_blank', rel: 'noopener', class: 'vp-place-link vp-place-nav' },
+    { href: navUrl(p), target: '_blank', rel: 'noopener', class: 'vp-place-link vp-place-nav',
+      title: 'Open directions in Google Maps' },
     el('i', { class: 'ti ti-navigation' }), 'Navigate'));
   card.appendChild(links);
 
@@ -221,7 +224,8 @@ function renderPlaceCard(p) {
     const deepRow = el('div', { class: 'vp-place-deeplinks' });
     deep.forEach(d => {
       deepRow.appendChild(el('a',
-        { href: d.url, target: '_blank', rel: 'noopener', class: 'vp-place-deeplink' },
+        { href: d.url, target: '_blank', rel: 'noopener', class: 'vp-place-deeplink',
+          title: d.title },
         el('i', { class: 'ti ' + d.icon }), d.label));
     });
     card.appendChild(deepRow);
