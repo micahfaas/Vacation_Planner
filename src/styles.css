@@ -1502,3 +1502,30 @@ a.vp-res-link-title:hover span { text-decoration: underline; }
   color: var(--text-3);
   margin-top: 8px;
 }
+
+/* flight lookup */
+.vp-flight-lookup-row { margin-top: 10px; }
+.vp-flight-lookup {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 12px;
+  font-size: 12px;
+  font-family: inherit;
+  background: var(--surface);
+  color: var(--text);
+  border: 0.5px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+.vp-flight-lookup:hover { background: var(--surface-2); }
+.vp-flight-lookup:disabled { opacity: 0.6; cursor: default; }
+.vp-flight-lookup i { font-size: 14px; }
+.vp-flight-msg {
+  font-size: 11px;
+  color: var(--text-2);
+  margin-top: 6px;
+  min-height: 14px;
+}
+.vp-flight-msg-err { color: var(--danger); }

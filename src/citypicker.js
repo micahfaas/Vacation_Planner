@@ -118,6 +118,17 @@ export function createCityPicker(opts = {}) {
         latitude: value.latitude,
         longitude: value.longitude
       };
+    },
+    // Fill the picker programmatically (used by flight lookup).
+    setValue(v) {
+      value.name = (v && v.city) || '';
+      value.timezone = (v && v.timezone) || browserTz();
+      value.latitude = v && v.latitude != null ? v.latitude : null;
+      value.longitude = v && v.longitude != null ? v.longitude : null;
+      selected = !!(value.name && v && v.timezone);
+      input.value = value.name;
+      hideMenu();
+      updateCaption();
     }
   };
 }

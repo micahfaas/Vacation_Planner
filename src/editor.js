@@ -7,6 +7,7 @@ import { save } from './storage.js';
 import { render } from './render.js';
 import { createCityPicker } from './citypicker.js';
 import { createAttachmentsField } from './attachments.js';
+import { lookupFlight, flightLookupEnabled } from './flightlookup.js';
 
 export function openEditor(id, addTarget) {
   const t = activeTrip();
@@ -59,6 +60,42 @@ export function openEditor(id, addTarget) {
   const dynamic = el('div', {});
   m.appendChild(dynamic);
 
+  // Flight lookup — fills times and airports from a flight number + date.
+  const lookupMsg = el('div', { class: 'vp-flight-msg' });
+  function setLookupMsg(text, isErr) {
+    lookupMsg.textContent = text;
+    lookupMsg.classList.toggle('vp-flight-msg-err', !!isErr);
+  }
+  const lookupBtn = el('button', { type: 'button', class: 'vp-flight-lookup' },
+    el('i', { class: 'ti ti-search' }), ' Look up flight times');
+  lookupBtn.addEventListener('click', async () => {
+    const num = flightNoIn.value.trim();
+    if (!num) { setLookupMsg('Enter a flight number first.', true); return; }
+    const date = (departIn.value || '').slice(0, 10);
+    if (!date) { setLookupMsg('Set the Depart date above first.', true); return; }
+    lookupBtn.disabled = true;
+    setLookupMsg('Looking up ' + num.toUpperCase() + '…', false);
+    try {
+      const leg = await lookupFlight(num, date);
+      flightNoIn.value = leg.flightNo;
+      if (leg.origin.dt) departIn.value = leg.origin.dt;
+      if (leg.dest.dt) arriveIn.value = leg.dest.dt;
+      originPicker.setValue({
+        city: leg.origin.city, timezone: leg.origin.timezone,
+        latitude: leg.origin.lat, longitude: leg.origin.lng
+      });
+      destPicker.setValue({
+        city: leg.dest.city, timezone: leg.dest.timezone,
+        latitude: leg.dest.lat, longitude: leg.dest.lng
+      });
+      if (!titleIn.value.trim() && leg.dest.city) titleIn.value = 'Flight to ' + leg.dest.city;
+      setLookupMsg((leg.airline ? leg.airline + ' — ' : '') + 'times and airports filled in.', false);
+    } catch (e) {
+      setLookupMsg(e.message || 'Lookup failed.', true);
+    }
+    lookupBtn.disabled = false;
+  });
+
   function renderDynamic() {
     dynamic.innerHTML = '';
     const tp = typeSel.value;
@@ -73,6 +110,10 @@ export function openEditor(id, addTarget) {
       dynamic.appendChild(departIn);
       dynamic.appendChild(el('label', {}, 'Arrive — local time at destination'));
       dynamic.appendChild(arriveIn);
+      if (tp === 'flight' && flightLookupEnabled()) {
+        setLookupMsg('', false);
+        dynamic.appendChild(el('div', { class: 'vp-flight-lookup-row' }, lookupBtn, lookupMsg));
+      }
     } else {
       dynamic.appendChild(cityLabel);
       dynamic.appendChild(cityIn);
