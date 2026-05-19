@@ -8,6 +8,7 @@ import { render } from './render.js';
 import { PLACE_CATEGORIES } from './constants.js';
 import { addCard } from './cards.js';
 import { weatherSummary } from './weather.js';
+import { deepLinksFor } from './deeplinks.js';
 
 // category -> card type, for turning a researched place into a trip card
 const CAT_TO_TYPE = {
@@ -213,6 +214,18 @@ function renderPlaceCard(p) {
     { href: navUrl(p), target: '_blank', rel: 'noopener', class: 'vp-place-link vp-place-nav' },
     el('i', { class: 'ti ti-navigation' }), 'Navigate'));
   card.appendChild(links);
+
+  // Category-aware search links into other travel apps.
+  const deep = deepLinksFor(p);
+  if (deep.length) {
+    const deepRow = el('div', { class: 'vp-place-deeplinks' });
+    deep.forEach(d => {
+      deepRow.appendChild(el('a',
+        { href: d.url, target: '_blank', rel: 'noopener', class: 'vp-place-deeplink' },
+        el('i', { class: 'ti ' + d.icon }), d.label));
+    });
+    card.appendChild(deepRow);
+  }
 
   if (p.notes) card.appendChild(el('div', { class: 'vp-place-notes' }, p.notes));
 

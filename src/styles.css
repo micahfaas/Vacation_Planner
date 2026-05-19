@@ -1019,6 +1019,22 @@ body.vp-signed-out .vp-header-actions {
   white-space: pre-wrap;
   word-break: break-word;
 }
+.vp-place-deeplinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 6px;
+}
+.vp-place-deeplink {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  color: var(--text-2);
+  text-decoration: none;
+}
+.vp-place-deeplink:hover { color: var(--accent); text-decoration: underline; }
+.vp-place-deeplink i { font-size: 12px; }
 .vp-place-actions {
   position: absolute;
   top: 8px;
