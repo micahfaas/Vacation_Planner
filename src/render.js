@@ -11,6 +11,7 @@ import { renderPlacesView } from './places.js';
 import { renderPlanView } from './plan.js';
 import { renderResourcesView } from './resources.js';
 import { renderRemindersView } from './reminders.js';
+import { confirmDialog } from './dialog.js';
 
 const root = document.getElementById('vp-root');
 
@@ -352,7 +353,7 @@ function renderSpanCard(id, colStart, colSpan, continuesLeft, continuesRight) {
 
   const actions = el('div', { class: 'vp-card-actions' });
   actions.appendChild(el('button', { title: 'Duplicate', 'aria-label': 'Duplicate card', onclick: e => { e.stopPropagation(); duplicateCard(id); } }, '⧉'));
-  actions.appendChild(el('button', { title: 'Delete', 'aria-label': 'Delete card', onclick: e => { e.stopPropagation(); if (confirm('Delete this card?')) removeCard(id); } }, '×'));
+  actions.appendChild(el('button', { title: 'Delete', 'aria-label': 'Delete card', onclick: e => { e.stopPropagation(); confirmDialog('Delete this card?', { danger: true, confirmText: 'Delete' }).then(ok => { if (ok) removeCard(id); }); } }, '×'));
   card.appendChild(actions);
 
   card.addEventListener('dragstart', e => {
@@ -392,7 +393,7 @@ function renderCard(id) {
 
   const actions = el('div', { class: 'vp-card-actions' });
   actions.appendChild(el('button', { title: 'Duplicate', 'aria-label': 'Duplicate card', onclick: e => { e.stopPropagation(); duplicateCard(id); } }, '⧉'));
-  actions.appendChild(el('button', { title: 'Delete', 'aria-label': 'Delete card', onclick: e => { e.stopPropagation(); if (confirm('Delete this card?')) removeCard(id); } }, '×'));
+  actions.appendChild(el('button', { title: 'Delete', 'aria-label': 'Delete card', onclick: e => { e.stopPropagation(); confirmDialog('Delete this card?', { danger: true, confirmText: 'Delete' }).then(ok => { if (ok) removeCard(id); }); } }, '×'));
   card.appendChild(actions);
 
   card.addEventListener('dragstart', e => {

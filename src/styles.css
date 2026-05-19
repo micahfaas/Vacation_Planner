@@ -568,6 +568,14 @@ a:focus-visible,
   font-size: 16px;
   font-weight: 500;
 }
+.vp-dialog { width: min(380px, 100%); }
+.vp-dialog-msg {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+  white-space: pre-wrap;
+}
 .vp-modal label {
   display: block;
   font-size: 11px;

@@ -3,6 +3,7 @@
 import { activeTrip } from './state.js';
 import { TYPES } from './constants.js';
 import { parseISO, addDays, isoDate } from './dates.js';
+import { alertDialog } from './dialog.js';
 
 function pad(n) { return String(n).padStart(2, '0'); }
 
@@ -115,7 +116,7 @@ export function exportICS() {
   lines.push('END:VCALENDAR');
 
   if (!count) {
-    alert('Nothing to export yet — drag some cards onto calendar days first.');
+    alertDialog('Nothing to export yet — drag some cards onto calendar days first.');
     return;
   }
 

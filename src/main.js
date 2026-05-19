@@ -10,6 +10,7 @@ import { exportICS } from './ics.js';
 import { openCurrencyConverter } from './currency.js';
 import { openTripsMenu } from './trips.js';
 import { loadSharedTrip, renderSharedTrip } from './share.js';
+import { confirmDialog } from './dialog.js';
 
 // Register the service worker for offline support (production builds only,
 // so it never interferes with the Vite dev server's hot reload).
@@ -57,7 +58,8 @@ function bootApp() {
 
   const accountBtn = document.getElementById('vp-account-btn');
   accountBtn.addEventListener('click', () => {
-    if (confirm('Sign out of Vacation Planner?')) signOut();
+    confirmDialog('Sign out of Vacation Planner?', { confirmText: 'Sign out' })
+      .then(ok => { if (ok) signOut(); });
   });
 
   async function showApp(user) {

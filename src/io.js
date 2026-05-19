@@ -2,6 +2,7 @@
 import { data, activeTrip } from './state.js';
 import { save, migrateCard, newTripId } from './storage.js';
 import { render } from './render.js';
+import { alertDialog } from './dialog.js';
 
 export function exportJSON() {
   const t = activeTrip();
@@ -43,7 +44,7 @@ export function importJSON(file) {
       data.activeTripId = id;
       save(); render();
     } catch (e) {
-      alert('Could not read that file: ' + e.message);
+      alertDialog('Could not read that file: ' + e.message);
     }
   };
   reader.readAsText(file);

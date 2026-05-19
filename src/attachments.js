@@ -2,6 +2,7 @@
 import { el } from './dom.js';
 import { supabase } from './supabase.js';
 import { getUserId } from './storage.js';
+import { alertDialog } from './dialog.js';
 
 const BUCKET = 'attachments';
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -34,7 +35,7 @@ export async function openAttachment(path) {
     if (tab) tab.location.href = data.signedUrl;
   } catch (e) {
     if (tab) tab.close();
-    alert('Could not open the file: ' + (e.message || e));
+    alertDialog('Could not open the file: ' + (e.message || e));
   }
 }
 

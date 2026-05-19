@@ -9,6 +9,7 @@ import { PLACE_CATEGORIES } from './constants.js';
 import { addCard } from './cards.js';
 import { weatherSummary } from './weather.js';
 import { deepLinksFor } from './deeplinks.js';
+import { confirmDialog } from './dialog.js';
 
 // category -> card type, for turning a researched place into a trip card
 const CAT_TO_TYPE = {
@@ -150,7 +151,10 @@ function openPlaceEditor(id) {
   if (!isNew) {
     leftBtns.appendChild(el('button', {
       class: 'vp-delete',
-      onclick: () => { if (confirm('Delete this place?')) { removePlace(id); bg.remove(); } }
+      onclick: () => {
+        confirmDialog('Delete this place?', { danger: true, confirmText: 'Delete' })
+          .then(ok => { if (ok) { removePlace(id); bg.remove(); } });
+      }
     }, 'Delete'));
   }
   actions.appendChild(leftBtns);
@@ -256,7 +260,11 @@ function renderPlaceCard(p) {
   }, '+ card'));
   actions.appendChild(el('button', {
     title: 'Delete', 'aria-label': 'Delete place',
-    onclick: e => { e.stopPropagation(); if (confirm('Delete this place?')) removePlace(p.id); }
+    onclick: e => {
+      e.stopPropagation();
+      confirmDialog('Delete this place?', { danger: true, confirmText: 'Delete' })
+        .then(ok => { if (ok) removePlace(p.id); });
+    }
   }, '×'));
   card.appendChild(actions);
 

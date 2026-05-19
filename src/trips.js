@@ -5,6 +5,7 @@ import { save, markTripDirty, markTripDeleted, newTripId } from './storage.js';
 import { render } from './render.js';
 import { fmtShort, parseISO, isoDate } from './dates.js';
 import { openShareDialog } from './share.js';
+import { confirmDialog, promptDialog } from './dialog.js';
 
 export function openTripsMenu() {
   const bg = el('div', { class: 'vp-modal-bg', onclick: e => { if (e.target === bg) bg.remove(); } });
@@ -36,10 +37,10 @@ export function openTripsMenu() {
     }, el('i', { class: 'ti ti-share', 'aria-hidden': 'true' })));
     itemActions.appendChild(el('button', {
       title: 'Rename', 'aria-label': 'Rename trip',
-      onclick: e => {
+      onclick: async e => {
         e.stopPropagation();
-        const name = prompt('Trip name', tr.name);
-        if (name) { tr.name = name.trim(); markTripDirty(tr.id); save(); openTripsMenu(); bg.remove(); }
+        const name = await promptDialog('Trip name', tr.name, { title: 'Rename trip' });
+        if (name && name.trim()) { tr.name = name.trim(); markTripDirty(tr.id); save(); openTripsMenu(); bg.remove(); }
       }
     }, el('i', { class: 'ti ti-edit' })));
     if (Object.keys(data.trips).length > 1) {
@@ -47,14 +48,16 @@ export function openTripsMenu() {
         title: 'Delete', 'aria-label': 'Delete trip',
         onclick: e => {
           e.stopPropagation();
-          if (confirm('Delete trip "' + tr.name + '" and all its cards?')) {
+          confirmDialog('Delete trip “' + tr.name + '” and all its cards?',
+            { danger: true, confirmText: 'Delete' }).then(ok => {
+            if (!ok) return;
             markTripDeleted(tr.id);
             delete data.trips[tr.id];
             if (data.activeTripId === tr.id) {
               data.activeTripId = Object.keys(data.trips)[0];
             }
             save(); render(); bg.remove();
-          }
+          });
         }
       }, el('i', { class: 'ti ti-trash' })));
     }
@@ -69,9 +72,9 @@ export function openTripsMenu() {
   right.appendChild(el('button', { onclick: () => bg.remove() }, 'Close'));
   right.appendChild(el('button', {
     class: 'vp-save',
-    onclick: () => {
-      const name = prompt('Name for new trip', 'New trip');
-      if (!name) return;
+    onclick: async () => {
+      const name = await promptDialog('Name for new trip', 'New trip', { title: 'New trip' });
+      if (!name || !name.trim()) return;
       const id = newTripId();
       const today = new Date();
       const end = new Date(today); end.setDate(end.getDate() + 13);

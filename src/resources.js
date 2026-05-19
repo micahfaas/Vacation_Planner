@@ -5,6 +5,7 @@ import { el } from './dom.js';
 import { save } from './storage.js';
 import { render } from './render.js';
 import { createAttachmentsField, openAttachment } from './attachments.js';
+import { confirmDialog } from './dialog.js';
 
 function normalizeUrl(u) {
   if (!u) return '';
@@ -94,7 +95,10 @@ function openLinkEditor(id) {
   if (!isNew) {
     left.appendChild(el('button', {
       class: 'vp-delete',
-      onclick: () => { if (confirm('Delete this link?')) { removeLink(id); bg.remove(); } }
+      onclick: () => {
+        confirmDialog('Delete this link?', { danger: true, confirmText: 'Delete' })
+          .then(ok => { if (ok) { removeLink(id); bg.remove(); } });
+      }
     }, 'Delete'));
   }
   actions.appendChild(left);
@@ -154,7 +158,10 @@ function openTicketEditor(id) {
   if (!isNew) {
     left.appendChild(el('button', {
       class: 'vp-delete',
-      onclick: () => { if (confirm('Delete this ticket?')) { removeTicket(id); bg.remove(); } }
+      onclick: () => {
+        confirmDialog('Delete this ticket?', { danger: true, confirmText: 'Delete' })
+          .then(ok => { if (ok) { removeTicket(id); bg.remove(); } });
+      }
     }, 'Delete'));
   }
   actions.appendChild(left);
@@ -207,7 +214,11 @@ function renderLinkRow(l) {
   const actions = el('div', { class: 'vp-res-link-actions' });
   actions.appendChild(el('button', {
     title: 'Delete', 'aria-label': 'Delete link',
-    onclick: e => { e.stopPropagation(); if (confirm('Delete this link?')) removeLink(l.id); }
+    onclick: e => {
+      e.stopPropagation();
+      confirmDialog('Delete this link?', { danger: true, confirmText: 'Delete' })
+        .then(ok => { if (ok) removeLink(l.id); });
+    }
   }, '×'));
   row.appendChild(actions);
   return row;
@@ -250,7 +261,11 @@ function renderTicketCard(tk) {
   const actions = el('div', { class: 'vp-place-actions' });
   actions.appendChild(el('button', {
     title: 'Delete', 'aria-label': 'Delete ticket',
-    onclick: e => { e.stopPropagation(); if (confirm('Delete this ticket?')) removeTicket(tk.id); }
+    onclick: e => {
+      e.stopPropagation();
+      confirmDialog('Delete this ticket?', { danger: true, confirmText: 'Delete' })
+        .then(ok => { if (ok) removeTicket(tk.id); });
+    }
   }, '×'));
   card.appendChild(actions);
   return card;

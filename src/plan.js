@@ -7,6 +7,7 @@ import { save } from './storage.js';
 import { render } from './render.js';
 import { addCard } from './cards.js';
 import { isoDate, parseISO, addDays, fmtShort } from './dates.js';
+import { confirmDialog, alertDialog } from './dialog.js';
 
 function plan() {
   const t = activeTrip();
@@ -132,16 +133,18 @@ function starsView(val) {
 // Schedules each stop's transport + lodging onto real calendar dates, walking
 // a cursor from the draft's start date (or the trip start) by each stop's
 // nights. The trip window is widened so every placed card stays visible.
-function sendDraftToCalendar(d) {
+async function sendDraftToCalendar(d) {
   const t = activeTrip();
   const startISO = d.startDate || t.startDate;
   if (!startISO) {
-    alert('Set a start date on this draft (Edit draft) so its stops can be placed on the calendar.');
+    alertDialog('Set a start date on this draft (Edit draft) so its stops can be placed on the calendar.');
     return;
   }
   const stops = d.stops || [];
   if (!stops.length) return;
-  if (!confirm('Add this draft’s stops to the calendar? Your existing cards are kept.')) return;
+  const go = await confirmDialog('Add this draft’s stops to the calendar? Your existing cards are kept.',
+    { confirmText: 'Add to calendar' });
+  if (!go) return;
 
   ui.view = 'calendar';
   let cursor = parseISO(startISO);
@@ -223,7 +226,10 @@ function openDraftEditor(id) {
   const left = el('div', { style: { display: 'flex', gap: '8px' } });
   left.appendChild(el('button', {
     class: 'vp-delete',
-    onclick: () => { if (confirm('Delete this draft?')) { removeDraft(id); bg.remove(); } }
+    onclick: () => {
+      confirmDialog('Delete this draft?', { danger: true, confirmText: 'Delete' })
+        .then(ok => { if (ok) { removeDraft(id); bg.remove(); } });
+    }
   }, 'Delete'));
   actions.appendChild(left);
   const right = el('div', { class: 'vp-right' });
@@ -295,7 +301,10 @@ function openStopEditor(draftId, stopId) {
   const left = el('div', { style: { display: 'flex', gap: '8px' } });
   left.appendChild(el('button', {
     class: 'vp-delete',
-    onclick: () => { if (confirm('Delete this stop?')) { removeStop(draftId, stopId); bg.remove(); } }
+    onclick: () => {
+      confirmDialog('Delete this stop?', { danger: true, confirmText: 'Delete' })
+        .then(ok => { if (ok) { removeStop(draftId, stopId); bg.remove(); } });
+    }
   }, 'Delete'));
   actions.appendChild(left);
   const right = el('div', { class: 'vp-right' });
@@ -379,7 +388,11 @@ function renderStopBlock(draft, stop, dayCursor) {
 
   block.appendChild(el('button', {
     class: 'vp-stop-rm', title: 'Remove stop', 'aria-label': 'Remove stop',
-    onclick: e => { e.stopPropagation(); if (confirm('Remove this stop?')) removeStop(draft.id, stop.id); }
+    onclick: e => {
+      e.stopPropagation();
+      confirmDialog('Remove this stop?', { danger: true, confirmText: 'Remove' })
+        .then(ok => { if (ok) removeStop(draft.id, stop.id); });
+    }
   }, '×'));
   return block;
 }
@@ -399,7 +412,10 @@ function renderDraftColumn(draft) {
   }, '⧉'));
   headActions.appendChild(el('button', {
     title: 'Delete', 'aria-label': 'Delete draft',
-    onclick: () => { if (confirm('Delete this draft?')) removeDraft(draft.id); }
+    onclick: () => {
+      confirmDialog('Delete this draft?', { danger: true, confirmText: 'Delete' })
+        .then(ok => { if (ok) removeDraft(draft.id); });
+    }
   }, '×'));
   head.appendChild(headActions);
   col.appendChild(head);

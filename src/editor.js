@@ -8,6 +8,7 @@ import { render } from './render.js';
 import { createCityPicker } from './citypicker.js';
 import { createAttachmentsField } from './attachments.js';
 import { lookupFlight, flightLookupEnabled } from './flightlookup.js';
+import { confirmDialog } from './dialog.js';
 
 export function openEditor(id, addTarget) {
   const t = activeTrip();
@@ -157,7 +158,10 @@ export function openEditor(id, addTarget) {
     }, 'Duplicate'));
     leftBtns.appendChild(el('button', {
       class: 'vp-delete',
-      onclick: () => { if (confirm('Delete this card?')) { removeCard(id); bg.remove(); } }
+      onclick: () => {
+        confirmDialog('Delete this card?', { danger: true, confirmText: 'Delete' })
+          .then(ok => { if (ok) { removeCard(id); bg.remove(); } });
+      }
     }, 'Delete'));
   }
   actions.appendChild(leftBtns);
