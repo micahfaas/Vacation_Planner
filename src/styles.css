@@ -1233,6 +1233,42 @@ body.vp-signed-out .vp-header-actions {
 .vp-cost-row { display: flex; gap: 8px; }
 .vp-cost-row input { flex: 1; }
 .vp-cost-row select { flex: 0 0 110px; }
+
+/* currency converter */
+.vp-cc-row { display: flex; gap: 8px; align-items: center; }
+.vp-cc-row select { flex: 1; min-width: 0; }
+.vp-cc-swap {
+  all: unset;
+  cursor: pointer;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-2);
+}
+.vp-cc-swap:hover { background: var(--surface-2); color: var(--text); }
+.vp-cc-result {
+  margin-top: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: center;
+  padding: 14px 12px;
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+}
+.vp-cc-date {
+  font-size: 11px;
+  color: var(--text-3);
+  margin-top: 6px;
+  text-align: center;
+}
+.vp-cc-status { font-size: 12px; color: var(--text-2); margin: 8px 0; }
+.vp-cc-status-err { color: var(--danger); }
 .vp-plan-section {
   font-size: 11px;
   font-weight: 600;
