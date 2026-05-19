@@ -8,7 +8,7 @@ import { render } from './render.js';
 import { TYPES } from './constants.js';
 import { isoDate, parseISO, addDays, fmtShort } from './dates.js';
 import { importJSON } from './io.js';
-import { parseText, parseICS } from './import-formats.js';
+import { parseText, parseICS, parsePkpass } from './import-formats.js';
 import { alertDialog } from './dialog.js';
 
 export function openImportModal() {
@@ -46,8 +46,8 @@ export function openImportModal() {
       method('ti-clipboard-text', 'Paste text',
         'A confirmation email or itinerary — anything', showPaste),
       method('ti-file-upload', 'Upload a file',
-        'Calendar invite (.ics) or a trip backup (.json)',
-        () => pickFile('.ics,.json,text/calendar,application/json')));
+        'Calendar invite (.ics), Wallet pass (.pkpass), or a trip backup (.json)',
+        () => pickFile('.ics,.pkpass,.json,text/calendar,application/json')));
     setBody(el('h3', {}, 'Import into this trip'), list, actions([cancelBtn()]));
   }
 
@@ -90,6 +90,10 @@ export function openImportModal() {
       }
       if (name.endsWith('.ics') || file.type === 'text/calendar') {
         review(parseICS(await file.text()));
+        return;
+      }
+      if (name.endsWith('.pkpass') || file.type === 'application/vnd.apple.pkpass') {
+        review(parsePkpass(await file.arrayBuffer()));
         return;
       }
       showMessage('That file type is not supported yet.');
