@@ -1009,6 +1009,15 @@ body.vp-signed-out .vp-header-actions {
   margin-bottom: 4px;
 }
 .vp-place-loc-warn { color: var(--warning); }
+.vp-place-weather {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+.vp-place-weather i { font-size: 15px; color: var(--accent); }
 
 /* places map */
 .vp-map {

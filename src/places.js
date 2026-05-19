@@ -7,6 +7,7 @@ import { save } from './storage.js';
 import { render } from './render.js';
 import { PLACE_CATEGORIES } from './constants.js';
 import { addCard } from './cards.js';
+import { weatherSummary } from './weather.js';
 
 // category -> card type, for turning a researched place into a trip card
 const CAT_TO_TYPE = {
@@ -214,6 +215,23 @@ function renderPlaceCard(p) {
   card.appendChild(links);
 
   if (p.notes) card.appendChild(el('div', { class: 'vp-place-notes' }, p.notes));
+
+  // Weather outlook for the trip dates — filled in asynchronously.
+  if (typeof p.lat === 'number' && typeof p.lng === 'number') {
+    const wx = el('div', { class: 'vp-place-weather' });
+    card.appendChild(wx);
+    const t = activeTrip();
+    weatherSummary(p.lat, p.lng, t.startDate, t.endDate).then(s => {
+      if (!s) { wx.remove(); return; }
+      const label = s.kind === 'forecast' ? 'forecast'
+        : s.kind === 'recorded' ? 'recorded' : 'typical · last yr';
+      wx.appendChild(el('i', { class: 'ti ' + s.icon }));
+      wx.appendChild(el('span', {},
+        s.hi + '° / ' + s.lo + '°F · ' +
+        s.rainDays + (s.rainDays === 1 ? ' rainy day' : ' rainy days') +
+        ' · ' + label));
+    });
+  }
 
   const actions = el('div', { class: 'vp-place-actions' });
   actions.appendChild(el('button', {
