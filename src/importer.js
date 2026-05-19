@@ -46,8 +46,8 @@ export function openImportModal() {
       method('ti-clipboard-text', 'Paste text',
         'A confirmation email or itinerary — anything', showPaste),
       method('ti-file-upload', 'Upload a file',
-        'Calendar invite (.ics), Wallet pass (.pkpass), or a trip backup (.json)',
-        () => pickFile('.ics,.pkpass,.json,text/calendar,application/json')));
+        'PDF e-ticket, calendar invite (.ics), Wallet pass (.pkpass), or trip backup (.json)',
+        () => pickFile('.pdf,.ics,.pkpass,.json,application/pdf,text/calendar,application/json')));
     setBody(el('h3', {}, 'Import into this trip'), list, actions([cancelBtn()]));
   }
 
@@ -94,6 +94,12 @@ export function openImportModal() {
       }
       if (name.endsWith('.pkpass') || file.type === 'application/vnd.apple.pkpass') {
         review(parsePkpass(await file.arrayBuffer()));
+        return;
+      }
+      if (name.endsWith('.pdf') || file.type === 'application/pdf') {
+        showStatus('Reading the PDF…');
+        const { extractPdfText } = await import('./import-pdf.js');
+        review(parseText(await extractPdfText(await file.arrayBuffer())));
         return;
       }
       showMessage('That file type is not supported yet.');
@@ -172,6 +178,10 @@ export function openImportModal() {
       el('p', { class: 'vp-imp-msg' }, msg),
       actions([backBtn(), el('button', { onclick: close }, 'Close')])
     );
+  }
+
+  function showStatus(msg) {
+    setBody(el('h3', {}, 'Import'), el('div', { class: 'vp-imp-status' }, msg));
   }
 
   showPicker();
