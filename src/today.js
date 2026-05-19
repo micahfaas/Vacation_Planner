@@ -7,7 +7,7 @@ import { activeTrip, ui } from './state.js';
 import { TYPES } from './constants.js';
 import { el } from './dom.js';
 import { isoDate, parseISO, addDays, timeToMin } from './dates.js';
-import { cardSpan } from './derived.js';
+import { cardSpan, todayInTrip } from './derived.js';
 import { wallClockToUTC } from './timezone.js';
 import { openEditor } from './editor.js';
 import { openAttachment } from './attachments.js';
@@ -18,6 +18,15 @@ let viewISO = '';
 
 function isLive() {
   return viewISO === isoDate(new Date());
+}
+
+// The day the view should land on: a still-valid scrub target if one is set,
+// otherwise today while the trip is underway, otherwise the trip's first day.
+function defaultDayISO(t) {
+  const realToday = isoDate(new Date());
+  if (ui.dayDate && ui.dayDate >= t.startDate && ui.dayDate <= t.endDate) return ui.dayDate;
+  if (realToday >= t.startDate && realToday <= t.endDate) return realToday;
+  return t.startDate;
 }
 
 // ---------- formatting ----------
@@ -305,7 +314,8 @@ function buildHeader(t, entries, live) {
   dateWrap.appendChild(el('div', { class: 'vp-today-sub' }, tripContext(t, entries)));
   nav.appendChild(dateWrap);
 
-  if (!live) {
+  // Offered only when there is a real "today" inside the trip to snap back to.
+  if (!live && todayInTrip()) {
     nav.appendChild(el('button', {
       class: 'vp-today-todaybtn', onclick: backToToday
     }, 'Today'));
@@ -350,10 +360,13 @@ function tick() {
 // Built by render() when the Today view is active.
 export function renderTodayView() {
   const t = activeTrip();
-  const realToday = isoDate(new Date());
-  // A stored scrub date is honored only while it stays inside the trip.
-  viewISO = (ui.dayDate && ui.dayDate >= t.startDate && ui.dayDate <= t.endDate)
-    ? ui.dayDate : realToday;
+  if (!t.startDate || !t.endDate || t.endDate < t.startDate) {
+    const panel = el('div', { class: 'vp-today' });
+    panel.appendChild(el('div', { class: 'vp-today-empty' },
+      'Set the trip’s start and end dates on the Calendar to use the Day view.'));
+    return panel;
+  }
+  viewISO = defaultDayISO(t);
   const live = isLive();
 
   const entries = collectEntries();

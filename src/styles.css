@@ -329,6 +329,16 @@ a:focus-visible,
   font-size: var(--text-base);
   cursor: help;
 }
+/* Clickable date label — opens the Day view for that date. */
+.vp-day-open {
+  all: unset;
+  cursor: pointer;
+  border-radius: 3px;
+  padding: 1px 5px;
+  margin-left: -5px;
+  transition: background 0.12s;
+}
+.vp-day-open:hover { background: var(--accent-bg); }
 
 .vp-card {
   background: var(--surface-2);

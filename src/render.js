@@ -25,25 +25,24 @@ export function render() {
   document.getElementById('vp-trip-name').textContent = t.name;
   root.innerHTML = '';
 
-  // Today is only offered while the current date is inside the trip.
-  const canToday = todayInTrip();
-  if (ui.view === 'today' && !canToday) ui.view = 'calendar';
+  // At boot, open straight into day-of mode when the trip is already underway.
   if (!viewPicked) {
     viewPicked = true;
-    if (canToday) ui.view = 'today';
+    if (todayInTrip()) ui.view = 'today';
   }
 
   // toolbar with the view toggle
   const tb = el('div', { class: 'vp-toolbar' });
   const toggle = el('div', { class: 'vp-view-toggle' });
-  const tabs = [];
-  if (canToday) tabs.push(['today', 'Today']);
-  tabs.push(['calendar', 'Calendar'], ['places', 'Places'], ['plan', 'Plan'], ['resources', 'Resources'], ['reminders', 'Reminders']);
+  const tabs = [
+    ['today', 'Day'], ['calendar', 'Calendar'], ['places', 'Places'],
+    ['plan', 'Plan'], ['resources', 'Resources'], ['reminders', 'Reminders']
+  ];
   tabs.forEach(([v, label]) => {
     toggle.appendChild(el('button', {
       class: 'vp-view-btn' + (ui.view === v ? ' vp-view-on' : ''),
       onclick: () => {
-        if (v === 'today') ui.dayDate = null; // the Today tab always lands on today
+        if (v === 'today') ui.dayDate = null; // the Day tab lands on today / trip start
         ui.view = v;
         render();
       }
@@ -197,7 +196,14 @@ function calendarGrid() {
       });
       const headRow = el('div', { class: 'vp-day-num' });
       const lbl = d.getDate() === 1 || iso === t.startDate ? fmtShort(d) : String(d.getDate());
-      headRow.appendChild(el('span', {}, lbl));
+      if (out) {
+        headRow.appendChild(el('span', {}, lbl));
+      } else {
+        headRow.appendChild(el('button', {
+          class: 'vp-day-open', title: 'Open this day in the Day view',
+          onclick: () => { ui.dayDate = iso; ui.view = 'today'; render(); }
+        }, lbl));
+      }
       if (conflicts[iso] && !out) {
         headRow.appendChild(el('i', { class: 'ti ti-alert-triangle vp-conflict-ico', title: 'Time overlap on this day' }));
       }
@@ -251,8 +257,10 @@ function agendaList() {
       'data-date': iso
     });
     const head = el('div', { class: 'vp-agenda-day-head' });
-    head.appendChild(el('span', {},
-      d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })));
+    head.appendChild(el('button', {
+      class: 'vp-day-open', title: 'Open this day in the Day view',
+      onclick: () => { ui.dayDate = iso; ui.view = 'today'; render(); }
+    }, d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })));
     if (conflicts[iso]) {
       head.appendChild(el('i', {
         class: 'ti ti-alert-triangle vp-conflict-ico', title: 'Time overlap on this day'
