@@ -392,7 +392,8 @@ function buildDemoTrip() {
           id: crypto.randomUUID(),
           city: 'Sevilla', nights: 3,
           transport: { label: 'AVE Madrid → Sevilla', cost: 80, costUnit: 'usd', stars: 5 },
-          lodging: { label: 'Hotel Alfonso XIII', cost: 1200, costUnit: 'usd', stars: 5,
+          lodging: { label: 'Hotel Alfonso XIII (Marriott Luxury Collection)',
+            cost: 240000, costUnit: 'points', pointsProgram: 'Bonvoy', stars: 5,
             url: 'https://www.hotel-alfonsoxiii-seville.com/' }
         },
         {
@@ -409,8 +410,9 @@ function buildDemoTrip() {
       name: 'Route C — Same as A, cheaper multi-leg flights',
       stars: 3,
       startDate: '2026-08-01',
-      notes: 'Identical ground itinerary to Route A, but swaps the single overnight SEA → MAD flight for a longer 3-leg path: RDM → PDX → AMS → MAD outbound, MAD → AMS → SEA → RDM home. Saves roughly $400 round-trip but adds ~9 hours of total travel and two extra layovers. Better as a backup if direct Iberia award space is closed.',
-      returnTransport: { label: 'AVE Granada → MAD · KL 1702 MAD → AMS · DL 87 AMS → PDX · AS 2306 PDX → RDM', cost: 700, costUnit: 'usd', stars: 2 },
+      notes: 'Identical ground itinerary to Route A, but a 3-leg outbound (RDM → PDX → AMS → MAD) and a Flying Blue award redemption on the return. The miles burn the home leg almost for free in cash; outbound stays cheap. Total cash drops vs Route A — at the cost of ~9 hours extra travel and two layovers.',
+      returnTransport: { label: 'AVE Granada → MAD · KL 1702 MAD → AMS · DL 87 AMS → PDX · AS 2306 PDX → RDM',
+        cost: 60000, costUnit: 'points', pointsProgram: 'Flying Blue', cashTaxes: 290, stars: 3 },
       stops: [
         {
           id: crypto.randomUUID(),
@@ -437,16 +439,18 @@ function buildDemoTrip() {
     },
     {
       id: crypto.randomUUID(),
-      name: 'Route B — Madrid → Granada → Sevilla',
-      stars: 3,
+      name: 'Route B — Stretch your points',
+      stars: 4,
       startDate: '2026-08-01',
-      notes: 'Visits Granada earlier when energy is highest (Alhambra is a lot). Sevilla last means flying home via SVQ → MAD on day 10, which adds one extra short flight vs. Route A. Trade-off: ends with hotter, lower-key Sevilla evenings instead of Granada views.',
-      returnTransport: { label: 'IB 8521 SVQ → MAD · IB 6173 MAD → SEA · AS 2422 SEA → RDM', cost: 1250, costUnit: 'usd', stars: 3 },
+      notes: 'Same three cities as Route A but reordered Madrid → Granada → Sevilla so Granada (the most demanding) lands while energy is highest. Built to burn points: both Iberia long-haul flights on Avios, both nice hotels on Marriott Bonvoy. Out-of-pocket cash drops by roughly 60% vs Route A — at the cost of award-availability risk on the dates and a SVQ → MAD connection on the way home.',
+      returnTransport: { label: 'IB 8521 SVQ → MAD · IB 6173 MAD → SEA · AS 2422 SEA → RDM',
+        cost: 64000, costUnit: 'points', pointsProgram: 'Avios', cashTaxes: 480, stars: 3 },
       stops: [
         {
           id: crypto.randomUUID(),
           city: 'Madrid', nights: 3,
-          transport: { label: 'IB 6172 SEA → MAD (overnight)', cost: 1200, costUnit: 'usd', stars: 4 },
+          transport: { label: 'IB 6172 SEA → MAD (overnight)',
+            cost: 68000, costUnit: 'points', pointsProgram: 'Avios', cashTaxes: 420, stars: 4 },
           lodging: { label: 'Hotel Único Madrid', cost: 750, costUnit: 'usd', stars: 4,
             url: 'https://www.unicohotelmadrid.com/' }
         },
@@ -454,14 +458,16 @@ function buildDemoTrip() {
           id: crypto.randomUUID(),
           city: 'Granada', nights: 3,
           transport: { label: 'AVE Madrid → Granada', cost: 90, costUnit: 'usd', stars: 4 },
-          lodging: { label: 'Parador de Granada', cost: 1200, costUnit: 'usd', stars: 5,
-            url: 'https://www.parador.es/en/paradores/parador-de-granada' }
+          lodging: { label: 'AC Hotel Granada Palacio de Santa Paula (Marriott)',
+            cost: 180000, costUnit: 'points', pointsProgram: 'Bonvoy', stars: 5,
+            url: 'https://www.marriott.com/' }
         },
         {
           id: crypto.randomUUID(),
           city: 'Sevilla', nights: 2,
           transport: { label: 'AVE Granada → Sevilla (via Antequera)', cost: 75, costUnit: 'usd', stars: 4 },
-          lodging: { label: 'Hotel Alfonso XIII', cost: 800, costUnit: 'usd', stars: 5,
+          lodging: { label: 'Hotel Alfonso XIII (Marriott Luxury Collection)',
+            cost: 160000, costUnit: 'points', pointsProgram: 'Bonvoy', stars: 5,
             url: 'https://www.hotel-alfonsoxiii-seville.com/' }
         }
       ]

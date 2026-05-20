@@ -78,14 +78,26 @@ function removeStop(draftId, stopId) {
 }
 
 // ---------- derived ----------
+// A cost slot can hold:
+//   - cash:     cost > 0 and costUnit === 'usd'   → usd
+//   - points:   cost > 0 and costUnit === 'points' → goes to pointsByProgram[pointsProgram || 'Points']
+//   - taxes:    cashTaxes > 0 → usd (always; real-world award redemptions carry cash taxes)
 function addCost(x, totals) {
-  const c = x && parseFloat(x.cost);
-  if (!c || c < 0) return;
-  if (x.costUnit === 'points') totals.points += c;
-  else totals.usd += c;
+  if (!x) return;
+  const c = parseFloat(x.cost);
+  if (c > 0) {
+    if (x.costUnit === 'points') {
+      const prog = (x.pointsProgram || 'Points').trim() || 'Points';
+      totals.pointsByProgram[prog] = (totals.pointsByProgram[prog] || 0) + c;
+    } else {
+      totals.usd += c;
+    }
+  }
+  const tax = parseFloat(x.cashTaxes);
+  if (tax > 0) totals.usd += tax;
 }
 function draftTotals(d) {
-  const totals = { usd: 0, points: 0, nights: 0 };
+  const totals = { usd: 0, pointsByProgram: {}, nights: 0 };
   (d.stops || []).forEach(s => {
     totals.nights += parseInt(s.nights, 10) || 0;
     addCost(s.transport, totals);
@@ -93,6 +105,12 @@ function draftTotals(d) {
   });
   if (d.returnTransport) addCost(d.returnTransport, totals);
   return totals;
+}
+
+// Abbreviate large point counts: 240000 → "240k", 1500 → "1,500".
+function fmtPoints(n) {
+  if (n >= 10000) return Math.round(n / 1000) + 'k';
+  return Math.round(n).toLocaleString();
 }
 
 // Find lat/lng for a city by matching against the trip's saved places.
@@ -118,10 +136,13 @@ function tripWindowDays() {
   return Math.round((parseISO(t.endDate) - parseISO(t.startDate)) / 86400000) + 1;
 }
 
-function fmtCost(usd, points) {
+function fmtCost(usd, pointsByProgram) {
   const bits = [];
   if (usd) bits.push('$' + Math.round(usd).toLocaleString());
-  if (points) bits.push(Math.round(points).toLocaleString() + ' pts');
+  Object.keys(pointsByProgram || {}).sort().forEach(prog => {
+    const n = pointsByProgram[prog];
+    if (n > 0) bits.push(fmtPoints(n) + ' ' + prog);
+  });
   return bits.length ? bits.join('  +  ') : '—';
 }
 
@@ -376,11 +397,20 @@ function openStopEditor(draftId, stopId) {
 
 // ---------- rendering ----------
 function costLabel(x) {
-  const c = x && parseFloat(x.cost);
-  if (!c || c < 0) return '';
-  return x.costUnit === 'points'
-    ? Math.round(c).toLocaleString() + ' pts'
-    : '$' + Math.round(c).toLocaleString();
+  if (!x) return '';
+  const c = parseFloat(x.cost);
+  const tax = parseFloat(x.cashTaxes);
+  const parts = [];
+  if (c > 0) {
+    if (x.costUnit === 'points') {
+      const prog = (x.pointsProgram || '').trim();
+      parts.push(Math.round(c).toLocaleString() + (prog ? ' ' + prog : ' pts'));
+    } else {
+      parts.push('$' + Math.round(c).toLocaleString());
+    }
+  }
+  if (tax > 0) parts.push('+ $' + Math.round(tax).toLocaleString());
+  return parts.join(' ');
 }
 
 function renderStopBlock(draft, stop, dayCursor) {
@@ -502,7 +532,7 @@ function renderDraftColumn(draft) {
 
   const totals = draftTotals(draft);
   const foot = el('div', { class: 'vp-draft-foot' });
-  foot.appendChild(el('div', { class: 'vp-draft-total' }, fmtCost(totals.usd, totals.points)));
+  foot.appendChild(el('div', { class: 'vp-draft-total' }, fmtCost(totals.usd, totals.pointsByProgram)));
   foot.appendChild(el('div', { class: 'vp-draft-nights' },
     totals.nights + (totals.nights === 1 ? ' night total' : ' nights total')));
 
