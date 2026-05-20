@@ -257,6 +257,7 @@ function buildDemoTrip() {
   place({
     name: 'Mercado de San Miguel', category: 'restaurant', city: 'Madrid',
     address: 'Plaza de San Miguel, 28005 Madrid, Spain',
+    lat: 40.41535, lng: -3.70923,
     url: 'https://www.google.com/maps/search/?api=1&query=Mercado+de+San+Miguel+Madrid',
     website: 'https://www.mercadodesanmiguel.es/',
     notes: 'Iconic food market just off Plaza Mayor. Croquetas at El Imparcial stall.'
@@ -264,18 +265,21 @@ function buildDemoTrip() {
   place({
     name: 'Templo de Debod', category: 'attraction', city: 'Madrid',
     address: 'Calle de Ferraz 1, 28008 Madrid, Spain',
+    lat: 40.42434, lng: -3.71778,
     url: 'https://www.google.com/maps/search/?api=1&query=Templo+de+Debod+Madrid',
     notes: 'Ancient Egyptian temple — best at sunset.'
   });
   place({
     name: 'El Rastro flea market', category: 'shop', city: 'Madrid',
     address: 'Calle de la Ribera de Curtidores, Madrid, Spain',
+    lat: 40.40869, lng: -3.70846,
     url: 'https://www.google.com/maps/search/?api=1&query=El+Rastro+Madrid',
     notes: 'Sundays only, 9am–3pm. Bring small bills.'
   });
   place({
     name: 'Café del Príncipe', category: 'cafe', city: 'Madrid',
     address: 'Plaza Canalejas 5, 28014 Madrid, Spain',
+    lat: 40.41703, lng: -3.70113,
     url: 'https://www.google.com/maps/search/?api=1&query=Cafe+del+Principe+Madrid',
     notes: 'Quiet old-school café off Puerta del Sol.'
   });
@@ -284,12 +288,14 @@ function buildDemoTrip() {
   place({
     name: 'Casa de Pilatos', category: 'attraction', city: 'Sevilla',
     address: 'Plaza de Pilatos 1, 41003 Sevilla, Spain',
+    lat: 37.38929, lng: -5.98712,
     url: 'https://www.google.com/maps/search/?api=1&query=Casa+de+Pilatos+Sevilla',
     notes: 'Mudéjar palace, smaller and quieter than the Alcázar.'
   });
   place({
     name: 'Eslava', category: 'restaurant', city: 'Sevilla',
     address: 'Calle Eslava 3, 41002 Sevilla, Spain',
+    lat: 37.39989, lng: -5.99662,
     url: 'https://www.google.com/maps/search/?api=1&query=Eslava+Sevilla',
     website: 'https://www.espacioeslava.com/',
     notes: 'Award-winning yolk on caramelized boletus toast.'
@@ -297,12 +303,14 @@ function buildDemoTrip() {
   place({
     name: 'Bar El Comercio', category: 'cafe', city: 'Sevilla',
     address: 'Calle Lineros 9, 41004 Sevilla, Spain',
+    lat: 37.38943, lng: -5.99052,
     url: 'https://www.google.com/maps/search/?api=1&query=Bar+El+Comercio+Sevilla',
     notes: 'Best churros in town. Tiled walls from 1904.'
   });
   place({
     name: 'Hospital de los Venerables', category: 'attraction', city: 'Sevilla',
     address: 'Plaza de los Venerables 8, 41004 Sevilla, Spain',
+    lat: 37.38553, lng: -5.99117,
     url: 'https://www.google.com/maps/search/?api=1&query=Hospital+de+los+Venerables+Sevilla',
     notes: 'Baroque hospital with Velázquez paintings in Santa Cruz.'
   });
@@ -311,27 +319,95 @@ function buildDemoTrip() {
   place({
     name: 'Carmen de los Mártires', category: 'attraction', city: 'Granada',
     address: 'Paseo de los Mártires, 18009 Granada, Spain',
+    lat: 37.17382, lng: -3.59446,
     url: 'https://www.google.com/maps/search/?api=1&query=Carmen+de+los+Martires+Granada',
     notes: 'Free romantic gardens near the Alhambra. Peacocks roam.'
   });
   place({
     name: 'La Tetería del Bañuelo', category: 'cafe', city: 'Granada',
     address: 'Carrera del Darro 39, 18010 Granada, Spain',
+    lat: 37.17873, lng: -3.59194,
     url: 'https://www.google.com/maps/search/?api=1&query=Teteria+del+Banuelo+Granada',
     notes: 'Moroccan-style teahouse in the Albayzín.'
   });
   place({
     name: 'Bar Aliatar', category: 'bar', city: 'Granada',
     address: 'Plaza de Aliatar, 18010 Granada, Spain',
+    lat: 37.18001, lng: -3.58968,
     url: 'https://www.google.com/maps/search/?api=1&query=Bar+Aliatar+Granada',
     notes: 'Free tapa with every drink — local tradition still alive here.'
   });
   place({
     name: 'Catedral de Granada', category: 'attraction', city: 'Granada',
     address: 'Calle Gran Vía de Colón 5, 18001 Granada, Spain',
+    lat: 37.17679, lng: -3.59854,
     url: 'https://www.google.com/maps/search/?api=1&query=Catedral+de+Granada',
     notes: 'Royal Chapel: tombs of Ferdinand & Isabella.'
   });
+
+  // ---------- Itinerary drafts (two routes to compare) ----------
+  trip.plan.drafts = [
+    {
+      id: crypto.randomUUID(),
+      name: 'Route A — Madrid → Sevilla → Granada',
+      stars: 5,
+      startDate: '2026-08-01',
+      notes: 'Goes north→south then east. Sevilla → Granada is the new direct AVE (~2h 50m via Antequera). Return flight leaves from Madrid, so day 10 is Granada → Madrid by AVE in the morning then home. This is the chosen plan.',
+      stops: [
+        {
+          id: crypto.randomUUID(),
+          city: 'Madrid', nights: 3,
+          transport: { label: 'IB 6172 SEA → MAD (overnight)', cost: 1200, costUnit: 'usd', stars: 4 },
+          lodging: { label: 'Hotel Único Madrid', cost: 750, costUnit: 'usd', stars: 4,
+            url: 'https://www.unicohotelmadrid.com/' }
+        },
+        {
+          id: crypto.randomUUID(),
+          city: 'Sevilla', nights: 3,
+          transport: { label: 'AVE Madrid → Sevilla', cost: 80, costUnit: 'usd', stars: 5 },
+          lodging: { label: 'Hotel Alfonso XIII', cost: 1200, costUnit: 'usd', stars: 5,
+            url: 'https://www.hotel-alfonsoxiii-seville.com/' }
+        },
+        {
+          id: crypto.randomUUID(),
+          city: 'Granada', nights: 2,
+          transport: { label: 'AVE Sevilla → Granada (via Antequera)', cost: 75, costUnit: 'usd', stars: 4 },
+          lodging: { label: 'Parador de Granada', cost: 800, costUnit: 'usd', stars: 5,
+            url: 'https://www.parador.es/en/paradores/parador-de-granada' }
+        }
+      ]
+    },
+    {
+      id: crypto.randomUUID(),
+      name: 'Route B — Madrid → Granada → Sevilla',
+      stars: 3,
+      startDate: '2026-08-01',
+      notes: 'Visits Granada earlier when energy is highest (Alhambra is a lot). Sevilla last means flying home via SVQ → MAD on day 10, which adds one extra short flight vs. Route A. Trade-off: ends with hotter, lower-key Sevilla evenings instead of Granada views.',
+      stops: [
+        {
+          id: crypto.randomUUID(),
+          city: 'Madrid', nights: 3,
+          transport: { label: 'IB 6172 SEA → MAD (overnight)', cost: 1200, costUnit: 'usd', stars: 4 },
+          lodging: { label: 'Hotel Único Madrid', cost: 750, costUnit: 'usd', stars: 4,
+            url: 'https://www.unicohotelmadrid.com/' }
+        },
+        {
+          id: crypto.randomUUID(),
+          city: 'Granada', nights: 3,
+          transport: { label: 'AVE Madrid → Granada', cost: 90, costUnit: 'usd', stars: 4 },
+          lodging: { label: 'Parador de Granada', cost: 1200, costUnit: 'usd', stars: 5,
+            url: 'https://www.parador.es/en/paradores/parador-de-granada' }
+        },
+        {
+          id: crypto.randomUUID(),
+          city: 'Sevilla', nights: 2,
+          transport: { label: 'AVE Granada → Sevilla (via Antequera)', cost: 75, costUnit: 'usd', stars: 4 },
+          lodging: { label: 'Hotel Alfonso XIII', cost: 800, costUnit: 'usd', stars: 5,
+            url: 'https://www.hotel-alfonsoxiii-seville.com/' }
+        }
+      ]
+    }
+  ];
 
   // ---------- Resources ----------
   trip.resources.links = [
