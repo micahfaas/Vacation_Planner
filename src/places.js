@@ -7,7 +7,6 @@ import { save } from './storage.js';
 import { render } from './render.js';
 import { PLACE_CATEGORIES } from './constants.js';
 import { addCard } from './cards.js';
-import { weatherSummary } from './weather.js';
 import { deepLinksFor } from './deeplinks.js';
 import { confirmDialog } from './dialog.js';
 import { openPlacesImport } from './places-import.js';
@@ -257,7 +256,6 @@ function renderPlaceCard(p) {
   card.appendChild(top);
 
   card.appendChild(el('div', { class: 'vp-place-cat' }, cat.label));
-  if (p.address) card.appendChild(el('div', { class: 'vp-place-addr' }, p.address));
 
   const links = el('div', { class: 'vp-place-links' });
   if (p.url) links.appendChild(el('a',
@@ -288,23 +286,6 @@ function renderPlaceCard(p) {
   }
 
   if (p.notes) card.appendChild(el('div', { class: 'vp-place-notes' }, p.notes));
-
-  // Weather outlook for the trip dates — filled in asynchronously.
-  if (typeof p.lat === 'number' && typeof p.lng === 'number') {
-    const wx = el('div', { class: 'vp-place-weather' });
-    card.appendChild(wx);
-    const t = activeTrip();
-    weatherSummary(p.lat, p.lng, t.startDate, t.endDate).then(s => {
-      if (!s) { wx.remove(); return; }
-      const label = s.kind === 'forecast' ? 'forecast'
-        : s.kind === 'recorded' ? 'recorded' : 'typical · last yr';
-      wx.appendChild(el('i', { class: 'ti ' + s.icon }));
-      wx.appendChild(el('span', {},
-        s.hi + '° / ' + s.lo + '°F · ' +
-        s.rainDays + (s.rainDays === 1 ? ' rainy day' : ' rainy days') +
-        ' · ' + label));
-    });
-  }
 
   const actions = el('div', { class: 'vp-place-actions' });
   actions.appendChild(el('button', {
@@ -414,14 +395,41 @@ function openFavoritesPicker() {
 // ---------- map ----------
 let placesMap = null;
 
+// Marker colors mirror the place card tints so a glance ties a pin to a card.
+const MARKER_COLORS = {
+  staying:    '#c7549f',
+  restaurant: '#d94d3a',
+  cafe:       '#a88a4f',
+  bar:        '#e8821e',
+  cocktail:   '#7a4ea0',
+  attraction: '#2da55a',
+  shop:       '#1f7fb5',
+  lodging:    '#c7549f',
+  other:      '#6b6151'
+};
+
+function placeMarkerIcon(category) {
+  const cat = PLACE_CATEGORIES[category] || PLACE_CATEGORIES.other;
+  const color = MARKER_COLORS[category] || MARKER_COLORS.other;
+  return L.divIcon({
+    className: 'vp-place-marker',
+    html: '<span class="vp-place-marker-pin" style="background:' + color + '">' +
+          '<i class="ti ' + cat.icon + '"></i></span>',
+    iconSize: [30, 30],
+    iconAnchor: [15, 15]
+  });
+}
+
 function initPlacesMap(mapDiv, pts) {
   if (!document.body.contains(mapDiv)) return; // view changed before the tick fired
   if (placesMap) { placesMap.remove(); placesMap = null; }
   // scrollWheelZoom enables two-finger trackpad scroll-to-zoom and pinch-zoom.
   const map = L.map(mapDiv, { scrollWheelZoom: true });
   placesMap = map;
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors',
+  // CartoDB Positron — a desaturated basemap so the colored markers pop.
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    subdomains: 'abcd',
     maxZoom: 19
   }).addTo(map);
 
@@ -429,12 +437,8 @@ function initPlacesMap(mapDiv, pts) {
   pts.forEach(p => {
     const ll = [p.lat, p.lng];
     latlngs.push(ll);
-    const staying = p.category === 'staying';
-    L.circleMarker(ll, {
-      radius: staying ? 10 : 8, color: '#fff', weight: 2,
-      fillColor: staying ? '#c7549f' : '#1d8a9c', fillOpacity: 1
-    }).addTo(map)
-      .bindTooltip((staying ? '🏠 ' : '') + (p.name || 'Place'))
+    L.marker(ll, { icon: placeMarkerIcon(p.category) }).addTo(map)
+      .bindTooltip(p.name || 'Place')
       .on('click', () => openPlaceEditor(p.id));
   });
   if (latlngs.length) {

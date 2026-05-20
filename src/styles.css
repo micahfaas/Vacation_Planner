@@ -1339,6 +1339,21 @@ body.vp-shared .vp-footer { display: none; }
   background: var(--surface-2);
   font-family: inherit;
 }
+/* Category-colored markers on the Places map. The default Leaflet marker is
+   replaced with a small filled circle holding the category's icon. */
+.vp-place-marker { background: transparent; border: 0; }
+.vp-place-marker .vp-place-marker-pin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  color: #fff;
+}
+.vp-place-marker .vp-place-marker-pin i { font-size: 16px; line-height: 1; }
 
 /* plan view */
 .vp-draft-row {
