@@ -1139,6 +1139,49 @@ body.vp-shared .vp-footer { display: none; }
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 10px;
 }
+/* Side-by-side list + map. Cards stack vertically on the left in a
+   scrollable column; the map fills the rest of the row and stays in view
+   as the list scrolls. Collapses to a stack on narrower viewports. */
+.vp-places-split {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+}
+.vp-places-list-col {
+  width: 360px;
+  flex-shrink: 0;
+  max-height: calc(100vh - 220px);
+  min-height: 480px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 4px;
+}
+.vp-places-map {
+  flex: 1;
+  height: auto;
+  min-height: 480px;
+  margin-bottom: 0;
+  position: sticky;
+  top: 12px;
+  align-self: flex-start;
+  /* Override the stacked-layout clamp so the map fills the split row. */
+}
+.vp-places-split .vp-places-map { height: calc(100vh - 220px); }
+@media (max-width: 800px) {
+  .vp-places-split { flex-direction: column; }
+  .vp-places-list-col {
+    width: 100%;
+    max-height: none;
+    min-height: 0;
+    padding-right: 0;
+  }
+  .vp-places-split .vp-places-map {
+    height: 360px;
+    position: static;
+  }
+}
 .vp-place {
   position: relative;
   background: var(--surface-2);

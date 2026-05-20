@@ -506,21 +506,28 @@ export function renderPlacesView() {
   visible.sort((a, b) => (b.category === 'staying' ? 1 : 0) - (a.category === 'staying' ? 1 : 0));
 
   const withCoords = visible.filter(p => typeof p.lat === 'number' && typeof p.lng === 'number');
+
+  // Side-by-side layout: list on the left, sticky map on the right.
+  // The split collapses to a stack on narrow viewports via CSS.
+  const split = el('div', { class: 'vp-places-split' });
+  panel.appendChild(split);
+
+  const listCol = el('div', { class: 'vp-places-list-col' });
+  split.appendChild(listCol);
+
+  if (visible.length === 0) {
+    listCol.appendChild(el('div', { class: 'vp-places-empty' },
+      all.length ? 'No places match the current filter.'
+                 : 'No places yet. Click + new place to start your research list.'));
+  } else {
+    visible.forEach(p => listCol.appendChild(renderPlaceCard(p)));
+  }
+
   if (withCoords.length) {
-    const mapDiv = el('div', { class: 'vp-map' });
-    panel.appendChild(mapDiv);
+    const mapDiv = el('div', { class: 'vp-map vp-places-map' });
+    split.appendChild(mapDiv);
     setTimeout(() => initPlacesMap(mapDiv, withCoords), 0);
   }
 
-  if (visible.length === 0) {
-    panel.appendChild(el('div', { class: 'vp-places-empty' },
-      all.length ? 'No places in this category.'
-                 : 'No places yet. Click + new place to start your research list.'));
-    return panel;
-  }
-
-  const grid = el('div', { class: 'vp-places-grid' });
-  visible.forEach(p => grid.appendChild(renderPlaceCard(p)));
-  panel.appendChild(grid);
   return panel;
 }
