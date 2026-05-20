@@ -379,6 +379,7 @@ function buildDemoTrip() {
       stars: 5,
       startDate: '2026-08-01',
       notes: 'Goes north→south then east. Sevilla → Granada is the new direct AVE (~2h 50m via Antequera). Return flight leaves from Madrid, so day 10 is Granada → Madrid by AVE in the morning then home. This is the chosen plan.',
+      returnTransport: { label: 'AVE Granada → MAD · IB 6173 MAD → SEA · AS 2422 SEA → RDM', cost: 1100, costUnit: 'usd', stars: 4 },
       stops: [
         {
           id: crypto.randomUUID(),
@@ -409,6 +410,7 @@ function buildDemoTrip() {
       stars: 3,
       startDate: '2026-08-01',
       notes: 'Identical ground itinerary to Route A, but swaps the single overnight SEA → MAD flight for a longer 3-leg path: RDM → PDX → AMS → MAD outbound, MAD → AMS → SEA → RDM home. Saves roughly $400 round-trip but adds ~9 hours of total travel and two extra layovers. Better as a backup if direct Iberia award space is closed.',
+      returnTransport: { label: 'AVE Granada → MAD · KL 1702 MAD → AMS · DL 87 AMS → PDX · AS 2306 PDX → RDM', cost: 700, costUnit: 'usd', stars: 2 },
       stops: [
         {
           id: crypto.randomUUID(),
@@ -439,6 +441,7 @@ function buildDemoTrip() {
       stars: 3,
       startDate: '2026-08-01',
       notes: 'Visits Granada earlier when energy is highest (Alhambra is a lot). Sevilla last means flying home via SVQ → MAD on day 10, which adds one extra short flight vs. Route A. Trade-off: ends with hotter, lower-key Sevilla evenings instead of Granada views.',
+      returnTransport: { label: 'IB 8521 SVQ → MAD · IB 6173 MAD → SEA · AS 2422 SEA → RDM', cost: 1250, costUnit: 'usd', stars: 3 },
       stops: [
         {
           id: crypto.randomUUID(),

@@ -12,6 +12,8 @@ import { wallClockToUTC } from './timezone.js';
 import { openEditor } from './editor.js';
 import { openAttachment } from './attachments.js';
 import { render } from './render.js';
+import { weatherSummary } from './weather.js';
+import { placeCity } from './places.js';
 
 // The day currently being shown (YYYY-MM-DD), set at the top of each render.
 let viewISO = '';
@@ -291,6 +293,46 @@ function tripContext(t, entries) {
   return bits.join(' · ');
 }
 
+// Pick the city most relevant to this day's plan: any hotel's city, else
+// any card's city, else any flight/transit destination, else '' (no weather).
+function dayCity(entries) {
+  const hotel = entries.find(e => e.c.type === 'hotel' && e.c.city);
+  if (hotel) return hotel.c.city;
+  const withCity = entries.find(e => e.c.city);
+  if (withCity) return withCity.c.city;
+  const movement = entries.find(e =>
+    (e.c.type === 'flight' || e.c.type === 'transit') && e.c.destCity);
+  return movement ? movement.c.destCity : '';
+}
+
+// Look up lat/lng for a city by matching against the trip's saved places.
+function coordsForCity(t, city) {
+  const target = (city || '').trim().toLowerCase();
+  if (!target) return null;
+  const match = (t.places || []).find(p =>
+    typeof p.lat === 'number' && typeof p.lng === 'number' &&
+    (placeCity(p) || '').toLowerCase() === target);
+  return match ? { lat: match.lat, lng: match.lng } : null;
+}
+
+// Append a one-line weather chip for `iso` if we can find coords for the
+// day's primary city. Silent no-op when nothing is resolvable.
+function attachWeatherChip(parent, t, entries) {
+  const city = dayCity(entries);
+  const coords = coordsForCity(t, city);
+  if (!coords) return;
+  const wx = el('div', { class: 'vp-today-weather' });
+  parent.appendChild(wx);
+  weatherSummary(coords.lat, coords.lng, viewISO, viewISO).then(s => {
+    if (!s) { wx.remove(); return; }
+    const kind = s.kind === 'forecast' ? 'forecast'
+      : s.kind === 'recorded' ? 'recorded' : 'typical · last yr';
+    wx.appendChild(el('i', { class: 'ti ' + s.icon }));
+    wx.appendChild(el('span', {},
+      city + ' · ' + s.hi + '° / ' + s.lo + '°F · ' + kind));
+  });
+}
+
 function buildHeader(t, entries, live) {
   const head = el('div', { class: 'vp-today-head' });
   const nav = el('div', { class: 'vp-today-nav' });
@@ -312,6 +354,7 @@ function buildHeader(t, entries, live) {
   dateWrap.appendChild(el('div', { class: 'vp-today-date' },
     parseISO(viewISO).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })));
   dateWrap.appendChild(el('div', { class: 'vp-today-sub' }, tripContext(t, entries)));
+  attachWeatherChip(dateWrap, t, entries);
   nav.appendChild(dateWrap);
 
   // Offered only when there is a real "today" inside the trip to snap back to.

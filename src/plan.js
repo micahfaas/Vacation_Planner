@@ -8,6 +8,8 @@ import { render } from './render.js';
 import { addCard } from './cards.js';
 import { isoDate, parseISO, addDays, fmtShort } from './dates.js';
 import { confirmDialog, alertDialog } from './dialog.js';
+import { weatherSummary } from './weather.js';
+import { placeCity } from './places.js';
 
 function plan() {
   const t = activeTrip();
@@ -76,18 +78,38 @@ function removeStop(draftId, stopId) {
 }
 
 // ---------- derived ----------
+function addCost(x, totals) {
+  const c = x && parseFloat(x.cost);
+  if (!c || c < 0) return;
+  if (x.costUnit === 'points') totals.points += c;
+  else totals.usd += c;
+}
 function draftTotals(d) {
-  let usd = 0, points = 0, nights = 0;
+  const totals = { usd: 0, points: 0, nights: 0 };
   (d.stops || []).forEach(s => {
-    nights += parseInt(s.nights, 10) || 0;
-    [s.transport, s.lodging].forEach(x => {
-      const c = x && parseFloat(x.cost);
-      if (!c || c < 0) return;
-      if (x.costUnit === 'points') points += c;
-      else usd += c;
-    });
+    totals.nights += parseInt(s.nights, 10) || 0;
+    addCost(s.transport, totals);
+    addCost(s.lodging, totals);
   });
-  return { usd, points, nights };
+  if (d.returnTransport) addCost(d.returnTransport, totals);
+  return totals;
+}
+
+// Find lat/lng for a city by matching against the trip's saved places.
+function coordsForCity(city) {
+  const target = (city || '').trim().toLowerCase();
+  if (!target) return null;
+  const places = (activeTrip().places || [])
+    .filter(p => typeof p.lat === 'number' && typeof p.lng === 'number');
+  const match = places.find(p => (placeCity(p) || '').toLowerCase() === target);
+  return match ? { lat: match.lat, lng: match.lng } : null;
+}
+
+function fmtWeather(s) {
+  const kind = s.kind === 'forecast' ? 'forecast'
+    : s.kind === 'recorded' ? 'recorded' : 'typical · last yr';
+  return s.hi + '° / ' + s.lo + '°F · ' +
+    s.rainDays + (s.rainDays === 1 ? ' rainy day' : ' rainy days') + ' · ' + kind;
 }
 
 function tripWindowDays() {
@@ -178,6 +200,18 @@ async function sendDraftToCalendar(d) {
     prevCity = s.city || prevCity;
     cursor = addDays(cursor, nights);
   });
+
+  if (d.returnTransport && d.returnTransport.label) {
+    const iso = isoDate(cursor);
+    const cost = costLabel(d.returnTransport);
+    addCard({
+      type: 'transit',
+      title: d.returnTransport.label,
+      originCity: prevCity,
+      destCity: 'Home',
+      notes: cost ? 'Est. cost: ' + cost : ''
+    }, { kind: 'day', date: iso });
+  }
 
   // Widen the trip window so every placed card is on a visible day.
   if (!t.startDate || firstISO < t.startDate) t.startDate = firstISO;
@@ -365,6 +399,19 @@ function renderStopBlock(draft, stop, dayCursor) {
     const end = addDays(dayCursor, Math.max(0, n));
     block.appendChild(el('div', { class: 'vp-stop-dates' },
       fmtShort(dayCursor) + ' – ' + fmtShort(end)));
+
+    // Weather outlook for this stop's date window — filled in asynchronously.
+    const coords = coordsForCity(stop.city);
+    if (coords) {
+      const wx = el('div', { class: 'vp-stop-weather' });
+      block.appendChild(wx);
+      const endISO = isoDate(addDays(dayCursor, Math.max(0, n - 1)));
+      weatherSummary(coords.lat, coords.lng, isoDate(dayCursor), endISO).then(s => {
+        if (!s) { wx.remove(); return; }
+        wx.appendChild(el('i', { class: 'ti ' + s.icon }));
+        wx.appendChild(el('span', {}, fmtWeather(s)));
+      });
+    }
   }
 
   if (stop.transport && stop.transport.label) {
@@ -430,6 +477,24 @@ function renderDraftColumn(draft) {
     if (cursor) cursor = addDays(cursor, parseInt(s.nights, 10) || 0);
   });
   col.appendChild(stopsWrap);
+
+  // Optional return leg — a single transport line shown after the last stop.
+  if (draft.returnTransport && draft.returnTransport.label) {
+    const ret = el('div', { class: 'vp-stop vp-stop-return' });
+    ret.appendChild(el('div', { class: 'vp-stop-head' },
+      el('span', { class: 'vp-stop-city' }, 'Return home')));
+    if (cursor) {
+      ret.appendChild(el('div', { class: 'vp-stop-dates' }, fmtShort(cursor)));
+    }
+    const row = el('div', { class: 'vp-stop-line' });
+    row.appendChild(el('i', { class: 'ti ti-home vp-stop-ico' }));
+    row.appendChild(el('span', { class: 'vp-stop-line-label' }, draft.returnTransport.label));
+    const cl = costLabel(draft.returnTransport);
+    if (cl) row.appendChild(el('span', { class: 'vp-stop-cost' }, cl));
+    if (draft.returnTransport.stars) row.appendChild(starsView(draft.returnTransport.stars));
+    ret.appendChild(row);
+    col.appendChild(ret);
+  }
 
   col.appendChild(el('button', {
     class: 'vp-stop-add', onclick: () => addStop(draft.id)
