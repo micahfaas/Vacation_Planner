@@ -217,7 +217,8 @@ function openPlaceEditor(id) {
 function renderPlaceCard(p) {
   const cat = PLACE_CATEGORIES[p.category] || PLACE_CATEGORIES.other;
   const card = el('div', {
-    class: 'vp-place' + (p.category === 'staying' ? ' vp-place-staying' : ''),
+    class: 'vp-place vp-place-cat-' + (p.category || 'other') +
+      (p.category === 'staying' ? ' vp-place-staying' : ''),
     onclick: e => {
       if (e.target.closest('.vp-place-actions') || e.target.closest('a') ||
           e.target.closest('.vp-place-star')) return;

@@ -1157,6 +1157,25 @@ body.vp-shared .vp-footer { display: none; }
   border-color: var(--accent);
 }
 .vp-place-staying .vp-place-icon { color: var(--link); }
+
+/* Per-category color tint — soft background + colored left accent + icon. */
+.vp-place-cat-restaurant { background: #fce0db; border-left: 4px solid #d94d3a; }
+.vp-place-cat-restaurant .vp-place-icon { color: #d94d3a; }
+.vp-place-cat-cafe       { background: #f4ead2; border-left: 4px solid #a88a4f; }
+.vp-place-cat-cafe       .vp-place-icon { color: #a88a4f; }
+.vp-place-cat-bar        { background: #fce6c6; border-left: 4px solid #e8821e; }
+.vp-place-cat-bar        .vp-place-icon { color: #e8821e; }
+.vp-place-cat-cocktail   { background: #ece1f3; border-left: 4px solid #7a4ea0; }
+.vp-place-cat-cocktail   .vp-place-icon { color: #7a4ea0; }
+.vp-place-cat-attraction { background: #dff5e6; border-left: 4px solid #2da55a; }
+.vp-place-cat-attraction .vp-place-icon { color: #2da55a; }
+.vp-place-cat-shop       { background: #dff0fa; border-left: 4px solid #1f7fb5; }
+.vp-place-cat-shop       .vp-place-icon { color: #1f7fb5; }
+.vp-place-cat-lodging    { background: #fce5f0; border-left: 4px solid #c7549f; }
+.vp-place-cat-lodging    .vp-place-icon { color: #c7549f; }
+.vp-place-cat-staying    { background: #fce5f0; border-left: 4px solid #c7549f; }
+.vp-place-cat-staying    .vp-place-icon { color: #c7549f; }
+.vp-place-cat-other      { border-left: 4px solid var(--border-strong); }
 .vp-place-top {
   display: flex;
   align-items: center;
@@ -1265,7 +1284,7 @@ body.vp-shared .vp-footer { display: none; }
 
 /* places map */
 .vp-map {
-  height: 320px;
+  height: clamp(360px, 55vh, 640px);
   border: 0.5px solid var(--border);
   border-radius: var(--radius-md);
   overflow: hidden;

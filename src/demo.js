@@ -253,6 +253,32 @@ function buildDemoTrip() {
     trip.places.push(Object.assign({ id: crypto.randomUUID() }, p));
   }
 
+  // ----- Where I'm staying (one per city) -----
+  place({
+    name: 'Hotel Único Madrid', category: 'staying', city: 'Madrid',
+    address: 'Calle de Claudio Coello 67, 28001 Madrid, Spain',
+    lat: 40.42820, lng: -3.68400,
+    url: 'https://www.google.com/maps/search/?api=1&query=Hotel+Unico+Madrid',
+    website: 'https://www.unicohotelmadrid.com/',
+    notes: 'Nights of Aug 2–4 · Salamanca district · confirmation HU-2026-08AUG'
+  });
+  place({
+    name: 'Hotel Alfonso XIII', category: 'staying', city: 'Sevilla',
+    address: 'Calle San Fernando 2, 41004 Sevilla, Spain',
+    lat: 37.38290, lng: -5.99290,
+    url: 'https://www.google.com/maps/search/?api=1&query=Hotel+Alfonso+XIII+Sevilla',
+    website: 'https://www.hotel-alfonsoxiii-seville.com/',
+    notes: 'Nights of Aug 5–7 · historic luxury · confirmation AXIII-AUG26'
+  });
+  place({
+    name: 'Parador de Granada', category: 'staying', city: 'Granada',
+    address: 'Calle Real de la Alhambra s/n, 18009 Granada, Spain',
+    lat: 37.17810, lng: -3.58760,
+    url: 'https://www.google.com/maps/search/?api=1&query=Parador+de+Granada',
+    website: 'https://www.parador.es/en/paradores/parador-de-granada',
+    notes: 'Nights of Aug 8–9 · inside the Alhambra grounds · historic convent'
+  });
+
   // Madrid
   place({
     name: 'Mercado de San Miguel', category: 'restaurant', city: 'Madrid',
@@ -358,6 +384,36 @@ function buildDemoTrip() {
           id: crypto.randomUUID(),
           city: 'Madrid', nights: 3,
           transport: { label: 'IB 6172 SEA → MAD (overnight)', cost: 1200, costUnit: 'usd', stars: 4 },
+          lodging: { label: 'Hotel Único Madrid', cost: 750, costUnit: 'usd', stars: 4,
+            url: 'https://www.unicohotelmadrid.com/' }
+        },
+        {
+          id: crypto.randomUUID(),
+          city: 'Sevilla', nights: 3,
+          transport: { label: 'AVE Madrid → Sevilla', cost: 80, costUnit: 'usd', stars: 5 },
+          lodging: { label: 'Hotel Alfonso XIII', cost: 1200, costUnit: 'usd', stars: 5,
+            url: 'https://www.hotel-alfonsoxiii-seville.com/' }
+        },
+        {
+          id: crypto.randomUUID(),
+          city: 'Granada', nights: 2,
+          transport: { label: 'AVE Sevilla → Granada (via Antequera)', cost: 75, costUnit: 'usd', stars: 4 },
+          lodging: { label: 'Parador de Granada', cost: 800, costUnit: 'usd', stars: 5,
+            url: 'https://www.parador.es/en/paradores/parador-de-granada' }
+        }
+      ]
+    },
+    {
+      id: crypto.randomUUID(),
+      name: 'Route C — Same as A, cheaper multi-leg flights',
+      stars: 3,
+      startDate: '2026-08-01',
+      notes: 'Identical ground itinerary to Route A, but swaps the single overnight SEA → MAD flight for a longer 3-leg path: RDM → PDX → AMS → MAD outbound, MAD → AMS → SEA → RDM home. Saves roughly $400 round-trip but adds ~9 hours of total travel and two extra layovers. Better as a backup if direct Iberia award space is closed.',
+      stops: [
+        {
+          id: crypto.randomUUID(),
+          city: 'Madrid', nights: 3,
+          transport: { label: 'AS 2305 RDM→PDX · DL 86 PDX→AMS · KL 1701 AMS→MAD', cost: 800, costUnit: 'usd', stars: 2 },
           lodging: { label: 'Hotel Único Madrid', cost: 750, costUnit: 'usd', stars: 4,
             url: 'https://www.unicohotelmadrid.com/' }
         },
