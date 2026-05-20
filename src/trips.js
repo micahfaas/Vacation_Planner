@@ -6,6 +6,7 @@ import { render } from './render.js';
 import { fmtShort, parseISO, isoDate } from './dates.js';
 import { openShareDialog } from './share.js';
 import { confirmDialog, promptDialog } from './dialog.js';
+import { loadDemoTrip } from './demo.js';
 
 export function openTripsMenu() {
   const bg = el('div', { class: 'vp-modal-bg', onclick: e => { if (e.target === bg) bg.remove(); } });
@@ -67,7 +68,20 @@ export function openTripsMenu() {
   m.appendChild(list);
 
   const actions = el('div', { class: 'vp-modal-actions' });
-  actions.appendChild(el('div', {}));
+  const left = el('div', {});
+  left.appendChild(el('button', {
+    title: 'Load a 10-day Spain trip with rich sample data',
+    onclick: async () => {
+      const ok = await confirmDialog(
+        'Add a 10-day Spain demo trip with flights, hotels, activities, and saved places? ' +
+        'You can edit or delete it like any other trip.',
+        { title: 'Load demo', confirmText: 'Load demo' });
+      if (!ok) return;
+      loadDemoTrip();
+      bg.remove();
+    }
+  }, 'Load demo'));
+  actions.appendChild(left);
   const right = el('div', { class: 'vp-right' });
   right.appendChild(el('button', { onclick: () => bg.remove() }, 'Close'));
   right.appendChild(el('button', {
