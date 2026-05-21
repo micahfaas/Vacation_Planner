@@ -4,7 +4,7 @@
 // calls (Supabase, weather, rates, map tiles) are left to the network —
 // trip data itself survives offline through the localStorage cache in
 // storage.js, not this cache.
-const CACHE = 'vacation-planner-v2';
+const CACHE = 'trip-planner-v3';
 
 // Cross-origin hosts whose GET responses are safe to cache for offline use.
 const CACHEABLE_CDN = ['cdn.jsdelivr.net'];

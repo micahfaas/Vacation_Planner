@@ -83,7 +83,7 @@ export function exportICS() {
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Vacation Planner//EN',
+    'PRODID:-//Trip Planner//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     fold('X-WR-CALNAME:' + esc(t.name || 'Trip'))
@@ -102,7 +102,7 @@ export function exportICS() {
       if (c.booked) descBits.push('Booked ✓');
       const loc = cardLocation(c);
       lines.push('BEGIN:VEVENT');
-      lines.push('UID:' + id + '-' + anchor + '@vacation-planner');
+      lines.push('UID:' + id + '-' + anchor + '@trip-planner');
       lines.push('DTSTAMP:' + stamp);
       lines.push(when.start);
       lines.push(when.end);

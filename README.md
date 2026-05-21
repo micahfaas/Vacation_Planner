@@ -1,4 +1,4 @@
-# Vacation Planner
+# Trip Planner
 
 A drag-and-drop trip planner that runs entirely in your browser. Build a card library (flights, hotels, activities, transit, meals, notes) and shuffle them around a calendar grid to figure out the order of cities you want to visit. Data saves to `localStorage`, and you can export/import JSON to back up or move between devices.
 

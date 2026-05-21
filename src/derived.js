@@ -46,14 +46,24 @@ export function computeStats() {
   const t = activeTrip();
   const days = getDays();
   const totalDays = days.length;
-  const filled = days.filter(d => (t.schedule[isoDate(d)] || []).length > 0).length;
+  // A day counts as "planned" if it has any non-cityStay card; city stays
+  // are trip-shape, not actionable, so they don't fill a day on their own.
+  const filled = days.filter(d => {
+    const ids = t.schedule[isoDate(d)] || [];
+    return ids.some(id => {
+      const c = t.cards[id];
+      return c && c.type !== 'cityStay';
+    });
+  }).length;
   const cityNights = {};
   let totalFlightMin = 0, totalTransitMin = 0;
   let totalCards = 0, bookedCards = 0;
-  // count every scheduled card (including library? no - just scheduled)
+  // count scheduled cards toward booking progress, but skip city stays
+  // (they're not bookable items)
   Object.values(t.schedule).forEach(ids => {
     ids.forEach(id => {
       const c = t.cards[id]; if (!c) return;
+      if (c.type === 'cityStay') return;
       totalCards++;
       if (c.booked) bookedCards++;
     });
@@ -68,11 +78,19 @@ export function computeStats() {
       totalCost += v;
     }
   });
+  // Nights per city: prefer city-stay cards when present (they represent the
+  // trip shape directly); fall back to hotels for trips that haven't been
+  // marked up with city stays yet.
+  const hasCityStays = Object.values(t.cards).some(c => c && c.type === 'cityStay');
   days.forEach(d => {
     const ids = t.schedule[isoDate(d)] || [];
     ids.forEach(id => {
       const c = t.cards[id]; if (!c) return;
-      if (c.type === 'hotel' && c.city) {
+      if (hasCityStays) {
+        if (c.type === 'cityStay' && c.city) {
+          cityNights[c.city] = (cityNights[c.city] || 0) + (parseInt(c.nights) || 1);
+        }
+      } else if (c.type === 'hotel' && c.city) {
         cityNights[c.city] = (cityNights[c.city] || 0) + (parseInt(c.nights) || 1);
       }
       if (c.type === 'flight' || c.type === 'transit') {
@@ -117,11 +135,11 @@ export function getConflicts() {
   return out;
 }
 
-// How many calendar days does a card occupy? Hotels span their nights;
-// flights/transit span the days between their depart and arrive dates.
+// How many calendar days does a card occupy? Hotels and city stays span
+// their nights; flights/transit span the days between depart and arrive.
 export function cardSpan(c) {
   if (!c) return 1;
-  if (c.type === 'hotel') {
+  if (c.type === 'hotel' || c.type === 'cityStay') {
     const n = parseInt(c.nights) || 1;
     return Math.max(1, n);
   }
@@ -133,6 +151,15 @@ export function cardSpan(c) {
     }
   }
   return 1;
+}
+
+// Does this card belong in the multi-day span layer above the day cells?
+// City stays always render as a banner — even 1-night ones — so the user
+// always sees "you're in <city>" above whatever else is on that day.
+export function belongsInSpanLayer(c) {
+  if (!c) return false;
+  if (c.type === 'cityStay') return true;
+  return cardSpan(c) > 1;
 }
 
 // Is the current date within the active trip's start/end window?

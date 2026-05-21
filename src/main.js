@@ -106,7 +106,7 @@ function bootApp() {
     }
     menu.appendChild(item('About me', 'ti-user', openProfileDialog));
     menu.appendChild(item('Sign out', 'ti-logout', () => {
-      confirmDialog('Sign out of Vacation Planner?', { confirmText: 'Sign out' })
+      confirmDialog('Sign out of Trip Planner?', { confirmText: 'Sign out' })
         .then(ok => { if (ok) signOut(); });
     }));
     bg.appendChild(menu);

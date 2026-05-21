@@ -10,6 +10,8 @@ import { isoDate, parseISO, addDays, fmtShort } from './dates.js';
 import { confirmDialog, alertDialog } from './dialog.js';
 import { weatherSummary } from './weather.js';
 import { placeCity } from './places.js';
+import { getPointsBalances, setPointsBalances } from './profile.js';
+import { CITY_STAY_COLORS } from './constants.js';
 
 function plan() {
   const t = activeTrip();
@@ -146,6 +148,136 @@ function fmtCost(usd, pointsByProgram) {
   return bits.length ? bits.join('  +  ') : '—';
 }
 
+// ---------- balances sidebar ----------
+// Persist a balances array to the profile and re-render so the sidebar +
+// running deltas pick up the change. Errors are surfaced via alertDialog
+// (the profile.saveProfile path can fail if Supabase rejects the upsert).
+async function persistBalances(arr) {
+  try {
+    await setPointsBalances(arr);
+  } catch (e) {
+    alertDialog('Could not save balances — ' + (e.message || e));
+  }
+  render();
+}
+
+// Given a draft, return a Map<program, { start, used, after }>. Programs the
+// draft consumes that have no matching balance still show up so the user
+// sees the spend; balances the draft doesn't touch are also included so they
+// stay visible while one draft is selected.
+function balancesAfterDraft(d, balances) {
+  const totals = draftTotals(d);
+  const out = new Map();
+  balances.forEach(b => {
+    const start = parseFloat(b.balance) || 0;
+    const used = totals.pointsByProgram[b.name] || 0;
+    out.set(b.name, { start, used, after: start - used });
+  });
+  Object.entries(totals.pointsByProgram).forEach(([prog, used]) => {
+    if (!out.has(prog)) out.set(prog, { start: 0, used, after: -used });
+  });
+  return out;
+}
+
+function balanceRow(b, onChange, onRemove) {
+  const row = el('div', { class: 'vp-balance-row' });
+  const name = el('input', {
+    type: 'text', value: b.name || '', placeholder: 'Program (e.g. Avios)'
+  });
+  const amount = el('input', {
+    type: 'number', min: '0', step: '1',
+    value: b.balance != null ? b.balance : '', placeholder: '0'
+  });
+  name.addEventListener('change', () => onChange({ name: name.value.trim(), balance: parseFloat(amount.value) || 0 }));
+  amount.addEventListener('change', () => onChange({ name: name.value.trim(), balance: parseFloat(amount.value) || 0 }));
+  const rm = el('button', {
+    type: 'button', class: 'vp-balance-rm', title: 'Remove balance',
+    onclick: onRemove
+  }, '×');
+  row.appendChild(name);
+  row.appendChild(amount);
+  row.appendChild(rm);
+  return row;
+}
+
+function renderBalancesPanel() {
+  const balances = getPointsBalances().slice();
+  const selectedDraft = ui.planSelectedDraftId
+    ? plan().drafts.find(d => d.id === ui.planSelectedDraftId)
+    : null;
+  const deltas = selectedDraft ? balancesAfterDraft(selectedDraft, balances) : null;
+
+  const panel = el('aside', { class: 'vp-plan-side' });
+  panel.appendChild(el('h4', { class: 'vp-plan-side-h' }, 'Points & miles'));
+  panel.appendChild(el('div', { class: 'vp-plan-side-sub' },
+    selectedDraft ? 'After: ' + (selectedDraft.name || 'selected draft') : 'Free-text — name them whatever you want.'));
+
+  const list = el('div', { class: 'vp-balance-list' });
+  balances.forEach((b, idx) => {
+    list.appendChild(balanceRow(b,
+      patch => {
+        const next = balances.slice();
+        next[idx] = patch;
+        persistBalances(next);
+      },
+      () => {
+        const next = balances.filter((_, i) => i !== idx);
+        persistBalances(next);
+      }
+    ));
+    if (deltas) {
+      const d = deltas.get(b.name);
+      if (d && d.used > 0) {
+        list.appendChild(renderDeltaLine(d));
+      }
+    }
+  });
+
+  // Programs the selected draft burns but the user hasn't added a balance for.
+  if (deltas) {
+    deltas.forEach((d, prog) => {
+      const known = balances.some(b => b.name === prog);
+      if (!known && d.used > 0) {
+        list.appendChild(el('div', { class: 'vp-balance-orphan' },
+          el('strong', {}, prog),
+          el('span', {}, ' uses ' + fmtPoints(d.used) + ' · no balance set')));
+      }
+    });
+  }
+
+  panel.appendChild(list);
+
+  panel.appendChild(el('button', {
+    class: 'vp-balance-add',
+    onclick: () => persistBalances(balances.concat({ name: '', balance: 0 }))
+  }, '+ add balance'));
+
+  if (selectedDraft) {
+    panel.appendChild(el('button', {
+      class: 'vp-plan-clear-sel',
+      onclick: () => { ui.planSelectedDraftId = null; render(); }
+    }, 'Clear selection'));
+  }
+
+  return panel;
+}
+
+function renderDeltaLine(d) {
+  const after = d.after;
+  const short = after < 0 ? Math.abs(after) : 0;
+  const cls = 'vp-balance-delta' + (after < 0 ? ' vp-balance-delta-bad' : '');
+  const row = el('div', { class: cls });
+  row.appendChild(el('span', { class: 'vp-balance-delta-arrow' }, '→'));
+  row.appendChild(el('span', { class: 'vp-balance-delta-after' }, fmtPoints(after)));
+  row.appendChild(el('span', { class: 'vp-balance-delta-used' }, '(−' + fmtPoints(d.used) + ')'));
+  if (short > 0) {
+    row.appendChild(el('span', { class: 'vp-balance-short' }, '⚠ short by ' + fmtPoints(short)));
+  } else if (d.used > 0) {
+    row.appendChild(el('span', { class: 'vp-balance-ok' }, '✓'));
+  }
+  return row;
+}
+
 // ---------- star widgets ----------
 function starInput(initial, onChange) {
   const wrap = el('div', { class: 'vp-stars vp-stars-input' });
@@ -172,11 +304,41 @@ function starsView(val) {
   return w;
 }
 
-// ---------- send a draft to the calendar ----------
-// Schedules each stop's transport + lodging onto real calendar dates, walking
-// a cursor from the draft's start date (or the trip start) by each stop's
-// nights. The trip window is widened so every placed card stays visible.
-async function sendDraftToCalendar(d) {
+// ---------- commit / preview a draft on the calendar ----------
+// Pull cash/points/program off a draft's transport or lodging slot. Cash
+// taxes always flow into the cash bucket because that's where real-world
+// award redemptions levy them.
+function paymentFromSlot(slot) {
+  if (!slot) return { cost: 0, pointsCost: 0, pointsProgram: '' };
+  const c = parseFloat(slot.cost) || 0;
+  const tax = parseFloat(slot.cashTaxes) || 0;
+  if (slot.costUnit === 'points') {
+    return {
+      cost: tax,
+      pointsCost: c,
+      pointsProgram: (slot.pointsProgram || '').trim()
+    };
+  }
+  return { cost: c + tax, pointsCost: 0, pointsProgram: '' };
+}
+
+// Hash a city name to one of the named city-stay palettes so committed
+// stays look distinct without making the user pick a color each time.
+const CITY_STAY_PALETTE_ORDER = ['slate', 'amber', 'sage', 'rose', 'lavender'];
+function autoCityColor(name) {
+  const palette = Object.keys(CITY_STAY_COLORS).length
+    ? CITY_STAY_PALETTE_ORDER.filter(k => CITY_STAY_COLORS[k])
+    : ['slate'];
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) | 0;
+  return palette[Math.abs(h) % palette.length];
+}
+
+// Commit a draft to the live calendar: city-stay banner + hotel + transit
+// per stop, plus the return-transport card. Cards inherit payment data
+// (cash/points/program) so the Plan sidebar deltas keep matching reality
+// after the commit.
+async function useThisRoute(d) {
   const t = activeTrip();
   const startISO = d.startDate || t.startDate;
   if (!startISO) {
@@ -185,11 +347,12 @@ async function sendDraftToCalendar(d) {
   }
   const stops = d.stops || [];
   if (!stops.length) return;
-  const go = await confirmDialog('Add this draft’s stops to the calendar? Your existing cards are kept.',
-    { confirmText: 'Add to calendar' });
+  const go = await confirmDialog('Use this route? Its stops will be added to the calendar (your existing cards stay).',
+    { confirmText: 'Use this route' });
   if (!go) return;
 
   ui.view = 'calendar';
+  ui.previewDraftIds = []; // clear any preview overlay
   let cursor = parseISO(startISO);
   const firstISO = isoDate(cursor);
   let prevCity = '';
@@ -198,13 +361,28 @@ async function sendDraftToCalendar(d) {
     const iso = isoDate(cursor);
     const nights = parseInt(s.nights, 10) || 0;
     if (s.transport && s.transport.label) {
-      const cost = costLabel(s.transport);
-      addCard({
+      const pay = paymentFromSlot(s.transport);
+      const card = {
         type: 'transit',
         title: s.transport.label,
         originCity: prevCity,
         destCity: s.city || '',
-        notes: cost ? 'Est. cost: ' + cost : ''
+        notes: ''
+      };
+      if (pay.cost > 0) card.cost = pay.cost;
+      if (pay.pointsCost > 0) {
+        card.pointsCost = pay.pointsCost;
+        card.pointsProgram = pay.pointsProgram;
+      }
+      addCard(card, { kind: 'day', date: iso });
+    }
+    if (s.city && nights > 0) {
+      addCard({
+        type: 'cityStay',
+        title: s.city,
+        city: s.city,
+        nights,
+        color: autoCityColor(s.city)
       }, { kind: 'day', date: iso });
     }
     if (s.lodging && s.lodging.label) {
@@ -224,14 +402,20 @@ async function sendDraftToCalendar(d) {
 
   if (d.returnTransport && d.returnTransport.label) {
     const iso = isoDate(cursor);
-    const cost = costLabel(d.returnTransport);
-    addCard({
+    const pay = paymentFromSlot(d.returnTransport);
+    const card = {
       type: 'transit',
       title: d.returnTransport.label,
       originCity: prevCity,
       destCity: 'Home',
-      notes: cost ? 'Est. cost: ' + cost : ''
-    }, { kind: 'day', date: iso });
+      notes: ''
+    };
+    if (pay.cost > 0) card.cost = pay.cost;
+    if (pay.pointsCost > 0) {
+      card.pointsCost = pay.pointsCost;
+      card.pointsProgram = pay.pointsProgram;
+    }
+    addCard(card, { kind: 'day', date: iso });
   }
 
   // Widen the trip window so every placed card is on a visible day.
@@ -239,6 +423,98 @@ async function sendDraftToCalendar(d) {
   const lastISO = isoDate(cursor);
   if (!t.endDate || lastISO > t.endDate) t.endDate = lastISO;
   save();
+  render();
+}
+
+// Non-destructive: switch to the Calendar with the draft overlaid as a
+// preview. No trip cards are touched; the user can hit "Use this route" to
+// commit, or "Back to Plan" to drop the overlay.
+function previewDraftOnCalendar(draftId) {
+  const d = plan().drafts.find(x => x.id === draftId);
+  if (!d) return;
+  if (!(d.startDate || activeTrip().startDate)) {
+    alertDialog('Set a start date on this draft (Edit draft) so its stops can be placed on the calendar.');
+    return;
+  }
+  ui.previewDraftIds = [draftId];
+  ui.view = 'calendar';
+  render();
+}
+
+// Multi-draft side-by-side comparison: every checked draft renders as its
+// own stacked row of city-stay banners on the same calendar.
+function compareDraftsOnCalendar(ids) {
+  ui.previewDraftIds = ids.slice();
+  ui.view = 'calendar';
+  render();
+}
+
+// Build a synthetic "preview card set" for one or more drafts, anchored on
+// the draft's startDate (or trip start). Returns
+// [{ draft, stops: [{ city, nights, dateISO, color, transport }], endISO,
+//   returnTransport }] which the Calendar renderer uses to lay banners on
+// top of the live trip schedule. Transport is carried through verbatim so
+// the comparison view can show "flight path · cost" per leg.
+export function buildDraftPreviews(draftIds) {
+  const t = activeTrip();
+  const previews = [];
+  (draftIds || []).forEach(id => {
+    const d = plan().drafts.find(x => x.id === id);
+    if (!d) return;
+    const startISO = d.startDate || t.startDate;
+    if (!startISO) return;
+    let cursor = parseISO(startISO);
+    const stops = (d.stops || []).map(s => {
+      const dateISO = isoDate(cursor);
+      const nights = parseInt(s.nights, 10) || 0;
+      const out = {
+        city: s.city || '',
+        nights,
+        dateISO,
+        color: autoCityColor(s.city || 'stay'),
+        transport: s.transport && s.transport.label ? s.transport : null
+      };
+      cursor = addDays(cursor, nights);
+      return out;
+    });
+    previews.push({
+      draft: d,
+      stops,
+      endISO: isoDate(cursor),
+      returnTransport: d.returnTransport && d.returnTransport.label
+        ? d.returnTransport : null
+    });
+  });
+  return previews;
+}
+
+// Compact cost string for the Plan-tab comparison view: "$1,200", "68k Avios",
+// or a mixed "68k Avios + $420" if the transport carries both points and cash
+// taxes. Empty string when nothing is set.
+export function compactCostLabel(slot) {
+  if (!slot) return '';
+  const c = parseFloat(slot.cost);
+  const tax = parseFloat(slot.cashTaxes);
+  const parts = [];
+  if (c > 0) {
+    if (slot.costUnit === 'points') {
+      const pretty = c >= 10000 ? Math.round(c / 1000) + 'k' : Math.round(c).toLocaleString();
+      const prog = (slot.pointsProgram || '').trim();
+      parts.push(pretty + (prog ? ' ' + prog : ' pts'));
+    } else {
+      parts.push('$' + Math.round(c).toLocaleString());
+    }
+  }
+  if (tax > 0) parts.push('+ $' + Math.round(tax).toLocaleString());
+  return parts.join(' ');
+}
+
+// Called from the Calendar preview bar's "Back to Plan" button. Drops the
+// overlay and bounces back to the Plan tab so the user can pick another
+// route or edit the one they were previewing.
+export function clearDraftPreviews() {
+  ui.previewDraftIds = [];
+  ui.view = 'plan';
   render();
 }
 
@@ -475,21 +751,53 @@ function renderStopBlock(draft, stop, dayCursor) {
 }
 
 function renderDraftColumn(draft) {
-  const col = el('div', { class: 'vp-draft' });
+  const selected = ui.planSelectedDraftId === draft.id;
+  const inCompare = (ui.planComparedDraftIds || []).includes(draft.id);
+  const col = el('div', {
+    class: 'vp-draft' + (selected ? ' vp-draft-selected' : '') + (inCompare ? ' vp-draft-comparing' : ''),
+    'data-draft-id': draft.id,
+    // Click anywhere on the card body (outside buttons/inputs/links) to
+    // make this draft the "focus" of the balances sidebar.
+    onclick: e => {
+      if (e.target.closest('button, a, input, textarea, select, label')) return;
+      ui.planSelectedDraftId = selected ? null : draft.id;
+      render();
+    }
+  });
 
   const head = el('div', { class: 'vp-draft-head' });
+  // Comparison toggle — a checkbox that pulls this draft into the multi-draft
+  // calendar overlay. Independent from "selected" (single-focus for deltas).
+  const compareToggle = el('input', {
+    type: 'checkbox',
+    class: 'vp-draft-compare',
+    checked: inCompare ? '' : null,
+    title: 'Add to side-by-side comparison',
+    'aria-label': 'Compare on calendar'
+  });
+  if (inCompare) compareToggle.checked = true;
+  compareToggle.addEventListener('change', () => {
+    const set = new Set(ui.planComparedDraftIds || []);
+    if (compareToggle.checked) set.add(draft.id);
+    else set.delete(draft.id);
+    ui.planComparedDraftIds = Array.from(set);
+    render();
+  });
+  head.appendChild(compareToggle);
   const titleBtn = el('button', {
     class: 'vp-draft-title', title: 'Edit draft',
-    onclick: () => openDraftEditor(draft.id)
+    onclick: e => { e.stopPropagation(); openDraftEditor(draft.id); }
   }, draft.name || 'Untitled draft');
   head.appendChild(titleBtn);
   const headActions = el('div', { class: 'vp-draft-actions' });
   headActions.appendChild(el('button', {
-    title: 'Duplicate', 'aria-label': 'Duplicate draft', onclick: () => duplicateDraft(draft.id)
+    title: 'Duplicate', 'aria-label': 'Duplicate draft',
+    onclick: e => { e.stopPropagation(); duplicateDraft(draft.id); }
   }, '⧉'));
   headActions.appendChild(el('button', {
     title: 'Delete', 'aria-label': 'Delete draft',
-    onclick: () => {
+    onclick: e => {
+      e.stopPropagation();
       confirmDialog('Delete this draft?', { danger: true, confirmText: 'Delete' })
         .then(ok => { if (ok) removeDraft(draft.id); });
     }
@@ -541,9 +849,16 @@ function renderDraftColumn(draft) {
     foot.appendChild(el('div', { class: 'vp-draft-warn' },
       '⚠ ' + totals.nights + ' nights vs a ' + win + '-day trip window'));
   }
-  foot.appendChild(el('button', {
-    class: 'vp-draft-send', onclick: () => sendDraftToCalendar(draft)
-  }, 'Send to calendar'));
+  const footBtns = el('div', { class: 'vp-draft-foot-btns' });
+  footBtns.appendChild(el('button', {
+    class: 'vp-draft-preview',
+    onclick: e => { e.stopPropagation(); previewDraftOnCalendar(draft.id); }
+  }, 'View on calendar'));
+  footBtns.appendChild(el('button', {
+    class: 'vp-draft-send',
+    onclick: e => { e.stopPropagation(); useThisRoute(draft); }
+  }, 'Use this route'));
+  foot.appendChild(footBtns);
   col.appendChild(foot);
 
   return col;
@@ -556,17 +871,40 @@ export function renderPlanView() {
 
   const head = el('div', { class: 'vp-places-head' });
   head.appendChild(el('h3', {}, 'Plan — itinerary drafts'));
-  head.appendChild(el('button', { class: 'vp-btn-primary', onclick: addDraft }, '+ new draft'));
+  const headActions = el('div', { class: 'vp-plan-head-actions' });
+  const compared = ui.planComparedDraftIds || [];
+  if (compared.length >= 2) {
+    headActions.appendChild(el('button', {
+      class: 'vp-btn-secondary',
+      onclick: () => compareDraftsOnCalendar(compared)
+    }, 'Compare ' + compared.length + ' on calendar'));
+  }
+  // Standalone "+ add miles balance" so balances can be managed from the
+  // header even before any drafts exist.
+  headActions.appendChild(el('button', {
+    class: 'vp-btn-secondary',
+    onclick: () => persistBalances(getPointsBalances().concat({ name: '', balance: 0 }))
+  }, '+ add miles balance'));
+  headActions.appendChild(el('button', { class: 'vp-btn-primary', onclick: addDraft }, '+ new draft'));
+  head.appendChild(headActions);
   panel.appendChild(head);
 
-  if (!p.drafts.length) {
-    panel.appendChild(el('div', { class: 'vp-places-empty' },
-      'No drafts yet. Add a draft to sketch a candidate itinerary, then compare.'));
-    return panel;
-  }
+  // Sidebar is always rendered so the user can manage balances even with
+  // zero drafts in play. The main area falls back to an empty-state hint.
+  const layout = el('div', { class: 'vp-plan-layout' });
+  layout.appendChild(renderBalancesPanel());
 
-  const row = el('div', { class: 'vp-draft-row' });
-  p.drafts.forEach(d => row.appendChild(renderDraftColumn(d)));
-  panel.appendChild(row);
+  const main = el('div', { class: 'vp-plan-main' });
+  if (!p.drafts.length) {
+    main.appendChild(el('div', { class: 'vp-places-empty' },
+      'No drafts yet. Add a draft to sketch a candidate itinerary, then compare.'));
+  } else {
+    const row = el('div', { class: 'vp-draft-row' });
+    p.drafts.forEach(d => row.appendChild(renderDraftColumn(d)));
+    main.appendChild(row);
+  }
+  layout.appendChild(main);
+
+  panel.appendChild(layout);
   return panel;
 }
