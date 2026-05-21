@@ -14,24 +14,65 @@ function sleep(ms) {
   return new Promise(r => setTimeout(r, ms));
 }
 
-// Strip postal codes from an address — Nominatim chokes on country-specific
-// codes ("Lima 15063", "C1043ABO") that often don't match its own indices.
-function withoutPostalCodes(addr) {
-  return (addr || '')
-    .replace(/\s+\d{4,7}(?=,|\s|$)/g, '')
-    .replace(/(?:^|,\s*)[A-Z]\d{3,5}[A-Z]*\s+/g, m => m.startsWith(',') ? ', ' : '');
+// Spanish / Latin-American street-type abbreviations that confuse Nominatim
+// in their short form ("Jr. Colina" misses, "Jirón Colina" hits).
+const ABBREV = [
+  [/\bJr\./gi, 'Jirón'],
+  [/\bAvda?\./gi, 'Avenida'],
+  [/\bAv\./gi, 'Avenida'],
+  [/\bCl\./gi, 'Calle'],
+  [/\bPl\./gi, 'Plaza'],
+  [/\bPlza\./gi, 'Plaza'],
+  [/\bPsje\./gi, 'Pasaje'],
+  [/\bPje\./gi, 'Pasaje'],
+  [/\bBvd\./gi, 'Boulevard'],
+  [/\bBlvd\./gi, 'Boulevard']
+];
+function expandAbbreviations(s) {
+  let v = s || '';
+  for (const [re, to] of ABBREV) v = v.replace(re, to);
+  return v;
 }
 
-// Try a few query shapes against Nominatim until one returns coordinates.
-// Order: full (name + address) → address only → address minus postal codes.
-// Pauses between attempts to respect Nominatim's 1 req/sec policy.
+// Strip postal codes from non-street segments. Operates per comma-segment so
+// a 4-digit street number in the first segment ("Av. Corrientes 1234") is
+// preserved while a postal code in the city segment ("Lima 15063") is dropped.
+function withoutPostalCodes(addr) {
+  return (addr || '')
+    .split(/,\s*/)
+    .map((seg, i) => {
+      let v = seg.replace(/^(\d{4,7}|[A-Z]\d{3,5}[A-Z]*)\s+/, '');
+      if (i > 0) v = v.replace(/\s+(\d{4,7}|[A-Z]\d{3,5}[A-Z]*)$/, '');
+      return v;
+    })
+    .filter(s => s.trim())
+    .join(', ');
+}
+
+// Drop the street segment to fall back to neighborhood + city + country —
+// pins the place at an approximate location when OSM doesn't know the
+// street. Returns '' for addresses already coarse.
+function coarseQuery(addr) {
+  const parts = (addr || '').split(/,\s*/).map(s => s.trim()).filter(Boolean);
+  if (parts.length < 3) return '';
+  return parts.slice(1).join(', ');
+}
+
+// Try a chain of query shapes against Nominatim until one returns coordinates.
+// Order: full (name + expanded address) → expanded address → expanded with
+// postals stripped → coarse (neighborhood + city + country). Pauses between
+// attempts to respect Nominatim's 1 req/sec policy. May return an approximate
+// location when the precise street isn't in OSM.
 export async function tryGeocode(name, address) {
+  const expanded = expandAbbreviations(address);
+  const noZip = withoutPostalCodes(expanded);
+  const coarse = coarseQuery(noZip);
+
   const tries = [];
-  if (name && address) tries.push(name + ', ' + address);
-  if (address) tries.push(address);
-  const noZip = withoutPostalCodes(address);
-  if (noZip && noZip !== address) tries.push(noZip);
-  if (name && noZip) tries.push(name + ', ' + noZip);
+  if (name && expanded) tries.push(name + ', ' + expanded);
+  if (expanded) tries.push(expanded);
+  if (noZip && noZip !== expanded) tries.push(noZip);
+  if (coarse) tries.push(coarse);
 
   for (let i = 0; i < tries.length; i++) {
     const coords = await geocodePlace(tries[i]);
