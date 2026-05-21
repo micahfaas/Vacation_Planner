@@ -8,8 +8,8 @@ import { render } from './render.js';
 import { PLACE_CATEGORIES } from './constants.js';
 import { addCard } from './cards.js';
 import { deepLinksFor } from './deeplinks.js';
-import { confirmDialog } from './dialog.js';
-import { openPlacesImport } from './places-import.js';
+import { confirmDialog, alertDialog } from './dialog.js';
+import { openPlacesImport, tryGeocode } from './places-import.js';
 import { geocodePlace } from './geocoding.js';
 import { getFavorites, addFavorite, removeFavorite, isFavoriteId } from './favorites.js';
 
@@ -43,19 +43,38 @@ function parseMapsUrl(u) {
   return out;
 }
 
-// Best-effort city for a place — prefers an explicit field, otherwise the
-// second-to-last comma-separated chunk of the address (after stripping a
-// leading postal code). Returns '' when nothing usable is available.
+// Clean up a city candidate: strip leading or trailing postal codes and
+// common administrative prefixes that show up in addresses but aren't the
+// city name humans use.
+function cleanCityName(s) {
+  let v = s;
+  v = v.replace(/^(\d{4,7}|[A-Z]\d{3,5}[A-Z]*)\s+/, '');         // leading postal
+  v = v.replace(/\s+\d{4,7}$/, '');                              // trailing numeric postal
+  v = v.replace(/\s+[A-Z]\d{3,5}[A-Z]*$/, '');                   // trailing alphanumeric postal
+  v = v.replace(
+    /^(Cdad\.?\s+Aut[oó]noma\s+de\s+|Ciudad\s+Aut[oó]noma\s+de\s+|Provincia\s+de\s+|Comuna\s+de\s+|Distrito\s+de\s+|Regi[oó]n\s+(?:de\s+)?)/i,
+    '');
+  return v.trim();
+}
+
+// Best-effort city for a place — prefers an explicit field, otherwise picks
+// the most-likely-city comma chunk of the address. Returns '' if nothing
+// usable is available.
 export function placeCity(p) {
   const explicit = (p.city || '').trim();
-  if (explicit) return explicit;
+  if (explicit) return cleanCityName(explicit);
   const addr = (p.address || '').trim();
   if (!addr) return '';
   const parts = addr.split(/,\s*/).map(s => s.trim()).filter(Boolean);
   if (!parts.length) return '';
-  const candidate = parts.length >= 2 ? parts[parts.length - 2] : parts[0];
-  // Strip a leading postal code, numeric ("06700 ...") or alphanumeric ("C1043ABO ...").
-  return candidate.replace(/^(\d{4,7}|[A-Z]\d{3,5}[A-Z]*)\s+/, '').trim();
+  // Second-to-last is the typical city slot. In US-style addresses
+  // ("..., City, State ZIP, Country") the "State ZIP" lands there and the
+  // city sits one further back.
+  let candidate = parts.length >= 2 ? parts[parts.length - 2] : parts[0];
+  if (/^[A-Z]{2}\s+\d{5}/.test(candidate) && parts.length >= 3) {
+    candidate = parts[parts.length - 3];
+  }
+  return cleanCityName(candidate);
 }
 
 // Google Maps directions deep-link to a place.
@@ -304,6 +323,32 @@ function renderPlaceCard(p) {
   return card;
 }
 
+// ---------- backfill geocoding for places that lack coordinates ----------
+async function pinMissingPlaces(targets, btn) {
+  const total = targets.length;
+  let done = 0, found = 0;
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  btn.disabled = true;
+  for (const p of targets) {
+    btn.textContent = 'Pinning ' + (++done) + ' of ' + total + '…';
+    const coords = await tryGeocode(p.name, p.address);
+    if (coords) {
+      updatePlace(p.id, { lat: coords.lat, lng: coords.lng });
+      found++;
+    }
+    // Nominatim's usage policy asks for ≤1 request per second.
+    if (done < total) await sleep(1100);
+  }
+  btn.disabled = false;
+  // The render() inside updatePlace will refresh the map; nothing else to do.
+  if (found < total) {
+    alertDialog(
+      'Pinned ' + found + ' of ' + total + ' place' + (total === 1 ? '' : 's') +
+      '. The rest didn\'t turn up in OpenStreetMap — try opening each and ' +
+      'pasting a Google Maps link into the Link field.');
+  }
+}
+
 // ---------- favorites picker ----------
 function openFavoritesPicker() {
   const t = activeTrip();
@@ -465,6 +510,19 @@ export function renderPlacesView() {
     headBtns.appendChild(el('button', {
       class: 'vp-btn-primary', onclick: () => openFavoritesPicker()
     }, 'From favorites'));
+  }
+  // Backfill button for places that have an address but no map coordinates.
+  const needsCoords = all.filter(p =>
+    (p.address && p.address.trim()) &&
+    !(typeof p.lat === 'number' && typeof p.lng === 'number'));
+  if (needsCoords.length) {
+    const pinBtn = el('button', {
+      class: 'vp-btn-primary',
+      title: 'Geocode addresses for ' + needsCoords.length + ' place' +
+        (needsCoords.length === 1 ? '' : 's') + ' that aren’t on the map yet',
+      onclick: () => pinMissingPlaces(needsCoords, pinBtn)
+    }, 'Pin ' + needsCoords.length + ' on map');
+    headBtns.appendChild(pinBtn);
   }
   headBtns.appendChild(el('button', {
     class: 'vp-btn-primary', onclick: () => openPlaceEditor(null)

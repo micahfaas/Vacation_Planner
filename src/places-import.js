@@ -14,6 +14,33 @@ function sleep(ms) {
   return new Promise(r => setTimeout(r, ms));
 }
 
+// Strip postal codes from an address — Nominatim chokes on country-specific
+// codes ("Lima 15063", "C1043ABO") that often don't match its own indices.
+function withoutPostalCodes(addr) {
+  return (addr || '')
+    .replace(/\s+\d{4,7}(?=,|\s|$)/g, '')
+    .replace(/(?:^|,\s*)[A-Z]\d{3,5}[A-Z]*\s+/g, m => m.startsWith(',') ? ', ' : '');
+}
+
+// Try a few query shapes against Nominatim until one returns coordinates.
+// Order: full (name + address) → address only → address minus postal codes.
+// Pauses between attempts to respect Nominatim's 1 req/sec policy.
+export async function tryGeocode(name, address) {
+  const tries = [];
+  if (name && address) tries.push(name + ', ' + address);
+  if (address) tries.push(address);
+  const noZip = withoutPostalCodes(address);
+  if (noZip && noZip !== address) tries.push(noZip);
+  if (name && noZip) tries.push(name + ', ' + noZip);
+
+  for (let i = 0; i < tries.length; i++) {
+    const coords = await geocodePlace(tries[i]);
+    if (coords) return coords;
+    if (i < tries.length - 1) await sleep(1100);
+  }
+  return null;
+}
+
 export function openPlacesImport() {
   const bg = el('div', { class: 'vp-modal-bg', onclick: e => { if (e.target === bg) bg.remove(); } });
   const m = el('div', { class: 'vp-modal' });
@@ -128,8 +155,7 @@ export function openPlacesImport() {
     for (let i = 0; i < chosen.length; i++) {
       const p = chosen[i];
       status.textContent = `Adding places — ${i + 1} of ${chosen.length}…`;
-      const query = [p.name, p.address].filter(Boolean).join(', ');
-      const coords = await geocodePlace(query);
+      const coords = await tryGeocode(p.name, p.address);
       const place = {
         name: p.name,
         category: p.category,
