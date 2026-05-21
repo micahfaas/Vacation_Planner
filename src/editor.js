@@ -1,6 +1,7 @@
 // Card create/edit modal.
 import { activeTrip } from './state.js';
-import { TYPES } from './constants.js';
+import { TYPES, CITY_STAY_COLORS } from './constants.js';
+import { getPointsBalances } from './profile.js';
 import { el } from './dom.js';
 import { addCard, removeCard, duplicateCard } from './cards.js';
 import { save } from './storage.js';
@@ -55,8 +56,51 @@ export function openEditor(id, addTarget) {
     type: 'number', min: '0', step: '1',
     value: c.cost != null ? c.cost : '', placeholder: 'Estimated cost, e.g. 250'
   });
+
+  // Points payment (flight/transit only). Free-text program with a datalist
+  // sourced from the user's saved balances — autocompletes if they've already
+  // entered "Avios", but they can type any new name too.
+  const pointsCostIn = el('input', {
+    type: 'number', min: '0', step: '1',
+    value: c.pointsCost != null ? c.pointsCost : '',
+    placeholder: 'e.g. 75000'
+  });
+  const pointsBalanceList = 'vp-balance-programs';
+  const pointsProgramIn = el('input', {
+    type: 'text',
+    list: pointsBalanceList,
+    value: c.pointsProgram || '',
+    placeholder: 'e.g. Avios, Bonvoy, Flying Blue'
+  });
+  function buildPointsDatalist() {
+    const dl = el('datalist', { id: pointsBalanceList });
+    getPointsBalances().forEach(b => {
+      if (b && b.name) dl.appendChild(el('option', { value: b.name }));
+    });
+    return dl;
+  }
+
   const notesIn = el('textarea', { placeholder: 'Confirmation #, address, links, anything else…' });
   notesIn.value = c.notes || '';
+
+  // City-stay color picker: named-palette chips. Active selection tracked
+  // in cityColor so the dynamic re-render preserves it across type switches.
+  let cityColor = c.color && CITY_STAY_COLORS[c.color] ? c.color : 'slate';
+  function colorPicker() {
+    const row = el('div', { class: 'vp-color-picker' });
+    Object.keys(CITY_STAY_COLORS).forEach(name => {
+      const swatch = CITY_STAY_COLORS[name];
+      const chip = el('button', {
+        type: 'button',
+        class: 'vp-color-chip' + (cityColor === name ? ' vp-color-chip-on' : ''),
+        title: name,
+        style: { background: swatch.bg, borderColor: swatch.color },
+        onclick: () => { cityColor = name; renderDynamic(); }
+      });
+      row.appendChild(chip);
+    });
+    return row;
+  }
 
   const dynamic = el('div', {});
   m.appendChild(dynamic);
@@ -115,27 +159,52 @@ export function openEditor(id, addTarget) {
         setLookupMsg('', false);
         dynamic.appendChild(el('div', { class: 'vp-flight-lookup-row' }, lookupBtn, lookupMsg));
       }
+      // Points payment subsection. Leaving these blank means cash-only;
+      // filling them in marks this leg as a points (or mixed) redemption
+      // and feeds the Plan tab's running-balance math.
+      dynamic.appendChild(el('div', { class: 'vp-editor-section' }, 'Points payment (optional)'));
+      dynamic.appendChild(el('label', {}, 'Points cost'));
+      dynamic.appendChild(pointsCostIn);
+      dynamic.appendChild(el('label', {}, 'Program'));
+      dynamic.appendChild(pointsProgramIn);
+      dynamic.appendChild(buildPointsDatalist());
     } else {
       dynamic.appendChild(cityLabel);
       dynamic.appendChild(cityIn);
-      if (tp === 'hotel') {
+      if (tp === 'hotel' || tp === 'cityStay') {
         dynamic.appendChild(el('label', {}, 'Nights'));
         dynamic.appendChild(nightsIn);
       } else if (tp === 'activity' || tp === 'meal') {
         dynamic.appendChild(el('label', {}, 'Time'));
         dynamic.appendChild(timeIn);
       }
+      if (tp === 'cityStay') {
+        dynamic.appendChild(el('label', {}, 'Color'));
+        dynamic.appendChild(colorPicker());
+      }
     }
   }
   renderDynamic();
-  typeSel.addEventListener('change', renderDynamic);
+  typeSel.addEventListener('change', () => {
+    renderDynamic();
+    updateBookedVisibility();
+    updateCostLabel();
+  });
 
   const attachField = createAttachmentsField(c.attachments);
   m.appendChild(el('label', {}, 'Attachments'));
   m.appendChild(attachField.el);
 
-  m.appendChild(el('label', {}, 'Cost (USD)'));
+  const costLabel = el('label', {}, 'Cost (USD)');
+  m.appendChild(costLabel);
   m.appendChild(costIn);
+  // Cost label switches to "Cash cost" for flight/transit, where a separate
+  // Points cost field is shown above.
+  function updateCostLabel() {
+    costLabel.textContent = (typeSel.value === 'flight' || typeSel.value === 'transit')
+      ? 'Cash cost (USD)' : 'Cost (USD)';
+  }
+  updateCostLabel();
 
   m.appendChild(el('label', {}, 'Notes'));
   m.appendChild(notesIn);
@@ -149,6 +218,11 @@ export function openEditor(id, addTarget) {
   bookedRow.appendChild(bookedIn);
   bookedRow.appendChild(el('span', { style: { fontSize: '13px', color: 'var(--text)' } }, 'Booked ✓'));
   m.appendChild(bookedRow);
+  // City stays aren't "booked" — they describe the trip shape.
+  function updateBookedVisibility() {
+    bookedRow.style.display = typeSel.value === 'cityStay' ? 'none' : 'flex';
+  }
+  updateBookedVisibility();
 
   const actions = el('div', { class: 'vp-modal-actions' });
   const leftBtns = el('div', { style: { display: 'flex', gap: '8px' } });
@@ -172,11 +246,15 @@ export function openEditor(id, addTarget) {
     class: 'vp-save',
     onclick: () => {
       const tp = typeSel.value;
+      // City stays default their title to the city name when the user
+      // hasn't typed something more specific ("Beach week in Sevilla").
+      const cityValue = cityIn.value.trim();
+      const titleFallback = tp === 'cityStay' && cityValue ? cityValue : TYPES[tp].label;
       const out = {
         type: tp,
-        title: titleIn.value.trim() || TYPES[tp].label,
+        title: titleIn.value.trim() || titleFallback,
         notes: notesIn.value.trim(),
-        booked: bookedIn.checked
+        booked: tp === 'cityStay' ? false : bookedIn.checked
       };
       if (tp === 'flight' || tp === 'transit') {
         out.flightNo = flightNoIn.value.trim();
@@ -192,10 +270,15 @@ export function openEditor(id, addTarget) {
         out.destTz = d.timezone;
         out.destLat = d.latitude;
         out.destLng = d.longitude;
+        const pc = parseFloat(pointsCostIn.value);
+        const pp = pointsProgramIn.value.trim();
+        if (pc > 0) out.pointsCost = pc;
+        if (pp) out.pointsProgram = pp;
       } else {
-        out.city = cityIn.value.trim();
-        if (tp === 'hotel') out.nights = parseInt(nightsIn.value) || 1;
+        out.city = cityValue;
+        if (tp === 'hotel' || tp === 'cityStay') out.nights = parseInt(nightsIn.value) || 1;
         if (tp === 'activity' || tp === 'meal') out.time = timeIn.value;
+        if (tp === 'cityStay') out.color = cityColor;
       }
 
       const att = attachField.getValue();
@@ -211,12 +294,16 @@ export function openEditor(id, addTarget) {
         // clean stale fields that don't apply to the new type
         if (tp === 'flight' || tp === 'transit') {
           delete card.city;
+          if (!(out.pointsCost > 0)) delete card.pointsCost;
+          if (!out.pointsProgram) delete card.pointsProgram;
         } else {
           ['flightNo', 'depart', 'arrive',
            'originCity', 'originTz', 'originLat', 'originLng',
-           'destCity', 'destTz', 'destLat', 'destLng'].forEach(k => delete card[k]);
+           'destCity', 'destTz', 'destLat', 'destLng',
+           'pointsCost', 'pointsProgram'].forEach(k => delete card[k]);
         }
-        if (tp !== 'hotel') delete card.nights;
+        if (tp !== 'hotel' && tp !== 'cityStay') delete card.nights;
+        if (tp !== 'cityStay') delete card.color;
         if (tp !== 'activity' && tp !== 'meal') delete card.time;
         if (!att.length) delete card.attachments;
         if (!(cost > 0)) delete card.cost;

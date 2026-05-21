@@ -11,7 +11,7 @@ import { cardSpan, todayInTrip } from './derived.js';
 import { wallClockToUTC } from './timezone.js';
 import { openEditor } from './editor.js';
 import { openAttachment } from './attachments.js';
-import { render } from './render.js';
+import { render, renderCityBanner } from './render.js';
 import { weatherSummary } from './weather.js';
 import { placeCity } from './places.js';
 
@@ -116,7 +116,10 @@ function collectEntries() {
       const c = t.cards[id];
       if (!c) return;
       const span = cardSpan(c);
-      if (span <= 1) return;
+      // City stays span their full nights even when span === 1, so they
+      // re-appear on every covered day in the Day view.
+      const isMultiDay = c.type === 'cityStay' ? span >= 1 : span > 1;
+      if (!isMultiDay) return;
       if (addDays(parseISO(anchor), span - 1) >= dayMid) {
         seen.add(id);
         entries.push(buildEntry(id, anchor));
@@ -288,14 +291,19 @@ function tripContext(t, entries) {
   const dayNum = Math.round((parseISO(viewISO) - parseISO(t.startDate)) / 86400000) + 1;
   const totalDays = Math.round((parseISO(t.endDate) - parseISO(t.startDate)) / 86400000) + 1;
   const bits = ['Day ' + dayNum + ' of ' + totalDays];
+  const stay = entries.find(e => e.c.type === 'cityStay' && e.c.city);
   const hotel = entries.find(e => e.c.type === 'hotel' && e.c.city);
-  if (hotel) bits.push(hotel.c.city);
+  const city = stay ? stay.c.city : (hotel ? hotel.c.city : null);
+  if (city) bits.push(city);
   return bits.join(' · ');
 }
 
-// Pick the city most relevant to this day's plan: any hotel's city, else
-// any card's city, else any flight/transit destination, else '' (no weather).
+// Pick the city most relevant to this day's plan: the active city stay,
+// else any hotel's city, else any card's city, else any flight/transit
+// destination, else '' (no weather).
 function dayCity(entries) {
+  const stay = entries.find(e => e.c.type === 'cityStay' && e.c.city);
+  if (stay) return stay.c.city;
   const hotel = entries.find(e => e.c.type === 'hotel' && e.c.city);
   if (hotel) return hotel.c.city;
   const withCity = entries.find(e => e.c.city);
@@ -412,14 +420,25 @@ export function renderTodayView() {
   viewISO = defaultDayISO(t);
   const live = isLive();
 
-  const entries = collectEntries();
+  const allEntries = collectEntries();
+  // City stays surface as a banner above the schedule; everything else stays
+  // in the timeline so the hero / "next up" logic doesn't pick a stay.
+  const stayEntries = allEntries.filter(e => e.c.type === 'cityStay');
+  const entries = allEntries.filter(e => e.c.type !== 'cityStay');
+
   const panel = el('div', { class: 'vp-today' });
-  panel.appendChild(buildHeader(t, entries, live));
+  panel.appendChild(buildHeader(t, allEntries, live));
+
+  if (stayEntries.length) {
+    const banners = el('div', { class: 'vp-today-stays' });
+    stayEntries.forEach(e => banners.appendChild(renderCityBanner(e.id)));
+    panel.appendChild(banners);
+  }
 
   if (!entries.length) {
     const empty = el('div', { class: 'vp-today-empty' });
     empty.appendChild(el('div', {},
-      live ? 'Nothing scheduled for today.' : 'Nothing scheduled for this day.'));
+      live ? 'Nothing else scheduled for today.' : 'Nothing else scheduled for this day.'));
     empty.appendChild(el('button', {
       class: 'vp-btn-primary',
       onclick: () => openEditor(null, { kind: 'day', date: viewISO })

@@ -16,7 +16,11 @@ function defaultProfile() {
     travelingWith: '',
     diet: '',
     interests: '',
-    about: ''
+    about: '',
+    // Free-text points/miles balances, shared across every trip. Edited from
+    // the Plan tab sidebar; the running-deltas math reads them via
+    // getPointsBalances() to show what a draft route would actually cost.
+    pointsBalances: []
   };
 }
 
@@ -60,6 +64,16 @@ async function saveProfile(patch) {
     user_id: uid, data: cached, updated_at: new Date().toISOString()
   });
   if (error) throw error;
+}
+
+// ---------- Points / miles balances (cross-trip) ----------
+export function getPointsBalances() {
+  const p = cached || defaultProfile();
+  return Array.isArray(p.pointsBalances) ? p.pointsBalances : [];
+}
+
+export async function setPointsBalances(balances) {
+  await saveProfile({ pointsBalances: balances });
 }
 
 // A compact text block describing the user, for the co-planner context.

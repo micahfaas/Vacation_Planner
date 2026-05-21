@@ -9,5 +9,16 @@ export const data = {
 export function activeTrip() { return data.trips[data.activeTripId]; }
 
 // Session-only UI state (not persisted): which view is showing, place filter,
-// and the day the Today view is scrubbed to (null = the real current date).
-export const ui = { view: 'calendar', placeFilter: 'all', placeCityFilter: 'all', dayDate: null };
+// the day the Today view is scrubbed to (null = the real current date),
+// the currently-focused Plan draft (for the balances sidebar's running
+// deltas), Plan drafts toggled into compare mode, and draft ids previewed
+// over the Calendar as a non-destructive overlay.
+export const ui = {
+  view: 'calendar',
+  placeFilter: 'all',
+  placeCityFilter: 'all',
+  dayDate: null,
+  planSelectedDraftId: null,
+  planComparedDraftIds: [],
+  previewDraftIds: []
+};

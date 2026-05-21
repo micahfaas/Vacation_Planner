@@ -17,7 +17,7 @@ export function renderAuthScreen() {
 
   function draw(notice) {
     card.innerHTML = '';
-    card.appendChild(el('h2', {}, 'Vacation Planner'));
+    card.appendChild(el('h2', {}, 'Trip Planner'));
     card.appendChild(el('p', { class: 'vp-auth-sub' },
       mode === 'signin'
         ? 'Sign in to sync your trips across devices.'

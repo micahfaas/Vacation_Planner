@@ -1,4 +1,4 @@
-// Demo dataset — a 10-day Spain trip (RDM → Madrid → Sevilla → Granada).
+// Demo dataset — a Spain trip (RDM → Madrid → Sevilla → Granada → Madrid).
 // Loaded on demand from the Trips menu so the app can be shown off with
 // realistic data: every card type, multi-city research, reminders, packing,
 // tickets. Each load creates an independent copy that the user can edit,
@@ -6,6 +6,7 @@
 import { data } from './state.js';
 import { newTripId, markTripDirty, save } from './storage.js';
 import { render } from './render.js';
+import { getPointsBalances, setPointsBalances } from './profile.js';
 
 const TZ_PDT = 'America/Los_Angeles';
 const TZ_ES = 'Europe/Madrid';
@@ -13,9 +14,9 @@ const TZ_ES = 'Europe/Madrid';
 function buildDemoTrip() {
   const trip = {
     id: newTripId(),
-    name: '10 days in Spain — demo',
+    name: 'Spain Demo Trip',
     startDate: '2026-08-01',
-    endDate: '2026-08-10',
+    endDate: '2026-08-12',
     cards: {},
     schedule: {},
     library: [],
@@ -47,6 +48,7 @@ function buildDemoTrip() {
     originTz: TZ_PDT, destTz: TZ_PDT,
     depart: '2026-08-01T10:30', arrive: '2026-08-01T11:50',
     booked: true,
+    cost: 200,
     notes: 'Horizon Q400 · seat 7A'
   });
   add('2026-08-01', {
@@ -56,13 +58,20 @@ function buildDemoTrip() {
     originTz: TZ_PDT, destTz: TZ_ES,
     depart: '2026-08-01T16:00', arrive: '2026-08-02T12:30',
     booked: true,
+    cost: 1000,
     notes: 'Overnight transatlantic · 10h 30m · seat 24K'
   });
 
-  // ---------- Day 2: Sun Aug 2 — Arrive Madrid ----------
+  // ---------- Day 2: Sun Aug 2 — Arrive Madrid (Madrid stay starts) ----------
+  add('2026-08-02', {
+    type: 'cityStay', title: 'Madrid', city: 'Madrid',
+    nights: 3, color: 'slate',
+    notes: 'Salamanca district base — easy walk to El Retiro, Las Letras, Sol.'
+  });
   add('2026-08-02', {
     type: 'hotel', title: 'Hotel Único Madrid',
     city: 'Madrid', nights: 3, booked: true,
+    cost: 750,
     notes: 'Salamanca district · confirmation HU-2026-08AUG'
   });
   add('2026-08-02', {
@@ -115,19 +124,25 @@ function buildDemoTrip() {
     notes: 'Historic restaurant from 1839. Cocido madrileño on Tuesdays.'
   });
 
-  // ---------- Day 5: Wed Aug 5 — Madrid → Sevilla ----------
+  // ---------- Day 5: Wed Aug 5 — Madrid → Sevilla (Sevilla stay starts) ----------
   add('2026-08-05', {
     type: 'transit', title: 'AVE Madrid → Sevilla',
     originCity: 'Madrid', destCity: 'Sevilla',
     originTz: TZ_ES, destTz: TZ_ES,
     depart: '2026-08-05T10:00', arrive: '2026-08-05T12:30',
     booked: true,
+    cost: 80,
     notes: 'Madrid Atocha → Sevilla Santa Justa · coach 5, seats 1A/1B.'
+  });
+  add('2026-08-05', {
+    type: 'cityStay', title: 'Sevilla', city: 'Sevilla',
+    nights: 3, color: 'amber',
+    notes: 'Santa Cruz / Alfonso XIII area. Córdoba is a 45-min AVE day trip from here.'
   });
   add('2026-08-05', {
     type: 'hotel', title: 'Hotel Alfonso XIII',
     city: 'Sevilla', nights: 3, booked: true,
-    notes: 'Historic luxury · confirmation AXIII-AUG26'
+    notes: 'Historic luxury · Marriott Luxury Collection · 240k Bonvoy redemption · confirmation AXIII-AUG26'
   });
   add('2026-08-05', {
     type: 'activity', title: 'Flamenco at Casa de la Memoria',
@@ -164,6 +179,7 @@ function buildDemoTrip() {
     originTz: TZ_ES, destTz: TZ_ES,
     depart: '2026-08-07T08:15', arrive: '2026-08-07T09:00',
     booked: true,
+    cost: 30,
     notes: '45 minutes each way.'
   });
   add('2026-08-07', {
@@ -181,21 +197,29 @@ function buildDemoTrip() {
     originCity: 'Córdoba', destCity: 'Sevilla',
     originTz: TZ_ES, destTz: TZ_ES,
     depart: '2026-08-07T18:30', arrive: '2026-08-07T19:15',
-    booked: true
+    booked: true,
+    cost: 30
   });
 
-  // ---------- Day 8: Sat Aug 8 — Sevilla → Granada ----------
+  // ---------- Day 8: Sat Aug 8 — Sevilla → Granada (Granada stay starts) ----------
   add('2026-08-08', {
     type: 'transit', title: 'AVE Sevilla → Granada',
     originCity: 'Sevilla', destCity: 'Granada',
     originTz: TZ_ES, destTz: TZ_ES,
     depart: '2026-08-08T11:00', arrive: '2026-08-08T13:50',
     booked: true,
+    cost: 75,
     notes: 'New AVE route via Antequera — 2h 50m.'
   });
   add('2026-08-08', {
+    type: 'cityStay', title: 'Granada', city: 'Granada',
+    nights: 3, color: 'sage',
+    notes: 'Albayzín + Alhambra base. Free tapas with every drink — Granada tradition.'
+  });
+  add('2026-08-08', {
     type: 'hotel', title: 'Parador de Granada',
-    city: 'Granada', nights: 2, booked: true,
+    city: 'Granada', nights: 3, booked: true,
+    cost: 1200,
     notes: 'Inside the Alhambra grounds — historic convent.'
   });
   add('2026-08-08', {
@@ -216,36 +240,79 @@ function buildDemoTrip() {
     notes: 'Summer palace + gardens — included with Alhambra ticket.'
   });
   add('2026-08-09', {
+    type: 'meal', title: 'Bar Aliatar',
+    city: 'Granada', time: '20:00',
+    notes: 'Free tapa with every drink — Granada tradition still alive here.'
+  });
+
+  // ---------- Day 10: Mon Aug 10 — Albayzín + Sacromonte ----------
+  add('2026-08-10', {
+    type: 'activity', title: 'Carmen de los Mártires gardens',
+    city: 'Granada', time: '10:00',
+    notes: 'Free romantic gardens near the Alhambra. Peacocks roam.'
+  });
+  add('2026-08-10', {
+    type: 'activity', title: 'Catedral de Granada',
+    city: 'Granada', time: '13:00',
+    notes: 'Royal Chapel: tombs of Ferdinand & Isabella.'
+  });
+  add('2026-08-10', {
     type: 'activity', title: 'Sacromonte cave flamenco',
     city: 'Granada', time: '21:00', booked: true,
     notes: 'Zambra performance in a Romani cave.'
   });
 
-  // ---------- Day 10: Mon Aug 10 — Home ----------
-  add('2026-08-10', {
+  // ---------- Day 11: Tue Aug 11 — Granada → Madrid (return night) ----------
+  add('2026-08-11', {
     type: 'transit', title: 'AVE Granada → Madrid',
     originCity: 'Granada', destCity: 'Madrid',
     originTz: TZ_ES, destTz: TZ_ES,
-    depart: '2026-08-10T07:30', arrive: '2026-08-10T10:50',
+    depart: '2026-08-11T10:00', arrive: '2026-08-11T13:20',
     booked: true,
-    notes: 'Granada → Atocha · Metro to MAD-Barajas takes ~30 min.'
+    cost: 90,
+    notes: 'Granada → Atocha · checked-bag-friendly. Cab from Atocha to NH ~10 min.'
   });
-  add('2026-08-10', {
+  add('2026-08-11', {
+    type: 'cityStay', title: 'Madrid', city: 'Madrid',
+    nights: 1, color: 'slate',
+    notes: 'Return night before flying home — staying near Atocha for the airport run.'
+  });
+  add('2026-08-11', {
+    type: 'hotel', title: 'NH Madrid Atocha',
+    city: 'Madrid', nights: 1, booked: true,
+    cost: 180,
+    notes: 'Quick walk to Atocha · easy Aeropuerto Cercanías to MAD-Barajas.'
+  });
+  add('2026-08-11', {
+    type: 'activity', title: 'Templo de Debod at sunset',
+    city: 'Madrid', time: '20:30',
+    notes: 'Ancient Egyptian temple — best at sunset.'
+  });
+  add('2026-08-11', {
+    type: 'meal', title: 'Mercado de San Miguel',
+    city: 'Madrid', time: '22:00',
+    notes: 'Casual dinner crawl — croquetas at El Imparcial, oysters at La Casa del Bacalao.'
+  });
+
+  // ---------- Day 12: Wed Aug 12 — Home ----------
+  add('2026-08-12', {
     type: 'flight', title: 'IB 6173 MAD → SEA',
     flightNo: 'IB6173',
     originCity: 'Madrid', destCity: 'Seattle',
     originTz: TZ_ES, destTz: TZ_PDT,
-    depart: '2026-08-10T15:30', arrive: '2026-08-10T17:30',
+    depart: '2026-08-12T15:30', arrive: '2026-08-12T17:30',
     booked: true,
+    cost: 950,
     notes: 'Time-zone arithmetic feels weird — you "arrive" before you "left" Madrid in local time.'
   });
-  add('2026-08-10', {
+  add('2026-08-12', {
     type: 'flight', title: 'AS 2422 SEA → RDM',
     flightNo: 'AS2422',
     originCity: 'Seattle', destCity: 'Redmond',
     originTz: TZ_PDT, destTz: TZ_PDT,
-    depart: '2026-08-10T20:00', arrive: '2026-08-10T21:25',
-    booked: true
+    depart: '2026-08-12T20:00', arrive: '2026-08-12T21:25',
+    booked: true,
+    cost: 150
   });
 
   // ---------- Saved places (research) ----------
@@ -253,7 +320,7 @@ function buildDemoTrip() {
     trip.places.push(Object.assign({ id: crypto.randomUUID() }, p));
   }
 
-  // ----- Where I'm staying (one per city) -----
+  // ----- Where I'm staying (one per city, plus the Aug 11 return night) -----
   place({
     name: 'Hotel Único Madrid', category: 'staying', city: 'Madrid',
     address: 'Calle de Claudio Coello 67, 28001 Madrid, Spain',
@@ -276,7 +343,15 @@ function buildDemoTrip() {
     lat: 37.17810, lng: -3.58760,
     url: 'https://www.google.com/maps/search/?api=1&query=Parador+de+Granada',
     website: 'https://www.parador.es/en/paradores/parador-de-granada',
-    notes: 'Nights of Aug 8–9 · inside the Alhambra grounds · historic convent'
+    notes: 'Nights of Aug 8–10 · inside the Alhambra grounds · historic convent'
+  });
+  place({
+    name: 'NH Madrid Atocha', category: 'staying', city: 'Madrid',
+    address: 'Paseo Infanta Isabel 9, 28014 Madrid, Spain',
+    lat: 40.40545, lng: -3.69013,
+    url: 'https://www.google.com/maps/search/?api=1&query=NH+Madrid+Atocha',
+    website: 'https://www.nh-hotels.com/en/hotel/nh-madrid-atocha',
+    notes: 'Aug 11 return night · steps from Atocha · easy Cercanías to MAD-Barajas'
   });
 
   // Madrid
@@ -371,15 +446,15 @@ function buildDemoTrip() {
     notes: 'Royal Chapel: tombs of Ferdinand & Isabella.'
   });
 
-  // ---------- Itinerary drafts (two routes to compare) ----------
+  // ---------- Itinerary drafts (three routes to compare) ----------
   trip.plan.drafts = [
     {
       id: crypto.randomUUID(),
-      name: 'Route A — Madrid → Sevilla → Granada',
+      name: 'Route A — Direct cash',
       stars: 5,
       startDate: '2026-08-01',
-      notes: 'Goes north→south then east. Sevilla → Granada is the new direct AVE (~2h 50m via Antequera). Return flight leaves from Madrid, so day 10 is Granada → Madrid by AVE in the morning then home. This is the chosen plan.',
-      returnTransport: { label: 'AVE Granada → MAD · IB 6173 MAD → SEA · AS 2422 SEA → RDM', cost: 1100, costUnit: 'usd', stars: 4 },
+      notes: 'Goes north→south then east. Sevilla → Granada is the new direct AVE (~2h 50m via Antequera). Return flight leaves from Madrid, so day 11 is Granada → Madrid by AVE with one overnight near Atocha before the home flight on day 12. This is the chosen plan.',
+      returnTransport: { label: 'IB 6173 MAD → SEA · AS 2422 SEA → RDM', cost: 1100, costUnit: 'usd', stars: 4 },
       stops: [
         {
           id: crypto.randomUUID(),
@@ -398,42 +473,17 @@ function buildDemoTrip() {
         },
         {
           id: crypto.randomUUID(),
-          city: 'Granada', nights: 2,
+          city: 'Granada', nights: 3,
           transport: { label: 'AVE Sevilla → Granada (via Antequera)', cost: 75, costUnit: 'usd', stars: 4 },
-          lodging: { label: 'Parador de Granada', cost: 800, costUnit: 'usd', stars: 5,
+          lodging: { label: 'Parador de Granada', cost: 1200, costUnit: 'usd', stars: 5,
             url: 'https://www.parador.es/en/paradores/parador-de-granada' }
-        }
-      ]
-    },
-    {
-      id: crypto.randomUUID(),
-      name: 'Route C — Same as A, cheaper multi-leg flights',
-      stars: 3,
-      startDate: '2026-08-01',
-      notes: 'Identical ground itinerary to Route A, but a 3-leg outbound (RDM → PDX → AMS → MAD) and a Flying Blue award redemption on the return. The miles burn the home leg almost for free in cash; outbound stays cheap. Total cash drops vs Route A — at the cost of ~9 hours extra travel and two layovers.',
-      returnTransport: { label: 'AVE Granada → MAD · KL 1702 MAD → AMS · DL 87 AMS → PDX · AS 2306 PDX → RDM',
-        cost: 60000, costUnit: 'points', pointsProgram: 'Flying Blue', cashTaxes: 290, stars: 3 },
-      stops: [
-        {
-          id: crypto.randomUUID(),
-          city: 'Madrid', nights: 3,
-          transport: { label: 'AS 2305 RDM→PDX · DL 86 PDX→AMS · KL 1701 AMS→MAD', cost: 800, costUnit: 'usd', stars: 2 },
-          lodging: { label: 'Hotel Único Madrid', cost: 750, costUnit: 'usd', stars: 4,
-            url: 'https://www.unicohotelmadrid.com/' }
         },
         {
           id: crypto.randomUUID(),
-          city: 'Sevilla', nights: 3,
-          transport: { label: 'AVE Madrid → Sevilla', cost: 80, costUnit: 'usd', stars: 5 },
-          lodging: { label: 'Hotel Alfonso XIII', cost: 1200, costUnit: 'usd', stars: 5,
-            url: 'https://www.hotel-alfonsoxiii-seville.com/' }
-        },
-        {
-          id: crypto.randomUUID(),
-          city: 'Granada', nights: 2,
-          transport: { label: 'AVE Sevilla → Granada (via Antequera)', cost: 75, costUnit: 'usd', stars: 4 },
-          lodging: { label: 'Parador de Granada', cost: 800, costUnit: 'usd', stars: 5,
-            url: 'https://www.parador.es/en/paradores/parador-de-granada' }
+          city: 'Madrid', nights: 1,
+          transport: { label: 'AVE Granada → Madrid', cost: 90, costUnit: 'usd', stars: 4 },
+          lodging: { label: 'NH Madrid Atocha', cost: 180, costUnit: 'usd', stars: 4,
+            url: 'https://www.nh-hotels.com/en/hotel/nh-madrid-atocha' }
         }
       ]
     },
@@ -442,9 +492,9 @@ function buildDemoTrip() {
       name: 'Route B — Stretch your points',
       stars: 4,
       startDate: '2026-08-01',
-      notes: 'Same three cities as Route A but reordered Madrid → Granada → Sevilla so Granada (the most demanding) lands while energy is highest. Built to burn points: both Iberia long-haul flights on Avios, both nice hotels on Marriott Bonvoy. Out-of-pocket cash drops by roughly 60% vs Route A — at the cost of award-availability risk on the dates and a SVQ → MAD connection on the way home.',
-      returnTransport: { label: 'IB 8521 SVQ → MAD · IB 6173 MAD → SEA · AS 2422 SEA → RDM',
-        cost: 64000, costUnit: 'points', pointsProgram: 'Avios', cashTaxes: 480, stars: 3 },
+      notes: 'Same four stops as Route A but reordered Madrid → Granada → Sevilla → Madrid so Granada (the most demanding) lands while energy is highest. Built to burn points: both Iberia long-haul flights on Avios, both nice hotels on Marriott Bonvoy. Out-of-pocket cash drops by roughly 60% vs Route A — at the cost of award-availability risk on the dates and a longer SVQ → MAD → SEA stretch on the way home.',
+      returnTransport: { label: 'IB 6173 MAD → SEA · AS 2422 SEA → RDM',
+        cost: 64000, costUnit: 'points', pointsProgram: 'Avios', cashTaxes: 480, stars: 4 },
       stops: [
         {
           id: crypto.randomUUID(),
@@ -464,11 +514,57 @@ function buildDemoTrip() {
         },
         {
           id: crypto.randomUUID(),
-          city: 'Sevilla', nights: 2,
+          city: 'Sevilla', nights: 3,
           transport: { label: 'AVE Granada → Sevilla (via Antequera)', cost: 75, costUnit: 'usd', stars: 4 },
           lodging: { label: 'Hotel Alfonso XIII (Marriott Luxury Collection)',
-            cost: 160000, costUnit: 'points', pointsProgram: 'Bonvoy', stars: 5,
+            cost: 240000, costUnit: 'points', pointsProgram: 'Bonvoy', stars: 5,
             url: 'https://www.hotel-alfonsoxiii-seville.com/' }
+        },
+        {
+          id: crypto.randomUUID(),
+          city: 'Madrid', nights: 1,
+          transport: { label: 'AVE Sevilla → Madrid', cost: 80, costUnit: 'usd', stars: 5 },
+          lodging: { label: 'NH Madrid Atocha', cost: 180, costUnit: 'usd', stars: 4,
+            url: 'https://www.nh-hotels.com/en/hotel/nh-madrid-atocha' }
+        }
+      ]
+    },
+    {
+      id: crypto.randomUUID(),
+      name: 'Route C — Linger in Madrid',
+      stars: 3,
+      startDate: '2026-08-01',
+      notes: 'Same cities and order as Route A, but the time is distributed differently — four nights in Madrid to settle in, three in Sevilla, only two in Granada. Cheaper 3-leg outbound (RDM → PDX → AMS → MAD) and a Flying Blue redemption on the return to keep cash down.',
+      returnTransport: { label: 'KL 1702 MAD → AMS · DL 87 AMS → PDX · AS 2306 PDX → RDM',
+        cost: 60000, costUnit: 'points', pointsProgram: 'Flying Blue', cashTaxes: 290, stars: 3 },
+      stops: [
+        {
+          id: crypto.randomUUID(),
+          city: 'Madrid', nights: 4,
+          transport: { label: 'AS 2305 RDM→PDX · DL 86 PDX→AMS · KL 1701 AMS→MAD', cost: 800, costUnit: 'usd', stars: 2 },
+          lodging: { label: 'Hotel Único Madrid', cost: 1000, costUnit: 'usd', stars: 4,
+            url: 'https://www.unicohotelmadrid.com/' }
+        },
+        {
+          id: crypto.randomUUID(),
+          city: 'Sevilla', nights: 3,
+          transport: { label: 'AVE Madrid → Sevilla', cost: 80, costUnit: 'usd', stars: 5 },
+          lodging: { label: 'Hotel Alfonso XIII', cost: 1800, costUnit: 'usd', stars: 5,
+            url: 'https://www.hotel-alfonsoxiii-seville.com/' }
+        },
+        {
+          id: crypto.randomUUID(),
+          city: 'Granada', nights: 2,
+          transport: { label: 'AVE Sevilla → Granada (via Antequera)', cost: 75, costUnit: 'usd', stars: 4 },
+          lodging: { label: 'Parador de Granada', cost: 800, costUnit: 'usd', stars: 5,
+            url: 'https://www.parador.es/en/paradores/parador-de-granada' }
+        },
+        {
+          id: crypto.randomUUID(),
+          city: 'Madrid', nights: 1,
+          transport: { label: 'AVE Granada → Madrid', cost: 90, costUnit: 'usd', stars: 4 },
+          lodging: { label: 'NH Madrid Atocha', cost: 180, costUnit: 'usd', stars: 4,
+            url: 'https://www.nh-hotels.com/en/hotel/nh-madrid-atocha' }
         }
       ]
     }
@@ -545,6 +641,23 @@ function buildDemoTrip() {
   return trip;
 }
 
+// Seed a handful of points/miles balances the first time the demo is loaded
+// so the Plan tab's sidebar deltas have something to work against. If the
+// user has already entered their own balances we leave them alone so the
+// demo never trashes real data.
+async function seedDemoBalancesIfEmpty() {
+  if (getPointsBalances().length) return;
+  try {
+    await setPointsBalances([
+      { name: 'Avios', balance: 150000 },
+      { name: 'Bonvoy', balance: 500000 },
+      { name: 'Flying Blue', balance: 80000 },
+      { name: 'Amex MR', balance: 200000 },
+      { name: 'Capital One', balance: 120000 }
+    ]);
+  } catch { /* ignored — local cache update still succeeded */ }
+}
+
 // Create the demo trip, switch to it, persist + render. Resolves with the
 // new trip id so the caller can dismiss any dialog after the work is done.
 export function loadDemoTrip() {
@@ -553,6 +666,10 @@ export function loadDemoTrip() {
   data.activeTripId = trip.id;
   markTripDirty(trip.id);
   save();
+  // Seed balances in the background; the trip render doesn't depend on it,
+  // so we don't await. A second render fires once the seeding completes so
+  // the Plan sidebar picks the new balances up next time it's opened.
+  seedDemoBalancesIfEmpty().then(() => render());
   render();
   return trip.id;
 }

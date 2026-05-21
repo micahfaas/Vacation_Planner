@@ -1,5 +1,5 @@
 {
-  "name": "Vacation Planner",
+  "name": "Trip Planner",
   "short_name": "Trips",
   "description": "Drag-and-drop trip planner with calendar, places, and itinerary drafts.",
   "start_url": "./",
