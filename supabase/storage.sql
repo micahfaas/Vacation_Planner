@@ -14,3 +14,21 @@ create policy "Users manage own attachments"
   on storage.objects for all
   using (bucket_id = 'attachments' and (storage.foldername(name))[1] = auth.uid()::text)
   with check (bucket_id = 'attachments' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- Trip journal photos. Same per-user-folder model as attachments, with paths
+-- shaped <user-id>/<trip-id>/<photo-id>.jpg. Images are downscaled and
+-- re-encoded to JPEG client-side before upload, so the 5 MB limit is a
+-- guardrail against accidental full-resolution uploads, not the normal case
+-- (typical compressed photo is ~300-500 KB). Private bucket — the app reads
+-- via short-lived signed URLs.
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('trip-photos', 'trip-photos', false, 5242880, array['image/jpeg', 'image/png', 'image/webp'])
+on conflict (id) do nothing;
+
+drop policy if exists "Users manage own trip photos" on storage.objects;
+
+create policy "Users manage own trip photos"
+  on storage.objects for all
+  using (bucket_id = 'trip-photos' and (storage.foldername(name))[1] = auth.uid()::text)
+  with check (bucket_id = 'trip-photos' and (storage.foldername(name))[1] = auth.uid()::text);
