@@ -1,21 +1,18 @@
 # Trip Planner
 
-A drag-and-drop trip planner that runs entirely in your browser. Build a card library (flights, hotels, activities, transit, meals, notes) and shuffle them around a calendar grid to figure out the order of cities you want to visit. Data saves to `localStorage`, and you can export/import JSON to back up or move between devices.
+A drag-and-drop trip planner. Build a card library (flights, hotels, activities, transit, meals, notes) and shuffle them around a calendar grid to figure out the order of cities you want to visit. It pairs a vanilla-JS front end with Supabase (auth, sync, and Claude-backed Edge Functions) for AI assists like import parsing, a trip conflict checker, lounge lookup, and an AI-written journal. Trips sync to your account and cache in `localStorage` for offline use; you can also export/import JSON.
 
 ## Features
 
-- Calendar grid covering whatever date range you set (great for 1–3 week trips)
-- Drag cards between the library and any day, or between days
-- Card types with type-specific fields: flights and transit get depart/arrive datetimes, hotels get a nights count, activities and meals get a time
-- Library filter chips to narrow by card type
-- Multi-day cards (hotels with multiple nights, overnight flights) render as a single bar spanning the relevant days, splitting cleanly across week boundaries
-- Conflict detection: days with overlapping timed cards get an amber border + warning icon
-- Booked status: mark any card as booked and it turns green with a checkmark badge — the trip math panel shows `booked / total` so you can track progress
-- Trip math panel: total days, days planned, open days, booked count, nights per city, total flight and transit time
-- Multiple saved trips, with rename and delete
-- JSON export and import
-- Auto-saves to `localStorage`
-- Warm, bright vacation-themed palette
+See **[FEATURES.md](FEATURES.md)** for the full, by-tab feature list. Highlights:
+
+- Drag-and-drop calendar across any date range, with multi-day spans and city-stay banners
+- Card types with type-specific fields (flights/transit, hotels, activities, meals, notes, city stays)
+- AI **Check trip** conflict detector, AI **co-planner** suggestions, and AI **import** (paste email / OCR a PDF / scan a boarding pass / Google Calendar)
+- **Places** map, **Plan** itinerary drafts with cash + points/miles math, **Resources**, **Reminders**, and an AI **Journal** with photos
+- Lounge access on flight cards based on the cards/status you hold
+- Multiple trips, read-only share links, JSON/.ics export, currency converter
+- Account sync via Supabase, with `localStorage` offline cache
 
 ## Local development
 
@@ -37,20 +34,25 @@ npm run preview   # serve the build locally to check it
 
 ## Hosting
 
-`npm run build` emits a static bundle into `dist/`. Because there is now a build step,
-deploying to GitHub Pages needs either a GitHub Action that runs the build or a host
-that builds automatically — this will be wired up as part of deployment setup.
+`npm run build` emits a static bundle into `dist/`. Deployment to GitHub Pages is
+automated by `.github/workflows/deploy.yml`, which builds and publishes on every push
+to `main` (Supabase URL/key and the Google client ID are injected from repo Variables).
 
-`localStorage` is per-browser, per-device — use the JSON export/import buttons in the
-header to move a trip between devices.
+Signed-in trips sync to your Supabase account; the `localStorage` cache also keeps the
+last-loaded trips available offline. Use the JSON export/import buttons to move data
+outside your account.
 
 ## Project structure
 
 - `index.html` — markup shell and CDN-loaded icon font
 - `src/main.js` — app entry point
 - `src/*.js` — planner logic split into small ES modules (state, storage, rendering,
-  editor, trips, import/export)
+  editor, trips, import/export, places, plan, journal, lounges, photos, …)
+- `src/data/*.json` — bundled datasets (e.g. lounge catalog)
 - `src/styles.css` — styling
+- `supabase/functions/*` — Claude-backed Edge Functions (import parsing, co-planner,
+  trip-check, trip-journal, flight lookup)
+- `supabase/*.sql` — schema, storage buckets, and RLS policies (run in the SQL editor)
 - `vite.config.js` — build configuration
 
 No UI framework — just vanilla JS modules bundled by Vite.
