@@ -5,9 +5,12 @@ import { el } from './dom.js';
 import { searchCities } from './geocoding.js';
 import { browserTz } from './timezone.js';
 
-// opts: { city, timezone, latitude, longitude, placeholder }
+// opts: { city, timezone, latitude, longitude, placeholder, onChange }
+// onChange() fires whenever the city value changes (selection, typing, or
+// programmatic setValue) so callers can react live.
 // Returns { el, getValue } where getValue() -> { name, timezone, latitude, longitude }.
 export function createCityPicker(opts = {}) {
+  const fireChange = () => { if (typeof opts.onChange === 'function') opts.onChange(); };
   const value = {
     name: opts.city || '',
     timezone: opts.timezone || browserTz(),
@@ -76,6 +79,7 @@ export function createCityPicker(opts = {}) {
     input.value = city.label;
     hideMenu();
     updateCaption();
+    fireChange();
   }
 
   let debounceTimer = 0;
@@ -99,6 +103,7 @@ export function createCityPicker(opts = {}) {
     value.longitude = null;
     selected = false;
     updateCaption();
+    fireChange();
     clearTimeout(debounceTimer);
     if (text.length < 2) { hideMenu(); return; }
     debounceTimer = setTimeout(() => search(text), 250);
@@ -129,6 +134,7 @@ export function createCityPicker(opts = {}) {
       input.value = value.name;
       hideMenu();
       updateCaption();
+      fireChange();
     }
   };
 }
