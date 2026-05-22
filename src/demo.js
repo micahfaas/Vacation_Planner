@@ -693,9 +693,15 @@ The AVE made the whole thing feel effortless — three very different cities sti
   // use a direct `url` rather than a storage `path`, so they render without a
   // signed-URL fetch.
   const photoUrl = (slug) => import.meta.env.BASE_URL + 'demo-photos/' + slug + '.jpg';
+  // Two of the photos link to saved places (Places tab) to show how a journal
+  // photo can point at a place you've researched. placeId is resolved by name
+  // from the places built above.
+  const placeId = (name) => (trip.places.find(p => p.name === name) || {}).id;
   trip.photos = [
     { id: crypto.randomUUID(), url: photoUrl('madrid-plaza-mayor'), day: '2026-08-02', width: 1000, height: 773, caption: 'Plaza Mayor, Madrid' },
     { id: crypto.randomUUID(), url: photoUrl('madrid-prado'),       day: '2026-08-03', width: 1000, height: 666, caption: 'Museo del Prado, Madrid' },
+    { id: crypto.randomUUID(), url: photoUrl('madrid-cafe'),        day: '2026-08-04', width: 1000, height: 666, caption: 'Café del Príncipe, Madrid', placeId: placeId('Café del Príncipe') },
+    { id: crypto.randomUUID(), url: photoUrl('sevilla-restaurant'), day: '2026-08-05', width: 1000, height: 750, caption: 'Eslava, Sevilla', placeId: placeId('Eslava') },
     { id: crypto.randomUUID(), url: photoUrl('sevilla-alcazar'),    day: '2026-08-06', width: 900,  height: 900, caption: 'Real Alcázar, Sevilla' },
     { id: crypto.randomUUID(), url: photoUrl('sevilla-plaza-espana'), day: '2026-08-06', width: 1000, height: 666, caption: 'Plaza de España, Sevilla' },
     { id: crypto.randomUUID(), url: photoUrl('granada-alhambra'),   day: '2026-08-09', width: 1000, height: 353, caption: 'The Alhambra, Granada' }

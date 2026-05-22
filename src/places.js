@@ -5,6 +5,32 @@ import { activeTrip, ui } from './state.js';
 import { el } from './dom.js';
 import { save } from './storage.js';
 import { render } from './render.js';
+
+// Jump to the Places tab and spotlight a specific saved place. Clears any
+// filters that would hide it, switches view, then scrolls to + briefly
+// highlights its card. Used by the journal's photo→place links.
+export function focusPlace(placeId) {
+  const t = activeTrip();
+  if (!t || !(t.places || []).some(p => p.id === placeId)) return;
+  ui.placeFilter = 'all';
+  ui.placeCityFilter = 'all';
+  ui.focusPlaceId = placeId;
+  ui.view = 'places';
+  render();
+  // After the view renders, scroll the card into view and flash it.
+  setTimeout(() => {
+    const card = document.querySelector('.vp-place[data-place-id="' + placeId + '"]');
+    if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Drop the highlight after the flash so it doesn't persist on re-render.
+    setTimeout(() => {
+      if (ui.focusPlaceId === placeId) {
+        ui.focusPlaceId = null;
+        const c = document.querySelector('.vp-place-focus');
+        if (c) c.classList.remove('vp-place-focus');
+      }
+    }, 2200);
+  }, 60);
+}
 import { PLACE_CATEGORIES } from './constants.js';
 import { addCard } from './cards.js';
 import { deepLinksFor } from './deeplinks.js';
@@ -236,7 +262,9 @@ function renderPlaceCard(p) {
   const cat = PLACE_CATEGORIES[p.category] || PLACE_CATEGORIES.other;
   const card = el('div', {
     class: 'vp-place vp-place-cat-' + (p.category || 'other') +
-      (p.category === 'staying' ? ' vp-place-staying' : ''),
+      (p.category === 'staying' ? ' vp-place-staying' : '') +
+      (ui.focusPlaceId === p.id ? ' vp-place-focus' : ''),
+    'data-place-id': p.id,
     onclick: e => {
       if (e.target.closest('.vp-place-actions') || e.target.closest('a') ||
           e.target.closest('.vp-place-star')) return;

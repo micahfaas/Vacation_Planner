@@ -20,5 +20,8 @@ export const ui = {
   dayDate: null,
   planSelectedDraftId: null,
   planComparedDraftIds: [],
-  previewDraftIds: []
+  previewDraftIds: [],
+  // Transient: a saved place to spotlight on the Places tab (set by a
+  // journal photo→place link, cleared after the flash).
+  focusPlaceId: null
 };
