@@ -10,7 +10,7 @@ import { createCityPicker } from './citypicker.js';
 import { createAttachmentsField } from './attachments.js';
 import { lookupFlight } from './flightlookup.js';
 import { confirmDialog } from './dialog.js';
-import { eligibleLoungesForFlight, hasLoungeProfile } from './lounges.js';
+import { eligibleLoungesForFlight, hasLoungeProfile, airportsForCity } from './lounges.js';
 
 export function openEditor(id, addTarget) {
   const t = activeTrip();
@@ -335,8 +335,24 @@ function renderLoungeBlock(card) {
     return el('div', { class: 'vp-lounge-empty' },
       'Lounges: add the cards and elite status you hold under About me to see eligible lounges for this flight.');
   }
+
   const groups = eligibleLoungesForFlight(card, profile);
-  if (!groups.length) return null;
+  if (!groups.length) {
+    // Explain *why* it's empty rather than showing nothing. Distinguish
+    // "we don't cover these airports yet" from "your cards don't get you in".
+    const cities = [card.originCity, card.destCity].filter(Boolean);
+    const covered = cities.filter(c => airportsForCity(c).length);
+    if (!cities.length) return null; // no route entered yet — stay quiet
+    if (!covered.length) {
+      return el('div', { class: 'vp-lounge-empty' },
+        'Lounges: ' + (cities.join(' and ') || 'these airports') +
+        ' aren’t in the lounge dataset yet (it covers ~30 major hubs for now).');
+    }
+    const airports = covered.flatMap(c => airportsForCity(c));
+    return el('div', { class: 'vp-lounge-empty' },
+      'Lounges: none of your saved cards or status get you into a lounge at ' +
+      airports.join(', ') + '. Add more under About me.');
+  }
 
   const block = el('div', { class: 'vp-lounge-block' });
   block.appendChild(el('div', { class: 'vp-editor-section' }, 'Lounges you can access'));
