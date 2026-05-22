@@ -431,6 +431,38 @@ function buildPhotoTile(photo, trip) {
     } catch { if (tab) tab.close(); }
   });
 
+  // Saved-place link. When linked, show a clickable chip that jumps to the
+  // Places tab; otherwise show a picker so the user can link this photo to one
+  // of the trip's saved places.
+  const places = (activeTrip().places || []);
+  const foot = el('div', { class: 'vp-photo-foot' });
+  const linkedPlace = photo.placeId ? places.find(p => p.id === photo.placeId) : null;
+  if (linkedPlace) {
+    const chip = el('button', { class: 'vp-photo-place-chip', title: 'View in Places' },
+      el('i', { class: 'ti ti-map-pin' }), el('span', {}, linkedPlace.name));
+    chip.addEventListener('click', () => {
+      import('./places.js').then(({ focusPlace }) => focusPlace(linkedPlace.id));
+    });
+    foot.appendChild(chip);
+    const unlink = el('button', {
+      class: 'vp-photo-place-x', title: 'Unlink place', 'aria-label': 'Unlink place'
+    }, '×');
+    unlink.addEventListener('click', () => { delete photo.placeId; save(); rerender(); });
+    foot.appendChild(unlink);
+    tile.appendChild(foot);
+  } else if (places.length) {
+    const sel = el('select', { class: 'vp-photo-place' });
+    sel.appendChild(el('option', { value: '' }, 'Link a place…'));
+    places.forEach(p => {
+      sel.appendChild(el('option', { value: p.id }, p.name + (p.city ? ' · ' + p.city : '')));
+    });
+    sel.addEventListener('change', () => {
+      if (sel.value) { photo.placeId = sel.value; save(); rerender(); }
+    });
+    foot.appendChild(sel);
+    tile.appendChild(foot);
+  }
+
   return tile;
 }
 

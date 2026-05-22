@@ -11,6 +11,8 @@ here to satisfy the attribution terms of the CC licenses.
 | `sevilla-plaza-espana.jpg` | Plaza de España, Sevilla | Carlos Delgado | CC BY-SA 4.0 | https://commons.wikimedia.org/wiki/File:Plaza_de_Espa%C3%B1a_(Sevilla)_-_01.jpg |
 | `sevilla-alcazar.jpg` | Real Alcázar, Sevilla | Alvesgaspar | CC BY-SA 4.0 | https://commons.wikimedia.org/wiki/File:Alc%C3%A1zar_Seville_April_2019-11.jpg |
 | `granada-alhambra.jpg` | The Alhambra, Granada | Jebulon | Public domain | https://commons.wikimedia.org/wiki/File:Alhambra_in_the_evening.jpg |
+| `madrid-cafe.jpg` | Café interior (stands in for Café del Príncipe) | abhinav singh | CC0 | https://commons.wikimedia.org/wiki/File:Water_skis_in_a_cozy_coffee_shop_(Unsplash).jpg |
+| `sevilla-restaurant.jpg` | Restaurant interior, Los Caracoles, Barcelona (stands in for Eslava) | Jordiferrer | CC BY-SA 4.0 | https://commons.wikimedia.org/wiki/File:Interior_Restaurant_Los_Caracoles_-_Barcelona_07.JPG |
 
 CC BY-SA 4.0: https://creativecommons.org/licenses/by-sa/4.0/ ·
 CC BY 2.0: https://creativecommons.org/licenses/by/2.0/

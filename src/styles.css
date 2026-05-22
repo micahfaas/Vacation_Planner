@@ -3191,3 +3191,55 @@ a.vp-res-link-title:hover span { text-decoration: underline; }
   flex-shrink: 0;
 }
 .vp-photo-del:hover { background: #fff; }
+
+/* photo -> saved place link */
+.vp-photo-foot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+}
+.vp-photo-place-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 3px 8px 3px 6px;
+  border-radius: 999px;
+  border: 0.5px solid var(--accent);
+  background: var(--accent-bg);
+  color: var(--text);
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+.vp-photo-place-chip:hover { background: var(--accent); color: #fff; }
+.vp-photo-place-chip i { font-size: 13px; flex-shrink: 0; }
+.vp-photo-place-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vp-photo-place-x {
+  border: 0;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+  flex-shrink: 0;
+}
+.vp-photo-place-x:hover { color: var(--danger); }
+.vp-photo-place {
+  width: 100%;
+  font-size: var(--text-xs);
+  padding: 4px 6px;
+  color: var(--text-2);
+}
+
+/* spotlight a place when arrived via a journal photo link */
+.vp-place-focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  animation: vp-place-flash 2.2s ease-out;
+}
+@keyframes vp-place-flash {
+  0%, 35% { background: var(--accent-bg); }
+  100% { background: var(--surface); }
+}
