@@ -52,6 +52,10 @@ export function openTripsMenu() {
           confirmDialog('Delete trip “' + tr.name + '” and all its cards?',
             { danger: true, confirmText: 'Delete' }).then(ok => {
             if (!ok) return;
+            // Best-effort: free any journal photos this trip stored.
+            if ((tr.photos || []).length) {
+              import('./photos.js').then(m => m.deleteAllTripPhotos(tr));
+            }
             markTripDeleted(tr.id);
             delete data.trips[tr.id];
             if (data.activeTripId === tr.id) {

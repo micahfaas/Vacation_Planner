@@ -12,12 +12,16 @@
     { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
   ],
   "share_target": {
-    "action": "./",
-    "method": "GET",
+    "action": "./share-target",
+    "method": "POST",
+    "enctype": "multipart/form-data",
     "params": {
       "title": "shared_title",
       "text": "shared_text",
-      "url": "shared_url"
+      "url": "shared_url",
+      "files": [
+        { "name": "photos", "accept": ["image/*"] }
+      ]
     }
   }
 }
