@@ -1,0 +1,209 @@
+{
+  "_meta": {
+    "version": 1,
+    "curatedAt": "2026-05-21",
+    "notes": "Curated set of major lounges at top hub airports. Access keys reference lounge-catalog.json. Update when programs/lounges change."
+  },
+  "airports": {
+    "JFK": [
+      { "name": "Chase Sapphire Lounge by The Club", "terminal": "T1, airside", "access": ["chase-sapphire-lounges"] },
+      { "name": "American Express Centurion Lounge", "terminal": "T4 (Concourse B), airside", "access": ["amex-centurion-lounges"] },
+      { "name": "Delta Sky Club", "terminal": "T4, airside", "access": ["delta-skyclub", "delta-skyclub-with-delta-ticket"] },
+      { "name": "Air France / KLM Lounge", "terminal": "T1, airside", "access": ["skyteam-elite-plus", "afkl-business"] },
+      { "name": "Korean Air Lounge", "terminal": "T1, airside", "access": ["skyteam-elite-plus", "korean-business"] },
+      { "name": "Wingtips Lounge (Priority Pass)", "terminal": "T4, airside", "access": ["priority-pass-select"] }
+    ],
+    "LGA": [
+      { "name": "American Express Centurion Lounge", "terminal": "Terminal B, airside", "access": ["amex-centurion-lounges"] },
+      { "name": "Delta Sky Club", "terminal": "Terminal C, airside", "access": ["delta-skyclub", "delta-skyclub-with-delta-ticket"] },
+      { "name": "Chase Sapphire Lounge by The Club", "terminal": "Terminal B, airside", "access": ["chase-sapphire-lounges"] }
+    ],
+    "EWR": [
+      { "name": "United Club", "terminal": "Terminal C, airside", "access": ["united-club", "united-club-with-united-ticket", "star-gold-international"] },
+      { "name": "United Polaris Lounge", "terminal": "Terminal C, airside", "access": ["united-polaris-with-business-ticket", "star-gold-international-on-long-haul"] },
+      { "name": "British Airways Galleries Lounge", "terminal": "Terminal B, airside", "access": ["oneworld-sapphire", "ba-business"] }
+    ],
+    "LAX": [
+      { "name": "American Express Centurion Lounge", "terminal": "TBIT (Terminal B), airside", "access": ["amex-centurion-lounges"] },
+      { "name": "Chase Sapphire Lounge by The Club", "terminal": "T6, airside", "access": ["chase-sapphire-lounges"] },
+      { "name": "Capital One Lounge", "terminal": "T6, airside", "access": ["capital-one-lounges"] },
+      { "name": "Delta Sky Club", "terminal": "Terminals 2 & 3, airside", "access": ["delta-skyclub", "delta-skyclub-with-delta-ticket"] },
+      { "name": "Star Alliance Business Class Lounge", "terminal": "TBIT, airside", "access": ["star-gold-international"] },
+      { "name": "oneworld Business Lounge", "terminal": "TBIT, airside", "access": ["oneworld-sapphire-international", "oneworld-emerald-international"] },
+      { "name": "Korean Air KAL Lounge", "terminal": "TBIT, airside", "access": ["skyteam-elite-plus", "korean-business"] }
+    ],
+    "SFO": [
+      { "name": "American Express Centurion Lounge", "terminal": "Terminal 3, airside", "access": ["amex-centurion-lounges"] },
+      { "name": "Chase Sapphire Lounge by The Club", "terminal": "International Terminal A, airside", "access": ["chase-sapphire-lounges"] },
+      { "name": "United Club", "terminal": "Terminals 3 & G, airside", "access": ["united-club", "united-club-with-united-ticket", "star-gold-international"] },
+      { "name": "United Polaris Lounge", "terminal": "International Terminal G, airside", "access": ["united-polaris-with-business-ticket"] },
+      { "name": "KLM Crown Lounge", "terminal": "Terminal A, airside", "access": ["skyteam-elite-plus", "afkl-business"] }
+    ],
+    "ORD": [
+      { "name": "United Club", "terminal": "Terminals 1 & 2, airside", "access": ["united-club", "united-club-with-united-ticket", "star-gold-international"] },
+      { "name": "United Polaris Lounge", "terminal": "Terminal 1, airside", "access": ["united-polaris-with-business-ticket"] },
+      { "name": "American Airlines Admirals Club", "terminal": "Terminal 3, airside", "access": ["admirals-club", "admirals-club-with-aa-ticket", "oneworld-sapphire"] },
+      { "name": "American Express Centurion Lounge", "terminal": "Terminal 3, airside", "access": ["amex-centurion-lounges"] },
+      { "name": "Chase Sapphire Lounge by The Club", "terminal": "Terminal 3, airside", "access": ["chase-sapphire-lounges"] },
+      { "name": "Capital One Landing", "terminal": "Terminal 3, airside", "access": ["capital-one-lounges"] }
+    ],
+    "DFW": [
+      { "name": "American Airlines Flagship Lounge", "terminal": "Terminal D, airside", "access": ["aa-flagship-with-business-ticket", "oneworld-emerald"] },
+      { "name": "American Airlines Admirals Club", "terminal": "Terminals A/B/C/D, airside", "access": ["admirals-club", "admirals-club-with-aa-ticket", "oneworld-sapphire"] },
+      { "name": "Capital One Lounge", "terminal": "Terminal D, airside", "access": ["capital-one-lounges"] },
+      { "name": "American Express Centurion Lounge", "terminal": "Terminal D, airside", "access": ["amex-centurion-lounges"] }
+    ],
+    "ATL": [
+      { "name": "Delta Sky Club", "terminal": "Concourses A, B, C, E, F, T", "access": ["delta-skyclub", "delta-skyclub-with-delta-ticket"] },
+      { "name": "American Express Centurion Lounge", "terminal": "Concourse B, airside", "access": ["amex-centurion-lounges"] },
+      { "name": "Delta One Lounge", "terminal": "Concourse E, airside", "access": ["delta-one-with-business-ticket"] }
+    ],
+    "MIA": [
+      { "name": "American Airlines Flagship Lounge", "terminal": "Concourse D, airside", "access": ["aa-flagship-with-business-ticket", "oneworld-emerald"] },
+      { "name": "American Airlines Admirals Club", "terminal": "Concourses D & E, airside", "access": ["admirals-club", "admirals-club-with-aa-ticket", "oneworld-sapphire"] },
+      { "name": "American Express Centurion Lounge", "terminal": "Concourse D, airside", "access": ["amex-centurion-lounges"] },
+      { "name": "Avianca Lounge (Priority Pass)", "terminal": "Concourse J, airside", "access": ["priority-pass-select"] }
+    ],
+    "SEA": [
+      { "name": "Alaska Lounge", "terminal": "C and D concourses, airside", "access": ["alaska-lounge", "alaska-lounge-with-alaska-ticket", "oneworld-sapphire"] },
+      { "name": "Delta Sky Club", "terminal": "Concourse A, airside", "access": ["delta-skyclub", "delta-skyclub-with-delta-ticket"] },
+      { "name": "Capital One Lounge", "terminal": "Concourse A, airside", "access": ["capital-one-lounges"] },
+      { "name": "American Express Centurion Lounge", "terminal": "Concourse B, airside", "access": ["amex-centurion-lounges"] }
+    ],
+    "BOS": [
+      { "name": "American Express Centurion Lounge", "terminal": "Terminal B, airside", "access": ["amex-centurion-lounges"] },
+      { "name": "Delta Sky Club", "terminal": "Terminal A, airside", "access": ["delta-skyclub", "delta-skyclub-with-delta-ticket"] },
+      { "name": "Air France Lounge", "terminal": "Terminal E, airside", "access": ["skyteam-elite-plus", "afkl-business"] }
+    ],
+    "DEN": [
+      { "name": "United Club", "terminal": "Concourses A & B, airside", "access": ["united-club", "united-club-with-united-ticket", "star-gold-international"] },
+      { "name": "American Express Centurion Lounge", "terminal": "Concourse C, airside", "access": ["amex-centurion-lounges"] },
+      { "name": "Capital One Lounge", "terminal": "Concourse A, airside", "access": ["capital-one-lounges"] }
+    ],
+    "IAD": [
+      { "name": "United Club", "terminal": "Concourses A, B, C/D", "access": ["united-club", "united-club-with-united-ticket", "star-gold-international"] },
+      { "name": "United Polaris Lounge", "terminal": "Concourse C/D, airside", "access": ["united-polaris-with-business-ticket"] },
+      { "name": "Lufthansa Senator Lounge", "terminal": "Concourse Z, airside", "access": ["star-gold-international", "lufthansa-business"] }
+    ],
+    "YYZ": [
+      { "name": "Air Canada Maple Leaf Lounge", "terminal": "Terminals 1 (intl, US, dom), airside", "access": ["star-gold-international", "air-canada-business"] },
+      { "name": "Air Canada Signature Suite", "terminal": "Terminal 1 intl, airside", "access": ["air-canada-signature-with-business-ticket"] },
+      { "name": "Plaza Premium Lounge (Priority Pass)", "terminal": "Terminal 1 & 3, airside", "access": ["priority-pass-select", "plaza-premium"] }
+    ],
+    "LHR": [
+      { "name": "British Airways Galleries First & Concorde Room", "terminal": "T5, airside", "access": ["oneworld-emerald", "ba-first-with-first-ticket"] },
+      { "name": "British Airways Galleries Club", "terminal": "T3 & T5, airside", "access": ["oneworld-sapphire", "ba-business"] },
+      { "name": "Cathay Pacific First & Business Lounge", "terminal": "T3, airside", "access": ["oneworld-sapphire", "oneworld-emerald", "cathay-business"] },
+      { "name": "American Express Centurion Lounge", "terminal": "T3, airside", "access": ["amex-centurion-lounges"] },
+      { "name": "Plaza Premium Lounge (Priority Pass)", "terminal": "T2, T4, T5", "access": ["priority-pass-select", "plaza-premium"] },
+      { "name": "Virgin Atlantic Clubhouse", "terminal": "T3, airside", "access": ["virgin-atlantic-business", "skyteam-elite-plus-on-virgin"] }
+    ],
+    "LGW": [
+      { "name": "British Airways Lounge", "terminal": "South Terminal, airside", "access": ["oneworld-sapphire", "ba-business"] },
+      { "name": "No1 Lounge (Priority Pass)", "terminal": "North & South Terminals", "access": ["priority-pass-select"] }
+    ],
+    "CDG": [
+      { "name": "Air France Business Lounge", "terminal": "T2E, T2F, T2G", "access": ["skyteam-elite-plus", "afkl-business"] },
+      { "name": "Air France La Première", "terminal": "T2E Hall L, airside", "access": ["afkl-first-with-first-ticket"] },
+      { "name": "Star Alliance Lounge", "terminal": "T1, airside", "access": ["star-gold-international"] },
+      { "name": "Qantas International Business Lounge", "terminal": "T2A, airside", "access": ["oneworld-sapphire", "qantas-business"] }
+    ],
+    "FRA": [
+      { "name": "Lufthansa Senator Lounge", "terminal": "T1, A/B/Z gates", "access": ["star-gold-international", "lufthansa-business"] },
+      { "name": "Lufthansa First Class Terminal", "terminal": "T1, dedicated facility", "access": ["lufthansa-first-with-first-ticket", "hon-circle"] },
+      { "name": "American Express Centurion Lounge", "terminal": "Concourse A, airside", "access": ["amex-centurion-lounges"] },
+      { "name": "Air Canada Maple Leaf Lounge", "terminal": "T1, Concourse B", "access": ["star-gold-international", "air-canada-business"] }
+    ],
+    "AMS": [
+      { "name": "KLM Crown Lounge 25", "terminal": "Schengen, airside", "access": ["skyteam-elite-plus", "afkl-business"] },
+      { "name": "KLM Crown Lounge 52", "terminal": "Non-Schengen, airside", "access": ["skyteam-elite-plus", "afkl-business"] },
+      { "name": "Aspire Lounge (Priority Pass)", "terminal": "Schengen & Non-Schengen", "access": ["priority-pass-select"] }
+    ],
+    "MUC": [
+      { "name": "Lufthansa Senator Lounge", "terminal": "T2 Satellite, airside", "access": ["star-gold-international", "lufthansa-business"] },
+      { "name": "Lufthansa First Class Lounge", "terminal": "T2 Satellite, airside", "access": ["lufthansa-first-with-first-ticket", "hon-circle"] },
+      { "name": "Airport Lounge World (Priority Pass)", "terminal": "T1, airside", "access": ["priority-pass-select"] }
+    ],
+    "ZRH": [
+      { "name": "SWISS Senator Lounge", "terminal": "A & E concourses", "access": ["star-gold-international", "swiss-business"] },
+      { "name": "SWISS First Class Lounge", "terminal": "E concourse", "access": ["swiss-first-with-first-ticket"] },
+      { "name": "Aspire Lounge (Priority Pass)", "terminal": "A & E concourses", "access": ["priority-pass-select"] }
+    ],
+    "MAD": [
+      { "name": "Iberia Velázquez Premium Lounge", "terminal": "T4 Satellite, airside", "access": ["oneworld-emerald", "iberia-business"] },
+      { "name": "Iberia Dalí VIP Lounge", "terminal": "T4, airside", "access": ["oneworld-sapphire", "iberia-business"] },
+      { "name": "Sala VIP Cibeles (Priority Pass)", "terminal": "T1, airside", "access": ["priority-pass-select"] }
+    ],
+    "NRT": [
+      { "name": "JAL Sakura Lounge & First Class Lounge", "terminal": "T2, airside", "access": ["oneworld-sapphire", "oneworld-emerald", "jal-business"] },
+      { "name": "ANA Suite & Lounge", "terminal": "T1, airside", "access": ["star-gold-international", "ana-business"] },
+      { "name": "United Club", "terminal": "T1, airside", "access": ["united-club-with-united-ticket", "star-gold-international"] },
+      { "name": "American Express Centurion Lounge", "terminal": "T2 (Satellite), airside", "access": ["amex-centurion-lounges"] }
+    ],
+    "HND": [
+      { "name": "JAL Sakura Lounge", "terminal": "Terminal 3 (Intl), airside", "access": ["oneworld-sapphire", "oneworld-emerald", "jal-business"] },
+      { "name": "ANA Lounge", "terminal": "Terminal 3 (Intl), airside", "access": ["star-gold-international", "ana-business"] },
+      { "name": "Cathay Pacific Lounge", "terminal": "Terminal 3, airside", "access": ["oneworld-sapphire", "cathay-business"] }
+    ],
+    "ICN": [
+      { "name": "Korean Air Lounge", "terminal": "T2, airside", "access": ["skyteam-elite-plus", "korean-business"] },
+      { "name": "Asiana Lounge", "terminal": "T1, airside", "access": ["star-gold-international", "asiana-business"] },
+      { "name": "Matina Lounge (Priority Pass)", "terminal": "T1 & T2", "access": ["priority-pass-select"] }
+    ],
+    "HKG": [
+      { "name": "Cathay Pacific The Pier", "terminal": "Main terminal, airside", "access": ["oneworld-sapphire", "oneworld-emerald", "cathay-business"] },
+      { "name": "Cathay Pacific The Wing", "terminal": "Main terminal, airside", "access": ["oneworld-sapphire", "oneworld-emerald", "cathay-business"] },
+      { "name": "Plaza Premium First", "terminal": "Main terminal, airside", "access": ["priority-pass-select", "plaza-premium"] },
+      { "name": "American Express Centurion Lounge", "terminal": "Main terminal, airside", "access": ["amex-centurion-lounges"] }
+    ],
+    "SIN": [
+      { "name": "Singapore Airlines SilverKris Lounge & The Private Room", "terminal": "T3, airside", "access": ["star-gold-international", "singapore-business", "singapore-first-with-first-ticket"] },
+      { "name": "Qantas Singapore Lounge", "terminal": "T1, airside", "access": ["oneworld-sapphire", "oneworld-emerald", "qantas-business"] },
+      { "name": "American Express Centurion Lounge", "terminal": "T1, airside", "access": ["amex-centurion-lounges"] },
+      { "name": "Plaza Premium Lounge (Priority Pass)", "terminal": "T1 & T3", "access": ["priority-pass-select", "plaza-premium"] }
+    ],
+    "BKK": [
+      { "name": "Thai Royal Silk Lounge", "terminal": "Concourses A–F, airside", "access": ["star-gold-international", "thai-business"] },
+      { "name": "Thai Royal Orchid Spa & Lounge", "terminal": "Concourses, airside", "access": ["star-gold-international-on-thai", "thai-first-with-first-ticket"] },
+      { "name": "Miracle Lounge (Priority Pass)", "terminal": "Multiple concourses", "access": ["priority-pass-select"] }
+    ],
+    "DXB": [
+      { "name": "Emirates Business Class Lounge", "terminal": "T3, airside", "access": ["emirates-business-with-business-ticket"] },
+      { "name": "Emirates First Class Lounge", "terminal": "T3, airside", "access": ["emirates-first-with-first-ticket"] },
+      { "name": "Marhaba Lounge (Priority Pass)", "terminal": "T1 & T3, airside", "access": ["priority-pass-select"] }
+    ],
+    "DOH": [
+      { "name": "Qatar Airways Al Mourjan Business Lounge", "terminal": "South & North concourses", "access": ["oneworld-sapphire", "oneworld-emerald", "qatar-business"] },
+      { "name": "Qatar Airways Al Safwa First Lounge", "terminal": "Main terminal, airside", "access": ["qatar-first-with-first-ticket", "oneworld-emerald-on-qatar"] }
+    ]
+  },
+  "cityToAirports": {
+    "New York": ["JFK", "LGA", "EWR"],
+    "Newark": ["EWR"],
+    "Los Angeles": ["LAX"],
+    "San Francisco": ["SFO"],
+    "Chicago": ["ORD"],
+    "Dallas": ["DFW"],
+    "Atlanta": ["ATL"],
+    "Miami": ["MIA"],
+    "Seattle": ["SEA"],
+    "Boston": ["BOS"],
+    "Denver": ["DEN"],
+    "Washington": ["IAD"],
+    "Toronto": ["YYZ"],
+    "London": ["LHR", "LGW"],
+    "Paris": ["CDG"],
+    "Frankfurt": ["FRA"],
+    "Amsterdam": ["AMS"],
+    "Munich": ["MUC"],
+    "Zurich": ["ZRH"],
+    "Madrid": ["MAD"],
+    "Tokyo": ["NRT", "HND"],
+    "Seoul": ["ICN"],
+    "Hong Kong": ["HKG"],
+    "Singapore": ["SIN"],
+    "Bangkok": ["BKK"],
+    "Dubai": ["DXB"],
+    "Doha": ["DOH"]
+  }
+}

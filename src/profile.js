@@ -4,6 +4,7 @@
 import { supabase } from './supabase.js';
 import { el } from './dom.js';
 import { getUserId } from './storage.js';
+import { CARDS as LOUNGE_CARDS, STATUSES as LOUNGE_STATUSES } from './lounges.js';
 
 let cached = null;        // last-known profile JSON (null until loaded)
 const CACHE_KEY = 'vacation_planner_profile_';
@@ -20,7 +21,11 @@ function defaultProfile() {
     // Free-text points/miles balances, shared across every trip. Edited from
     // the Plan tab sidebar; the running-deltas math reads them via
     // getPointsBalances() to show what a draft route would actually cost.
-    pointsBalances: []
+    pointsBalances: [],
+    // Lounge access: ids reference lounge-catalog.json. lounges.js reads
+    // these to filter eligible lounges on each flight card.
+    loungeCards: [],
+    loungeStatuses: []
   };
 }
 
@@ -140,6 +145,75 @@ function selectField(name, value) {
   return sel;
 }
 
+// Chip-style multi-select. Renders selected items as removable chips and an
+// autocomplete-style picker. Returns { el, getSelected }.
+function chipMultiSelect(options, initial, placeholder) {
+  const selected = new Set(initial || []);
+  const wrap = el('div', { class: 'vp-chip-field' });
+  const chips = el('div', { class: 'vp-chip-list' });
+  const input = el('input', { type: 'text', placeholder, class: 'vp-chip-input' });
+  const dropdown = el('div', { class: 'vp-chip-dropdown', style: { display: 'none' } });
+
+  function renderChips() {
+    chips.innerHTML = '';
+    [...selected].forEach(id => {
+      const opt = options.find(o => o.id === id);
+      if (!opt) return;
+      const chip = el('span', { class: 'vp-chip' });
+      chip.appendChild(el('span', {}, opt.label));
+      const x = el('button', {
+        class: 'vp-chip-x', 'aria-label': 'Remove',
+        onclick: () => { selected.delete(id); renderChips(); renderDropdown(); }
+      }, '×');
+      chip.appendChild(x);
+      chips.appendChild(chip);
+    });
+  }
+
+  function renderDropdown() {
+    const q = input.value.trim().toLowerCase();
+    const matches = options.filter(o =>
+      !selected.has(o.id) && (!q || o.label.toLowerCase().includes(q))
+    ).slice(0, 12);
+    dropdown.innerHTML = '';
+    if (!matches.length || (!q && document.activeElement !== input)) {
+      dropdown.style.display = 'none';
+      return;
+    }
+    matches.forEach(o => {
+      const row = el('button', {
+        class: 'vp-chip-option', type: 'button',
+        onclick: () => {
+          selected.add(o.id);
+          input.value = '';
+          renderChips();
+          renderDropdown();
+          input.focus();
+        }
+      }, o.label);
+      dropdown.appendChild(row);
+    });
+    dropdown.style.display = 'block';
+  }
+
+  input.addEventListener('focus', renderDropdown);
+  input.addEventListener('input', renderDropdown);
+  input.addEventListener('blur', () => {
+    // delay so click on dropdown item registers
+    setTimeout(() => { dropdown.style.display = 'none'; }, 150);
+  });
+
+  wrap.appendChild(chips);
+  const inputWrap = el('div', { class: 'vp-chip-input-wrap' });
+  inputWrap.appendChild(input);
+  inputWrap.appendChild(dropdown);
+  wrap.appendChild(inputWrap);
+
+  renderChips();
+
+  return { el: wrap, getSelected: () => [...selected] };
+}
+
 export function openProfileDialog() {
   const p = getProfile();
   const bg = el('div', { class: 'vp-modal-bg', onclick: e => { if (e.target === bg) bg.remove(); } });
@@ -172,6 +246,19 @@ export function openProfileDialog() {
 
   m.appendChild(form);
 
+  // ---- Lounge access ----
+  m.appendChild(el('h4', { class: 'vp-profile-section' }, 'Lounge access'));
+  m.appendChild(el('p', { class: 'vp-profile-sub' },
+    'Pick the cards you hold and any airline elite status — the planner uses these to show which lounges you can access on each flight.'));
+
+  const cardsField = chipMultiSelect(LOUNGE_CARDS, p.loungeCards || [], 'Search cards…');
+  m.appendChild(el('label', {}, 'Cards'));
+  m.appendChild(cardsField.el);
+
+  const statusField = chipMultiSelect(LOUNGE_STATUSES, p.loungeStatuses || [], 'Search elite status…');
+  m.appendChild(el('label', {}, 'Airline status'));
+  m.appendChild(statusField.el);
+
   const status = el('div', { class: 'vp-profile-status' });
 
   const saveBtn = el('button', { class: 'vp-save' }, 'Save');
@@ -186,7 +273,9 @@ export function openProfileDialog() {
         travelingWith: travelingWith.value,
         diet: diet.value.trim(),
         interests: interests.value.trim(),
-        about: about.value.trim()
+        about: about.value.trim(),
+        loungeCards: cardsField.getSelected(),
+        loungeStatuses: statusField.getSelected()
       });
       bg.remove();
     } catch (e) {

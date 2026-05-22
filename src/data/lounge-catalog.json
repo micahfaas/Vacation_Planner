@@ -1,0 +1,167 @@
+{
+  "_meta": {
+    "version": 1,
+    "curatedAt": "2026-05-21",
+    "notes": "Cards and elite statuses with the access tags they unlock. Tags reference lounges.json. Update when programs change benefits."
+  },
+  "cards": [
+    {
+      "id": "amex-platinum-us",
+      "label": "Amex Platinum (Personal, US)",
+      "issuer": "American Express",
+      "unlocks": ["amex-centurion-lounges", "priority-pass-select", "delta-skyclub-with-delta-ticket", "plaza-premium", "escape-lounges", "airspace-lounges"]
+    },
+    {
+      "id": "amex-business-platinum-us",
+      "label": "Amex Business Platinum (US)",
+      "issuer": "American Express",
+      "unlocks": ["amex-centurion-lounges", "priority-pass-select", "delta-skyclub-with-delta-ticket", "plaza-premium", "escape-lounges", "airspace-lounges"]
+    },
+    {
+      "id": "amex-centurion-us",
+      "label": "Amex Centurion (Black, US)",
+      "issuer": "American Express",
+      "unlocks": ["amex-centurion-lounges", "priority-pass-select", "delta-skyclub-with-delta-ticket", "plaza-premium", "escape-lounges", "airspace-lounges"]
+    },
+    {
+      "id": "delta-reserve-amex",
+      "label": "Delta SkyMiles Reserve (Amex)",
+      "issuer": "American Express",
+      "unlocks": ["delta-skyclub-with-delta-ticket"]
+    },
+    {
+      "id": "chase-sapphire-reserve",
+      "label": "Chase Sapphire Reserve",
+      "issuer": "Chase",
+      "unlocks": ["chase-sapphire-lounges", "priority-pass-select", "plaza-premium"]
+    },
+    {
+      "id": "chase-ritz-carlton",
+      "label": "Ritz-Carlton Credit Card (legacy, Chase)",
+      "issuer": "Chase",
+      "unlocks": ["priority-pass-select"]
+    },
+    {
+      "id": "capital-one-venture-x",
+      "label": "Capital One Venture X",
+      "issuer": "Capital One",
+      "unlocks": ["capital-one-lounges", "priority-pass-select", "plaza-premium"]
+    },
+    {
+      "id": "capital-one-venture-x-business",
+      "label": "Capital One Venture X Business",
+      "issuer": "Capital One",
+      "unlocks": ["capital-one-lounges", "priority-pass-select", "plaza-premium"]
+    },
+    {
+      "id": "citi-prestige-legacy",
+      "label": "Citi Prestige (legacy holders)",
+      "issuer": "Citi",
+      "unlocks": ["priority-pass-select"]
+    },
+    {
+      "id": "citi-strata-elite",
+      "label": "Citi Strata Elite",
+      "issuer": "Citi",
+      "unlocks": ["priority-pass-select", "american-airlines-admirals-club-with-aa-ticket"]
+    },
+    {
+      "id": "united-club-infinite",
+      "label": "United Club Infinite Card (Chase)",
+      "issuer": "Chase",
+      "unlocks": ["united-club"]
+    },
+    {
+      "id": "united-club-business",
+      "label": "United Club Business Card (Chase)",
+      "issuer": "Chase",
+      "unlocks": ["united-club"]
+    },
+    {
+      "id": "aa-citi-executive",
+      "label": "Citi / AAdvantage Executive World Elite",
+      "issuer": "Citi",
+      "unlocks": ["admirals-club"]
+    },
+    {
+      "id": "hilton-aspire",
+      "label": "Hilton Honors American Express Aspire",
+      "issuer": "American Express",
+      "unlocks": ["priority-pass-select"]
+    },
+    {
+      "id": "marriott-brilliant",
+      "label": "Marriott Bonvoy Brilliant (Amex)",
+      "issuer": "American Express",
+      "unlocks": ["priority-pass-select"]
+    },
+    {
+      "id": "alaska-visa-signature",
+      "label": "Alaska Airlines Visa Signature",
+      "issuer": "Bank of America",
+      "unlocks": []
+    },
+    {
+      "id": "amex-gold-us",
+      "label": "Amex Gold (US)",
+      "issuer": "American Express",
+      "unlocks": []
+    },
+    {
+      "id": "amex-green-us",
+      "label": "Amex Green (US)",
+      "issuer": "American Express",
+      "unlocks": []
+    }
+  ],
+  "statuses": [
+    {
+      "id": "star-gold",
+      "label": "Star Alliance Gold (UA 1K/Platinum/Gold, AC E50K+, LH Senator, etc.)",
+      "alliance": "Star Alliance",
+      "unlocks": ["star-gold-international", "star-gold-international-on-thai", "star-gold-international-on-long-haul"]
+    },
+    {
+      "id": "oneworld-sapphire",
+      "label": "oneworld Sapphire (AA Platinum, BA Silver, Cathay Silver, etc.)",
+      "alliance": "oneworld",
+      "unlocks": ["oneworld-sapphire", "oneworld-sapphire-international"]
+    },
+    {
+      "id": "oneworld-emerald",
+      "label": "oneworld Emerald (AA Executive Platinum, BA Gold, Cathay Diamond, etc.)",
+      "alliance": "oneworld",
+      "unlocks": ["oneworld-sapphire", "oneworld-sapphire-international", "oneworld-emerald", "oneworld-emerald-international", "oneworld-emerald-on-qatar"]
+    },
+    {
+      "id": "skyteam-elite-plus",
+      "label": "SkyTeam Elite Plus (Delta Platinum/Diamond, AF/KL Gold, etc.)",
+      "alliance": "SkyTeam",
+      "unlocks": ["skyteam-elite-plus", "skyteam-elite-plus-on-virgin"]
+    },
+    {
+      "id": "delta-diamond",
+      "label": "Delta Diamond Medallion",
+      "alliance": "SkyTeam",
+      "unlocks": ["delta-skyclub", "skyteam-elite-plus", "skyteam-elite-plus-on-virgin"]
+    },
+    {
+      "id": "delta-platinum",
+      "label": "Delta Platinum Medallion",
+      "alliance": "SkyTeam",
+      "unlocks": ["skyteam-elite-plus", "skyteam-elite-plus-on-virgin"]
+    },
+    {
+      "id": "alaska-mvp-gold",
+      "label": "Alaska MVP Gold / Gold 75K / 100K",
+      "alliance": "oneworld",
+      "unlocks": ["oneworld-sapphire", "oneworld-sapphire-international"]
+    },
+    {
+      "id": "hon-circle",
+      "label": "Lufthansa HON Circle",
+      "alliance": "Star Alliance",
+      "unlocks": ["star-gold-international", "hon-circle"]
+    }
+  ]
+}
