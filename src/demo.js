@@ -638,6 +638,69 @@ function buildDemoTrip() {
     { id: crypto.randomUUID(), text: 'Phone + charger', packed: true }
   ];
 
+  // ---------- Journal ----------
+  // Pre-written so the demo shows the Journal feature instantly (no API call).
+  // One "## Day N" heading per trip day, in order, so the photos below land
+  // under the right day.
+  trip.journal = {
+    markdown: `# Spain — Madrid, Sevilla & Granada
+A late-summer loop through the south of Spain: three days in Madrid, the AVE down to Sevilla's orange-scented streets, the Alhambra in Granada, then back to Madrid to fly home. Twelve days and a great deal of tapas.
+
+## Day 1 — Aug 1
+Two flights to get here: the early Alaska hop RDM→SEA, then the long Iberia leg into Madrid. Landed late, dropped bags at Hotel Único, and went no further than a quiet first night.
+
+## Day 2 — Aug 2
+First full day in Madrid. Wandered El Retiro in the late-afternoon light, then dinner at Casa González — a tiny wine-and-cheese spot that set the tone for the trip.
+
+## Day 3 — Aug 3
+Churros and thick chocolate at Chocolatería San Ginés to start, then a long morning in the Prado. Lunch at Casa Lucio for the huevos rotos, and a late dinner at Sobrino de Botín, said to be the oldest restaurant in the world.
+
+## Day 4 — Aug 4
+Modern-art morning at the Reina Sofía — Guernica in person is something else. Spent the afternoon grazing the tapas bars of La Latina, with a final Madrid dinner at Lhardy.
+
+## Day 5 — Aug 5
+Caught the AVE south to Sevilla — barely two and a half hours and you're in another world. Checked into the Hotel Alfonso XIII, then flamenco at Casa de la Memoria, close enough to feel the floor.
+
+## Day 6 — Aug 6
+The Real Alcázar in the morning — tilework and gardens that swallow a couple of hours easily — and the impossibly grand Plaza de España in the afternoon. Dinner at El Rinconcillo, sherry poured the old way.
+
+## Day 7 — Aug 7
+A day trip on the AVE to Córdoba for the Mezquita, back to Sevilla by evening. Tired feet, happy.
+
+## Day 8 — Aug 8
+AVE across to Granada. The city climbs its hills and the Albaicín is all narrow lanes and viewpoints; settled in for the Alhambra the next morning.
+
+## Day 9 — Aug 9
+The Alhambra. Timed entry to the Nasrid Palaces at 10:30 — worth every bit of the early alarm — then the rest of the day just looking back at it from across the valley.
+
+## Day 10 — Aug 10
+A slower Granada day, leaning into the local custom of a free tapa with every drink, which is reason enough to keep ordering.
+
+## Day 11 — Aug 11
+AVE back up to Madrid for a last night, and one more round of the city's tapas before the early flight.
+
+## Day 12 — Aug 12
+Home the way we came: Iberia to Seattle, Alaska back to Redmond.
+
+## Looking back
+The AVE made the whole thing feel effortless — three very different cities stitched together in twelve days. Sevilla was the surprise favorite, the Alhambra the high point, and somehow the simplest meals (the San Ginés churros, the La Latina tapas) are the ones that stuck. Next time: more days in Granada.`,
+    generatedAt: '2026-08-13T09:00:00.000Z',
+    edited: false
+  };
+
+  // ---------- Journal photos ----------
+  // Bundled, freely-licensed images (see public/demo-photos/CREDITS.md). They
+  // use a direct `url` rather than a storage `path`, so they render without a
+  // signed-URL fetch.
+  const photoUrl = (slug) => import.meta.env.BASE_URL + 'demo-photos/' + slug + '.jpg';
+  trip.photos = [
+    { id: crypto.randomUUID(), url: photoUrl('madrid-plaza-mayor'), day: '2026-08-02', width: 1000, height: 773, caption: 'Plaza Mayor, Madrid' },
+    { id: crypto.randomUUID(), url: photoUrl('madrid-prado'),       day: '2026-08-03', width: 1000, height: 666, caption: 'Museo del Prado, Madrid' },
+    { id: crypto.randomUUID(), url: photoUrl('sevilla-alcazar'),    day: '2026-08-06', width: 900,  height: 900, caption: 'Real Alcázar, Sevilla' },
+    { id: crypto.randomUUID(), url: photoUrl('sevilla-plaza-espana'), day: '2026-08-06', width: 1000, height: 666, caption: 'Plaza de España, Sevilla' },
+    { id: crypto.randomUUID(), url: photoUrl('granada-alhambra'),   day: '2026-08-09', width: 1000, height: 353, caption: 'The Alhambra, Granada' }
+  ];
+
   return trip;
 }
 

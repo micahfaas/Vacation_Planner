@@ -381,8 +381,12 @@ function buildPhotoStrip(photos, trip) {
 function buildPhotoTile(photo, trip) {
   const tile = el('div', { class: 'vp-photo-tile' });
   const img = el('img', {
-    class: 'vp-photo-img', 'data-path': photo.path, alt: photo.caption || 'Trip photo', loading: 'lazy'
+    class: 'vp-photo-img', alt: photo.caption || 'Trip photo', loading: 'lazy'
   });
+  // A photo with a direct `url` (demo/bundled images) loads as-is; one with a
+  // storage `path` gets a signed URL filled in by hydratePhotoUrls.
+  if (photo.url) img.src = photo.url;
+  else img.setAttribute('data-path', photo.path);
   if (photo.width && photo.height) img.style.aspectRatio = photo.width + ' / ' + photo.height;
   tile.appendChild(img);
 
@@ -409,13 +413,15 @@ function buildPhotoTile(photo, trip) {
     t.photos = (t.photos || []).filter(x => x.id !== photo.id);
     save();
     rerender();
-    deleteTripPhoto(photo.path); // best-effort storage cleanup
+    if (photo.path) deleteTripPhoto(photo.path); // best-effort storage cleanup (skip for direct-url demo photos)
   });
   bar.appendChild(del);
   tile.appendChild(bar);
 
-  // Click image to open full size in a new tab via a signed URL.
+  // Click image to open full size. Direct-url photos open as-is; stored photos
+  // resolve a short-lived signed URL first.
   img.addEventListener('click', async () => {
+    if (photo.url) { window.open(photo.url, '_blank', 'noopener'); return; }
     const tab = window.open('about:blank', '_blank');
     try {
       const map = await signedUrls([photo.path], 300);
