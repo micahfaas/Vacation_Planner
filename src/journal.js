@@ -380,6 +380,9 @@ function buildPhotoStrip(photos, trip) {
 
 function buildPhotoTile(photo, trip) {
   const tile = el('div', { class: 'vp-photo-tile' });
+  // Image + overlay bar live in their own clipped wrapper so the place
+  // chip/picker (the foot, below) is never clipped by the rounded corners.
+  const imgwrap = el('div', { class: 'vp-photo-imgwrap' });
   const img = el('img', {
     class: 'vp-photo-img', alt: photo.caption || 'Trip photo', loading: 'lazy'
   });
@@ -388,7 +391,7 @@ function buildPhotoTile(photo, trip) {
   if (photo.url) img.src = photo.url;
   else img.setAttribute('data-path', photo.path);
   if (photo.width && photo.height) img.style.aspectRatio = photo.width + ' / ' + photo.height;
-  tile.appendChild(img);
+  imgwrap.appendChild(img);
 
   const bar = el('div', { class: 'vp-photo-bar' });
   // Day reassignment
@@ -416,7 +419,8 @@ function buildPhotoTile(photo, trip) {
     if (photo.path) deleteTripPhoto(photo.path); // best-effort storage cleanup (skip for direct-url demo photos)
   });
   bar.appendChild(del);
-  tile.appendChild(bar);
+  imgwrap.appendChild(bar);
+  tile.appendChild(imgwrap);
 
   // Click image to open full size. Direct-url photos open as-is; stored photos
   // resolve a short-lived signed URL first.
