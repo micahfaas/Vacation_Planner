@@ -34,8 +34,7 @@ Each suggestion card has ALL of these fields; use "" / 0 / false when a field do
 - originCity / destCity: origin and destination city names, for flights and transit. "" otherwise.
 - flightNo: a flight number or carrier reference. "" otherwise.
 - depart / arrive: departure and arrival as local wall-clock "YYYY-MM-DDTHH:MM", for flights and transit. "" otherwise.
-- address: the venue's real street address, for activities / meals / hotels — only when you genuinely know it for a well-known place. "" otherwise.
-- website: the venue's real official website URL (homepage), for activities / meals / hotels — only when you genuinely know it for a well-known place. Must start with "https://". "" otherwise. Never invent a URL or link to a search engine, directory, or social profile.
+- address: the venue's real street address, for activities / meals / hotels — only when you genuinely know it for a well-known place. "" otherwise. Never invent an address; the app geocodes it and builds map + website-search links from the name and address, so accuracy here matters more than completeness.
 - notes: a one-line reason or tip for this suggestion.
 - booked: always false for suggestions — they are proposals.
 
@@ -62,13 +61,12 @@ const CARD = {
     depart: { type: 'string' },
     arrive: { type: 'string' },
     address: { type: 'string' },
-    website: { type: 'string' },
     notes: { type: 'string' },
     booked: { type: 'boolean' },
   },
   required: [
     'type', 'title', 'date', 'time', 'city', 'nights',
-    'originCity', 'destCity', 'flightNo', 'depart', 'arrive', 'address', 'website', 'notes', 'booked',
+    'originCity', 'destCity', 'flightNo', 'depart', 'arrive', 'address', 'notes', 'booked',
   ],
   additionalProperties: false,
 };
