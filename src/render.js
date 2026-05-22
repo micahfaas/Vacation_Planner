@@ -14,6 +14,8 @@ import { renderPlanView } from './plan.js';
 import { renderResourcesView } from './resources.js';
 import { renderRemindersView } from './reminders.js';
 import { confirmDialog } from './dialog.js';
+import { openTripCheck } from './tripcheck.js';
+import { renderJournalView } from './journal.js';
 
 const root = document.getElementById('vp-root');
 
@@ -37,7 +39,8 @@ export function render() {
   const toggle = el('div', { class: 'vp-view-toggle' });
   const tabs = [
     ['today', 'Day'], ['calendar', 'Calendar'], ['places', 'Places'],
-    ['plan', 'Plan'], ['resources', 'Resources'], ['reminders', 'Reminders']
+    ['plan', 'Plan'], ['resources', 'Resources'], ['reminders', 'Reminders'],
+    ['journal', 'Journal']
   ];
   tabs.forEach(([v, label]) => {
     toggle.appendChild(el('button', {
@@ -64,6 +67,7 @@ export function render() {
     const ed = el('input', { type: 'date', value: t.endDate || '' });
     ed.addEventListener('change', e => { t.endDate = e.target.value; save(); render(); });
     tb.appendChild(ed);
+    tb.appendChild(el('button', { class: 'vp-btn-ghost vp-tc-btn', onclick: openTripCheck }, 'Check trip'));
     tb.appendChild(el('button', { class: 'vp-btn-primary', onclick: () => openEditor(null, { kind: 'lib' }) }, '+ new card'));
   }
   root.appendChild(tb);
@@ -90,6 +94,11 @@ export function render() {
 
   if (ui.view === 'reminders') {
     root.appendChild(renderRemindersView());
+    return;
+  }
+
+  if (ui.view === 'journal') {
+    root.appendChild(renderJournalView());
     return;
   }
 

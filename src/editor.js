@@ -1,7 +1,7 @@
 // Card create/edit modal.
 import { activeTrip } from './state.js';
 import { TYPES, CITY_STAY_COLORS } from './constants.js';
-import { getPointsBalances } from './profile.js';
+import { getPointsBalances, getProfile } from './profile.js';
 import { el } from './dom.js';
 import { addCard, removeCard, duplicateCard } from './cards.js';
 import { save } from './storage.js';
@@ -10,6 +10,7 @@ import { createCityPicker } from './citypicker.js';
 import { createAttachmentsField } from './attachments.js';
 import { lookupFlight } from './flightlookup.js';
 import { confirmDialog } from './dialog.js';
+import { eligibleLoungesForFlight, hasLoungeProfile } from './lounges.js';
 
 export function openEditor(id, addTarget) {
   const t = activeTrip();
@@ -159,6 +160,11 @@ export function openEditor(id, addTarget) {
         setLookupMsg('', false);
         dynamic.appendChild(el('div', { class: 'vp-flight-lookup-row' }, lookupBtn, lookupMsg));
       }
+      // Lounge access: shown when the user has cards/status configured AND
+      // the current card's origin/destination cities map to curated airports.
+      const loungeBlock = renderLoungeBlock(c);
+      if (loungeBlock) dynamic.appendChild(loungeBlock);
+
       // Points payment subsection. Leaving these blank means cash-only;
       // filling them in marks this leg as a points (or mixed) redemption
       // and feeds the Plan tab's running-balance math.
@@ -319,3 +325,34 @@ export function openEditor(id, addTarget) {
   document.body.appendChild(bg);
   setTimeout(() => titleIn.focus(), 30);
 }
+
+// Renders the "Lounges you can access" subsection for a flight/transit card.
+// Returns null when the user has no cards/status configured, or when neither
+// city maps to a curated airport with eligible lounges.
+function renderLoungeBlock(card) {
+  const profile = getProfile();
+  if (!hasLoungeProfile(profile)) {
+    return el('div', { class: 'vp-lounge-empty' },
+      'Lounges: add the cards and elite status you hold under About me to see eligible lounges for this flight.');
+  }
+  const groups = eligibleLoungesForFlight(card, profile);
+  if (!groups.length) return null;
+
+  const block = el('div', { class: 'vp-lounge-block' });
+  block.appendChild(el('div', { class: 'vp-editor-section' }, 'Lounges you can access'));
+  groups.forEach(g => {
+    const head = el('div', { class: 'vp-lounge-head' },
+      el('span', { class: 'vp-lounge-iata' }, g.iata),
+      el('span', { class: 'vp-lounge-city' },
+        (g.side === 'departure' ? 'Departure · ' : 'Arrival · ') + g.city));
+    block.appendChild(head);
+    g.lounges.forEach(l => {
+      const row = el('div', { class: 'vp-lounge-row' });
+      row.appendChild(el('div', { class: 'vp-lounge-name' }, l.name));
+      if (l.terminal) row.appendChild(el('div', { class: 'vp-lounge-term' }, l.terminal));
+      block.appendChild(row);
+    });
+  });
+  return block;
+}
+
