@@ -707,6 +707,12 @@ a:focus-visible,
   z-index: 2000; /* above Leaflet map controls */
   padding: var(--space-4);
 }
+/* Phones: tighter backdrop padding + modal padding so the dialog gets the
+   full screen width minus a small margin. */
+@media (max-width: 560px) {
+  .vp-modal-bg { padding: var(--space-2); align-items: flex-start; padding-top: var(--space-4); }
+  .vp-modal { padding: 16px; }
+}
 .vp-modal {
   background: var(--surface);
   border-radius: var(--radius-lg);
@@ -824,6 +830,11 @@ a:focus-visible,
 .vp-modal select,
 .vp-modal textarea {
   width: 100%;
+  max-width: 100%;
+  /* min-width:0 is required so native iOS date/datetime inputs honor
+     width:100% instead of forcing their (large) intrinsic width, which
+     pushed the modal wider than the screen. */
+  min-width: 0;
   box-sizing: border-box;
   font-size: var(--text-sm);
   padding: var(--space-2);
@@ -832,6 +843,14 @@ a:focus-visible,
   background: var(--surface);
   color: var(--text);
   font-family: inherit;
+}
+/* iOS renders date/datetime fields with a fixed native control; pin them to
+   the field width so they can't overflow the dialog. */
+.vp-modal input[type="date"],
+.vp-modal input[type="datetime-local"],
+.vp-modal input[type="time"] {
+  -webkit-appearance: none;
+  appearance: none;
 }
 .vp-modal input:focus,
 .vp-modal select:focus,
