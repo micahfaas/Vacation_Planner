@@ -40,13 +40,31 @@ export function openEditor(id, addTarget) {
   const originPicker = createCityPicker({
     city: c.originCity, timezone: c.originTz,
     latitude: c.originLat, longitude: c.originLng,
-    placeholder: 'Search origin city…'
+    placeholder: 'Search origin city…',
+    onChange: () => refreshLounges()
   });
   const destPicker = createCityPicker({
     city: c.destCity, timezone: c.destTz,
     latitude: c.destLat, longitude: c.destLng,
-    placeholder: 'Search destination city…'
+    placeholder: 'Search destination city…',
+    onChange: () => refreshLounges()
   });
+
+  // Live lounge section: rebuilt whenever the cities (or type) change, reading
+  // the current picker values rather than the card snapshot — so it works for
+  // brand-new cards as the route is filled in.
+  let loungeContainer = null;
+  function refreshLounges() {
+    if (!loungeContainer) return;
+    loungeContainer.innerHTML = '';
+    const liveCard = {
+      type: typeSel.value,
+      originCity: originPicker.getValue().name,
+      destCity: destPicker.getValue().name
+    };
+    const block = renderLoungeBlock(liveCard);
+    if (block) loungeContainer.appendChild(block);
+  }
 
   const flightNoIn = el('input', { type: 'text', value: c.flightNo || '', placeholder: 'AA123' });
   const departIn = el('input', { type: 'datetime-local', value: c.depart || '' });
@@ -144,6 +162,7 @@ export function openEditor(id, addTarget) {
 
   function renderDynamic() {
     dynamic.innerHTML = '';
+    loungeContainer = null; // detached on rebuild; re-created below for flights
     const tp = typeSel.value;
     if (tp === 'flight' || tp === 'transit') {
       dynamic.appendChild(el('label', {}, 'Origin city'));
@@ -160,10 +179,11 @@ export function openEditor(id, addTarget) {
         setLookupMsg('', false);
         dynamic.appendChild(el('div', { class: 'vp-flight-lookup-row' }, lookupBtn, lookupMsg));
       }
-      // Lounge access: shown when the user has cards/status configured AND
-      // the current card's origin/destination cities map to curated airports.
-      const loungeBlock = renderLoungeBlock(c);
-      if (loungeBlock) dynamic.appendChild(loungeBlock);
+      // Lounge access: a live container rebuilt as the cities/type change
+      // (refreshLounges reads the picker values, so new cards work too).
+      loungeContainer = el('div', { class: 'vp-lounge-container' });
+      dynamic.appendChild(loungeContainer);
+      refreshLounges();
 
       // Points payment subsection. Leaving these blank means cash-only;
       // filling them in marks this leg as a points (or mixed) redemption
