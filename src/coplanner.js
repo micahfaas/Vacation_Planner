@@ -78,11 +78,15 @@ function mapsSearchUrl(card, address) {
   return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(query);
 }
 
-// Accept the model's website only if it looks like a real http(s) URL.
-function safeWebsite(raw) {
-  const u = String(raw || '').trim();
-  if (!/^https?:\/\//i.test(u)) return '';
-  try { return new URL(u).toString(); } catch { return ''; }
+// Model-generated website URLs are unreliable — even with "never invent a
+// URL" in the prompt, small models confidently produce plausible homepages
+// that 404. Rather than linking a guessed URL, build a Google search for the
+// venue's official site: it reliably lands on the real homepage, and the
+// knowledge panel surfaces the link, hours, and reviews alongside it.
+function officialSiteUrl(name, city) {
+  const q = [name, city, 'official website'].filter(Boolean).join(' ').trim();
+  if (!q) return '';
+  return 'https://www.google.com/search?q=' + encodeURIComponent(q);
 }
 
 function suggestionMeta(card, date, address) {
@@ -102,11 +106,12 @@ function suggestionRow(aiCard) {
   if (!cand) return null;
   const c = cand.card;
   const address = (aiCard.address || '').trim();
-  const website = safeWebsite(aiCard.website);
   const tp = TYPES[c.type] || TYPES.note;
   const timed = c.type === 'activity' || c.type === 'meal';
   const venueLike = !!PLACE_CAT[c.type] && c.type !== 'note';
   const mapUrl = venueLike ? mapsSearchUrl(c, address) : '';
+  // Reliable "official website" search link (replaces the model's guessed URL).
+  const siteUrl = venueLike ? officialSiteUrl(c.title, c.city) : '';
 
   const row = el('div', { class: 'vp-coplan-sug' });
   row.appendChild(el('i', { class: 'ti ' + tp.icon, style: { color: tp.color } }));
@@ -126,10 +131,10 @@ function suggestionRow(aiCard) {
       class: 'vp-coplan-link', title: 'Open in Google Maps'
     }, [el('i', { class: 'ti ti-map-pin' }), 'Map']));
   }
-  if (website) {
+  if (siteUrl) {
     controls.appendChild(el('a', {
-      href: website, target: '_blank', rel: 'noopener noreferrer',
-      class: 'vp-coplan-link', title: website
+      href: siteUrl, target: '_blank', rel: 'noopener noreferrer',
+      class: 'vp-coplan-link', title: 'Search for the official website'
     }, [el('i', { class: 'ti ti-external-link' }), 'Site']));
   }
 
@@ -148,7 +153,7 @@ function suggestionRow(aiCard) {
       if (timeInput.value) card.time = timeInput.value;
       else delete card.time;
     }
-    const extras = [address, website].filter(Boolean);
+    const extras = [address].filter(Boolean);
     if (extras.length) card.notes = [card.notes, ...extras].filter(Boolean).join('\n');
     const t = activeTrip();
     const onDay = cand.date && t.startDate && t.endDate &&
@@ -174,7 +179,7 @@ function suggestionRow(aiCard) {
         address: address || c.city || '',
         city: c.city || '',
         url: mapUrl || '',
-        website: website || '',
+        website: siteUrl || '',
         notes: c.notes || ''
       };
       const query = [place.name, place.address].filter(Boolean).join(', ');
