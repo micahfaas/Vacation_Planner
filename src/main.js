@@ -40,6 +40,28 @@ const shareToken = params.get('share');
 let pendingShare = [params.get('shared_title'), params.get('shared_text'), params.get('shared_url')]
   .filter(Boolean).join('\n') || null;
 
+// PWA share target — photos. The service worker stashes shared images in a
+// cache and redirects here with ?shared_photos=<n>; we drain them after the
+// active trip loads (see showApp).
+let pendingSharedPhotoCount = parseInt(params.get('shared_photos') || '0', 10) || 0;
+
+// Read and remove the photos the service worker stashed for a share.
+async function drainSharedPhotos() {
+  const files = [];
+  try {
+    const cache = await caches.open('trip-planner-shared');
+    for (const req of await cache.keys()) {
+      const res = await cache.match(req);
+      if (!res) continue;
+      const blob = await res.blob();
+      const name = decodeURIComponent(res.headers.get('X-Filename') || 'photo.jpg');
+      files.push(new File([blob], name, { type: blob.type || 'image/jpeg' }));
+      await cache.delete(req);
+    }
+  } catch { /* no cache / not supported */ }
+  return files;
+}
+
 if (shareToken) {
   document.body.classList.add('vp-shared');
   root.innerHTML = '<div class="vp-loading">Loading shared trip…</div>';
@@ -50,7 +72,7 @@ if (shareToken) {
         'or sharing was turned off.</div>';
     });
 } else {
-  if (pendingShare) history.replaceState({}, '', location.pathname);
+  if (pendingShare || pendingSharedPhotoCount) history.replaceState({}, '', location.pathname);
   bootApp();
 }
 
@@ -76,6 +98,14 @@ function bootApp() {
       const text = pendingShare;
       pendingShare = null;
       openImportModal({ text });
+    }
+    if (pendingSharedPhotoCount) {
+      pendingSharedPhotoCount = 0;
+      const files = await drainSharedPhotos();
+      if (files.length) {
+        const { ingestSharedPhotos } = await import('./journal.js');
+        ingestSharedPhotos(files);
+      }
     }
   }
 
