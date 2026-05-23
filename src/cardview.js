@@ -75,17 +75,20 @@ function overnightDays(depart, arrive) {
 // Real venue photo from Google Places (place-photo function), fetched
 // server-side and cached for the session. Removes the wrapper if none is found.
 const photoCache = new Map();
-export async function loadPlacePhoto(query, wrap) {
+export async function loadPlacePhoto(query, wrap, coords) {
   if (!query) { wrap.remove(); return; }
-  if (photoCache.has(query)) { showPhoto(wrap, photoCache.get(query)); return; }
+  const hasCoords = coords && typeof coords.lat === 'number' && typeof coords.lng === 'number';
+  const cacheKey = query + (hasCoords ? `|${coords.lat},${coords.lng}` : '');
+  if (photoCache.has(cacheKey)) { showPhoto(wrap, photoCache.get(cacheKey)); return; }
   try {
-    const res = await supabase.functions.invoke('place-photo', { body: { query } });
+    const body = hasCoords ? { query, lat: coords.lat, lng: coords.lng } : { query };
+    const res = await supabase.functions.invoke('place-photo', { body });
     const d = res && res.data;
     const data = (d && d.ok && d.image) ? { image: d.image, attribution: d.attribution || '' } : null;
-    photoCache.set(query, data);
+    photoCache.set(cacheKey, data);
     showPhoto(wrap, data);
   } catch {
-    photoCache.set(query, null);
+    photoCache.set(cacheKey, null);
     wrap.remove();
   }
 }

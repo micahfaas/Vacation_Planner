@@ -39,6 +39,8 @@ import { openPlacesImport, tryGeocode } from './places-import.js';
 import { geocodePlace } from './geocoding.js';
 import { getFavorites, addFavorite, removeFavorite, isFavoriteId } from './favorites.js';
 import { loadPlacePhoto, linkifyNotes } from './cardview.js';
+import { getDays } from './derived.js';
+import { isoDate, fmtShort } from './dates.js';
 
 // category -> card type, for turning a researched place into a trip card
 const CAT_TO_TYPE = {
@@ -140,9 +142,50 @@ function makeCardFromPlace(p) {
     notes: [p.notes, p.address, p.url, p.website].filter(Boolean).join('\n')
   };
   if (type === 'hotel') card.nights = 1;
-  if (type !== 'flight' && type !== 'transit') card.city = '';
-  ui.view = 'calendar';
-  addCard(card, { kind: 'lib' }); // addCard saves + renders
+  if (type !== 'flight' && type !== 'transit') card.city = p.city || placeCity(p) || '';
+
+  // If the trip has dates, let the user drop it on a specific day; otherwise
+  // it goes to the card library to be placed later.
+  const t = activeTrip();
+  const days = (t && t.startDate && t.endDate) ? getDays() : [];
+  if (!days.length) {
+    ui.view = 'calendar';
+    addCard(card, { kind: 'lib' }); // addCard saves + renders
+    return;
+  }
+  openDayChooser(card, days);
+}
+
+// Small picker: which day should this place become a card on (or the library)?
+function openDayChooser(card, days) {
+  const bg = el('div', { class: 'vp-modal-bg', onclick: e => { if (e.target === bg) bg.remove(); } });
+  const m = el('div', { class: 'vp-modal' });
+  m.appendChild(el('h3', {}, 'Add to which day?'));
+  m.appendChild(el('p', { class: 'vp-dialog-msg' },
+    'Pick a day, or add it to your card library to place later.'));
+
+  const list = el('div', { class: 'vp-daychooser' });
+  days.forEach(d => {
+    list.appendChild(el('button', {
+      class: 'vp-daychooser-day',
+      onclick: () => { ui.view = 'calendar'; addCard(card, { kind: 'day', date: isoDate(d) }); bg.remove(); }
+    }, fmtShort(d)));
+  });
+  m.appendChild(list);
+
+  const actions = el('div', { class: 'vp-modal-actions' });
+  const left = el('div', {});
+  left.appendChild(el('button', {
+    onclick: () => { ui.view = 'calendar'; addCard(card, { kind: 'lib' }); bg.remove(); }
+  }, 'Card library (no date)'));
+  actions.appendChild(left);
+  const right = el('div', { class: 'vp-right' });
+  right.appendChild(el('button', { onclick: () => bg.remove() }, 'Cancel'));
+  actions.appendChild(right);
+  m.appendChild(actions);
+
+  bg.appendChild(m);
+  document.body.appendChild(bg);
 }
 
 function openPlaceEditor(id) {
@@ -296,7 +339,8 @@ function openPlaceDetail(id) {
   const website = normalizeUrl(p.website || '');
   const photoWrap = el('div', { class: 'vp-cd-photo' });
   m.appendChild(photoWrap);
-  loadPlacePhoto([p.name, p.address || placeCity(p)].filter(Boolean).join(', '), photoWrap);
+  const coords = (typeof p.lat === 'number' && typeof p.lng === 'number') ? { lat: p.lat, lng: p.lng } : null;
+  loadPlacePhoto([p.name, p.address || placeCity(p)].filter(Boolean).join(', '), photoWrap, coords);
 
   const body = el('div', { class: 'vp-cd-body' });
   function row(label, value) {
