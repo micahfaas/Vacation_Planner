@@ -25,14 +25,23 @@ Deno.serve(async (req) => {
   const key = Deno.env.get('GOOGLE_PLACES_KEY');
   if (!key) return json({ ok: false, error: 'Place photos are not configured.' });
 
-  let query = '';
+  let query = '', lat: number | null = null, lng: number | null = null;
   try {
     const body = await req.json();
     query = String(body.query || '').trim().slice(0, 300);
+    if (typeof body.lat === 'number' && typeof body.lng === 'number') { lat = body.lat; lng = body.lng; }
   } catch {
     return json({ ok: false, error: 'Bad request.' });
   }
   if (!query) return json({ ok: true, image: '' });
+
+  // Bias the search to the saved coordinates so an ambiguous name (e.g.
+  // "Central") resolves to the place the user means, not the most globally
+  // prominent one.
+  const reqBody: Record<string, unknown> = { textQuery: query, maxResultCount: 1 };
+  if (lat !== null && lng !== null) {
+    reqBody.locationBias = { circle: { center: { latitude: lat, longitude: lng }, radius: 30000 } };
+  }
 
   // 1) Find the place + its first photo reference.
   let search: Response;
@@ -44,7 +53,7 @@ Deno.serve(async (req) => {
         'X-Goog-Api-Key': key,
         'X-Goog-FieldMask': 'places.photos,places.displayName',
       },
-      body: JSON.stringify({ textQuery: query, maxResultCount: 1 }),
+      body: JSON.stringify(reqBody),
     });
   } catch {
     return json({ ok: false, error: 'Could not reach Google Places.' });
@@ -74,5 +83,6 @@ Deno.serve(async (req) => {
   const mdata = await media.json().catch(() => ({}));
   const attribution =
     (photo.authorAttributions && photo.authorAttributions[0] && photo.authorAttributions[0].displayName) || '';
-  return json({ ok: true, image: mdata.photoUri || '', attribution });
+  const name = (place.displayName && place.displayName.text) || '';
+  return json({ ok: true, image: mdata.photoUri || '', attribution, name });
 });

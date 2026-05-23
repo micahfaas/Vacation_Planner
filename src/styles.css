@@ -2836,9 +2836,11 @@ a.vp-res-link-title:hover span { text-decoration: underline; }
 /* Card read view */
 .vp-card-detail { width: min(440px, 100%); position: relative; }
 .vp-cd-close {
-  position: absolute;
-  top: 8px;
-  right: 8px;
+  position: sticky;
+  top: 4px;
+  float: right;
+  margin: 0 -8px -40px 0;
+  z-index: 2;
   width: 40px;
   height: 40px;
   display: flex;
@@ -2848,7 +2850,7 @@ a.vp-res-link-title:hover span { text-decoration: underline; }
   font-size: 26px;
   line-height: 1;
   color: var(--text-3);
-  background: transparent;
+  background: var(--surface);
   border: 0;
   border-radius: 50%;
   cursor: pointer;
@@ -2863,6 +2865,17 @@ a.vp-res-link-title:hover span { text-decoration: underline; }
 .vp-cd-photo { margin-bottom: var(--space-3); }
 .vp-cd-photo-img { width: 100%; max-height: 200px; object-fit: cover; border-radius: var(--radius-md); display: block; }
 .vp-cd-photo-attr { font-size: 10px; color: var(--text-3); margin-top: 3px; }
+.vp-daychooser { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 4px; max-height: 44vh; overflow-y: auto; }
+.vp-daychooser-day {
+  padding: 8px 12px;
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+.vp-daychooser-day:hover { background: var(--accent-bg); border-color: var(--accent); }
 .vp-cd-body { display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--space-2); }
 .vp-cd-route { font-size: var(--text-lg); font-weight: 600; color: var(--text); }
 .vp-cd-row { display: flex; gap: var(--space-3); font-size: var(--text-sm); }
