@@ -1478,6 +1478,44 @@ body.vp-shared .vp-footer { display: none; }
 }
 .vp-place-marker .vp-place-marker-pin i { font-size: 16px; line-height: 1; }
 
+/* current-location dot + per-place distance */
+.vp-user-marker { background: transparent; border: 0; }
+.vp-user-dot {
+  display: block;
+  position: relative;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 2px rgba(29, 138, 156, 0.45), 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+.vp-user-dot::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(29, 138, 156, 0.35);
+  transform: translate(-50%, -50%);
+  animation: vp-user-pulse 2s ease-out infinite;
+}
+@keyframes vp-user-pulse {
+  0%   { transform: translate(-50%, -50%) scale(1);   opacity: 0.6; }
+  100% { transform: translate(-50%, -50%) scale(3.2); opacity: 0; }
+}
+.vp-place-dist {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: var(--text-xs);
+  color: var(--link);
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
 /* plan view */
 .vp-plan-head-actions {
   display: flex;
