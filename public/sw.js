@@ -19,6 +19,40 @@ self.addEventListener('activate', e => {
   );
 });
 
+// Web push: booking reminders (#12). The watcher-run function sends a JSON
+// payload { title, body, url, tag }; show it as a notification.
+self.addEventListener('push', e => {
+  let data = {};
+  try { data = e.data ? e.data.json() : {}; } catch { data = {}; }
+  const title = data.title || 'Trip Planner';
+  const options = {
+    body: data.body || '',
+    tag: data.tag || undefined,
+    data: { url: data.url || './' },
+    icon: './icon.svg',
+    badge: './icon.svg',
+  };
+  e.waitUntil(self.registration.showNotification(title, options));
+});
+
+// Tapping a notification focuses an open tab (navigating it to the target) or
+// opens a new one.
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const target = (e.notification.data && e.notification.data.url) || './';
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+      for (const c of list) {
+        if ('focus' in c) {
+          if ('navigate' in c && target) c.navigate(target).catch(() => {});
+          return c.focus();
+        }
+      }
+      if (self.clients.openWindow) return self.clients.openWindow(target);
+    })
+  );
+});
+
 self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;

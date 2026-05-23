@@ -7,6 +7,7 @@ import { fmtShort, parseISO, isoDate } from './dates.js';
 import { openShareDialog } from './share.js';
 import { confirmDialog, promptDialog } from './dialog.js';
 import { loadDemoTrip } from './demo.js';
+import { openTripIdeas } from './tripideas.js';
 
 export function openTripsMenu() {
   const bg = el('div', { class: 'vp-modal-bg', onclick: e => { if (e.target === bg) bg.remove(); } });
@@ -69,6 +70,11 @@ export function openTripsMenu() {
 
   const actions = el('div', { class: 'vp-modal-actions' });
   const left = el('div', {});
+  left.appendChild(el('button', {
+    class: 'vp-trips-ideas',
+    title: 'Get destination ideas based on your points and dates',
+    onclick: () => { bg.remove(); openTripIdeas(); }
+  }, [el('i', { class: 'ti ti-sparkles', 'aria-hidden': 'true' }), ' Trip ideas']));
   left.appendChild(el('button', {
     title: 'Load a 10-day Spain trip with rich sample data',
     onclick: async () => {

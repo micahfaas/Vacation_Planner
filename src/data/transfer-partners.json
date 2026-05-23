@@ -1,0 +1,131 @@
+{
+  "lastVerified": "2026-05",
+  "_note": "Transfer ratios and speeds drift over time. Spot-check against each program before relying on these. Flights-only by design; bank-currency hotel partners are intentionally omitted.",
+  "programs": [
+    { "id": "avios", "name": "Avios (BA / Iberia / Aer Lingus)", "aliases": ["avios", "british airways", "ba", "iberia", "iberia plus", "aer lingus", "aerclub", "executive club"] },
+    { "id": "flyingblue", "name": "Air France-KLM Flying Blue", "aliases": ["flying blue", "flyingblue", "air france", "klm", "af", "afklm"] },
+    { "id": "aeroplan", "name": "Air Canada Aeroplan", "aliases": ["aeroplan", "air canada", "ac"] },
+    { "id": "united", "name": "United MileagePlus", "aliases": ["united", "mileageplus", "ua"] },
+    { "id": "delta", "name": "Delta SkyMiles", "aliases": ["delta", "skymiles", "dl"] },
+    { "id": "ana", "name": "ANA Mileage Club", "aliases": ["ana", "ana mileage club", "all nippon"] },
+    { "id": "lifemiles", "name": "Avianca LifeMiles", "aliases": ["lifemiles", "avianca", "life miles"] },
+    { "id": "krisflyer", "name": "Singapore KrisFlyer", "aliases": ["krisflyer", "singapore", "singapore airlines", "kris flyer", "sq"] },
+    { "id": "virginatlantic", "name": "Virgin Atlantic Flying Club", "aliases": ["virgin atlantic", "flying club", "virgin", "vs"] },
+    { "id": "emirates", "name": "Emirates Skywards", "aliases": ["emirates", "skywards", "ek"] },
+    { "id": "etihad", "name": "Etihad Guest", "aliases": ["etihad", "etihad guest", "ey"] },
+    { "id": "cathay", "name": "Cathay (Asia Miles)", "aliases": ["cathay", "cathay pacific", "asia miles", "cx"] },
+    { "id": "qantas", "name": "Qantas Frequent Flyer", "aliases": ["qantas", "qf"] },
+    { "id": "turkish", "name": "Turkish Miles&Smiles", "aliases": ["turkish", "miles&smiles", "miles and smiles", "tk"] },
+    { "id": "aeromexico", "name": "Aeromexico Club Premier", "aliases": ["aeromexico", "club premier", "am"] },
+    { "id": "jetblue", "name": "JetBlue TrueBlue", "aliases": ["jetblue", "trueblue", "true blue", "b6"] },
+    { "id": "southwest", "name": "Southwest Rapid Rewards", "aliases": ["southwest", "rapid rewards", "wn"] },
+    { "id": "alaska", "name": "Alaska Mileage Plan", "aliases": ["alaska", "mileage plan", "as"] },
+    { "id": "hawaiian", "name": "Hawaiian HawaiianMiles", "aliases": ["hawaiian", "hawaiianmiles", "ha"] },
+    { "id": "eva", "name": "EVA Air Infinity MileageLands", "aliases": ["eva", "eva air", "infinity mileagelands", "br"] },
+    { "id": "qatar", "name": "Qatar Privilege Club", "aliases": ["qatar", "privilege club", "qr"] },
+    { "id": "thai", "name": "Thai Royal Orchid Plus", "aliases": ["thai", "royal orchid", "tg"] },
+    { "id": "finnair", "name": "Finnair Plus", "aliases": ["finnair", "finnair plus", "ay"] },
+    { "id": "tap", "name": "TAP Miles&Go", "aliases": ["tap", "tap air portugal", "miles&go", "miles and go"] }
+  ],
+  "currencies": [
+    {
+      "id": "chase-ur",
+      "name": "Chase Ultimate Rewards",
+      "aliases": ["chase", "chase ur", "ultimate rewards", "ur", "chase points", "chase sapphire", "sapphire"],
+      "partners": [
+        { "program": "aeroplan", "ratio": 1, "speed": "instant" },
+        { "program": "flyingblue", "ratio": 1, "speed": "instant" },
+        { "program": "avios", "ratio": 1, "speed": "instant" },
+        { "program": "emirates", "ratio": 1, "speed": "instant" },
+        { "program": "jetblue", "ratio": 1, "speed": "instant" },
+        { "program": "krisflyer", "ratio": 1, "speed": "1–3 days" },
+        { "program": "southwest", "ratio": 1, "speed": "instant" },
+        { "program": "united", "ratio": 1, "speed": "instant" },
+        { "program": "virginatlantic", "ratio": 1, "speed": "instant" }
+      ]
+    },
+    {
+      "id": "amex-mr",
+      "name": "Amex Membership Rewards",
+      "aliases": ["amex", "amex mr", "membership rewards", "american express", "mr", "amex points"],
+      "partners": [
+        { "program": "avios", "ratio": 1, "speed": "instant" },
+        { "program": "aeromexico", "ratio": 1.6, "speed": "instant" },
+        { "program": "aeroplan", "ratio": 1, "speed": "instant" },
+        { "program": "flyingblue", "ratio": 1, "speed": "instant" },
+        { "program": "ana", "ratio": 1, "speed": "1–3 days" },
+        { "program": "lifemiles", "ratio": 1, "speed": "instant" },
+        { "program": "cathay", "ratio": 1, "speed": "1–3 days" },
+        { "program": "delta", "ratio": 1, "speed": "instant" },
+        { "program": "emirates", "ratio": 1, "speed": "instant" },
+        { "program": "etihad", "ratio": 1, "speed": "instant" },
+        { "program": "hawaiian", "ratio": 1, "speed": "instant" },
+        { "program": "jetblue", "ratio": 0.8, "speed": "instant" },
+        { "program": "qantas", "ratio": 1, "speed": "instant" },
+        { "program": "krisflyer", "ratio": 1, "speed": "1–3 days" },
+        { "program": "virginatlantic", "ratio": 1, "speed": "instant" }
+      ]
+    },
+    {
+      "id": "citi-typ",
+      "name": "Citi ThankYou Points",
+      "aliases": ["citi", "citi typ", "thankyou", "thank you", "typ", "citi points"],
+      "partners": [
+        { "program": "aeromexico", "ratio": 1, "speed": "instant" },
+        { "program": "flyingblue", "ratio": 1, "speed": "instant" },
+        { "program": "lifemiles", "ratio": 1, "speed": "instant" },
+        { "program": "cathay", "ratio": 1, "speed": "1–3 days" },
+        { "program": "emirates", "ratio": 1, "speed": "instant" },
+        { "program": "etihad", "ratio": 1, "speed": "instant" },
+        { "program": "eva", "ratio": 1, "speed": "1–3 days" },
+        { "program": "jetblue", "ratio": 1, "speed": "instant" },
+        { "program": "qantas", "ratio": 1, "speed": "instant" },
+        { "program": "qatar", "ratio": 1, "speed": "instant" },
+        { "program": "krisflyer", "ratio": 1, "speed": "1–3 days" },
+        { "program": "thai", "ratio": 1, "speed": "instant" },
+        { "program": "turkish", "ratio": 1, "speed": "instant" },
+        { "program": "virginatlantic", "ratio": 1, "speed": "instant" }
+      ]
+    },
+    {
+      "id": "capital-one",
+      "name": "Capital One Miles",
+      "aliases": ["capital one", "cap one", "cap1", "c1", "venture", "capital one miles"],
+      "partners": [
+        { "program": "aeromexico", "ratio": 1, "speed": "instant" },
+        { "program": "aeroplan", "ratio": 1, "speed": "instant" },
+        { "program": "flyingblue", "ratio": 1, "speed": "instant" },
+        { "program": "lifemiles", "ratio": 1, "speed": "instant" },
+        { "program": "avios", "ratio": 1, "speed": "instant" },
+        { "program": "cathay", "ratio": 1, "speed": "1–3 days" },
+        { "program": "emirates", "ratio": 1, "speed": "instant" },
+        { "program": "etihad", "ratio": 1, "speed": "instant" },
+        { "program": "eva", "ratio": 0.75, "speed": "1–3 days" },
+        { "program": "finnair", "ratio": 1, "speed": "instant" },
+        { "program": "qantas", "ratio": 1, "speed": "instant" },
+        { "program": "krisflyer", "ratio": 1, "speed": "1–3 days" },
+        { "program": "tap", "ratio": 1, "speed": "instant" },
+        { "program": "turkish", "ratio": 1, "speed": "instant" },
+        { "program": "virginatlantic", "ratio": 1, "speed": "instant" }
+      ]
+    },
+    {
+      "id": "bilt",
+      "name": "Bilt Rewards",
+      "aliases": ["bilt", "bilt rewards", "bilt points"],
+      "partners": [
+        { "program": "avios", "ratio": 1, "speed": "instant" },
+        { "program": "aeroplan", "ratio": 1, "speed": "instant" },
+        { "program": "flyingblue", "ratio": 1, "speed": "instant" },
+        { "program": "alaska", "ratio": 1, "speed": "instant" },
+        { "program": "lifemiles", "ratio": 1, "speed": "instant" },
+        { "program": "cathay", "ratio": 1, "speed": "1–3 days" },
+        { "program": "emirates", "ratio": 1, "speed": "instant" },
+        { "program": "hawaiian", "ratio": 1, "speed": "instant" },
+        { "program": "turkish", "ratio": 1, "speed": "instant" },
+        { "program": "united", "ratio": 1, "speed": "instant" },
+        { "program": "virginatlantic", "ratio": 1, "speed": "instant" }
+      ]
+    }
+  ]
+}
