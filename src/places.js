@@ -38,6 +38,7 @@ import { confirmDialog, alertDialog } from './dialog.js';
 import { openPlacesImport, tryGeocode } from './places-import.js';
 import { geocodePlace } from './geocoding.js';
 import { getFavorites, addFavorite, removeFavorite, isFavoriteId } from './favorites.js';
+import { loadPlacePhoto, linkifyNotes } from './cardview.js';
 
 // category -> card type, for turning a researched place into a trip card
 const CAT_TO_TYPE = {
@@ -258,6 +259,97 @@ function openPlaceEditor(id) {
   setTimeout(() => nameIn.focus(), 30);
 }
 
+// Read view for a saved place — opens on tap; Edit flips to openPlaceEditor.
+function openPlaceDetail(id) {
+  const t = activeTrip();
+  const p = (t.places || []).find(x => x.id === id);
+  if (!p) return;
+  const cat = PLACE_CATEGORIES[p.category] || PLACE_CATEGORIES.other;
+  const accent = MARKER_COLORS[p.category] || MARKER_COLORS.other;
+
+  const bg = el('div', { class: 'vp-modal-bg', onclick: e => { if (e.target === bg) bg.remove(); } });
+  const m = el('div', { class: 'vp-modal vp-card-detail' });
+
+  const header = el('div', { class: 'vp-cd-head', style: { borderLeftColor: accent } });
+  const titleRow = el('div', { class: 'vp-cd-titlerow' });
+  titleRow.appendChild(el('i', { class: 'ti ' + cat.icon + ' vp-cd-icon', style: { color: accent }, 'aria-hidden': 'true' }));
+  titleRow.appendChild(el('div', { class: 'vp-cd-title' }, p.name || 'Place'));
+  const starred = isFavoriteId(p.favoriteId);
+  const starBtn = el('button', {
+    class: 'vp-place-star' + (starred ? ' vp-place-star-on' : ''),
+    title: starred ? 'Remove from favorites' : 'Save to favorites'
+  }, el('i', { class: 'ti ' + (starred ? 'ti-star-filled' : 'ti-star') }));
+  starBtn.addEventListener('click', async () => {
+    starBtn.disabled = true;
+    try {
+      if (starred) { await removeFavorite(p.favoriteId); updatePlace(p.id, { favoriteId: '' }); }
+      else { const fid = await addFavorite(p); updatePlace(p.id, { favoriteId: fid }); }
+      bg.remove();
+    } catch { starBtn.disabled = false; }
+  });
+  titleRow.appendChild(starBtn);
+  header.appendChild(titleRow);
+  header.appendChild(el('div', { class: 'vp-cd-type' }, cat.label));
+  m.appendChild(header);
+
+  const website = normalizeUrl(p.website || '');
+  const photoWrap = el('div', { class: 'vp-cd-photo' });
+  m.appendChild(photoWrap);
+  loadPlacePhoto([p.name, p.address || placeCity(p)].filter(Boolean).join(', '), photoWrap);
+
+  const body = el('div', { class: 'vp-cd-body' });
+  function row(label, value) {
+    if (!value) return;
+    body.appendChild(el('div', { class: 'vp-cd-row' },
+      el('span', { class: 'vp-cd-label' }, label), el('span', { class: 'vp-cd-val' }, value)));
+  }
+  const distKm = placeDistanceKm(p);
+  if (distKm != null) row('Distance', fmtDistance(distKm) + ' away');
+  if (p.address) row('Address', p.address);
+  else { const city = placeCity(p); if (city) row('City', city); }
+  if (body.children.length) m.appendChild(body);
+
+  const links = el('div', { class: 'vp-cd-links' });
+  if (website) links.appendChild(el('a', { href: website, target: '_blank', rel: 'noopener noreferrer', class: 'vp-cd-link' },
+    el('i', { class: 'ti ti-world', 'aria-hidden': 'true' }), 'Website'));
+  if (p.url) links.appendChild(el('a', { href: normalizeUrl(p.url), target: '_blank', rel: 'noopener noreferrer', class: 'vp-cd-link' },
+    el('i', { class: 'ti ti-link', 'aria-hidden': 'true' }), 'Link'));
+  if (links.children.length) m.appendChild(links);
+
+  const deep = deepLinksFor(p);
+  if (deep.length) {
+    const dr = el('div', { class: 'vp-place-deeplinks' });
+    deep.forEach(d => dr.appendChild(el('a', { href: d.url, target: '_blank', rel: 'noopener', class: 'vp-place-deeplink', title: d.title },
+      el('i', { class: 'ti ' + d.icon }), d.label)));
+    m.appendChild(dr);
+  }
+
+  if (p.notes && p.notes.trim()) {
+    m.appendChild(el('div', { class: 'vp-cd-section' }, 'Notes'));
+    m.appendChild(linkifyNotes(p.notes));
+  }
+
+  const actions = el('div', { class: 'vp-modal-actions' });
+  const left = el('div', { style: { display: 'flex', gap: '8px' } });
+  left.appendChild(el('button', {
+    class: 'vp-delete',
+    onclick: () => confirmDialog('Delete this place?', { danger: true, confirmText: 'Delete' })
+      .then(ok => { if (ok) { removePlace(id); bg.remove(); } })
+  }, 'Delete'));
+  actions.appendChild(left);
+  const right = el('div', { class: 'vp-right' });
+  const nav = navUrl(p);
+  if (nav) right.appendChild(el('a', { href: nav, target: '_blank', rel: 'noopener noreferrer', class: 'vp-cd-actionlink' },
+    el('i', { class: 'ti ti-navigation', 'aria-hidden': 'true' }), 'Navigate'));
+  right.appendChild(el('button', { onclick: () => { makeCardFromPlace(p); bg.remove(); } }, '+ Card'));
+  right.appendChild(el('button', { class: 'vp-save', onclick: () => { bg.remove(); openPlaceEditor(id); } }, 'Edit'));
+  actions.appendChild(right);
+  m.appendChild(actions);
+
+  bg.appendChild(m);
+  document.body.appendChild(bg);
+}
+
 function renderPlaceCard(p) {
   const cat = PLACE_CATEGORIES[p.category] || PLACE_CATEGORIES.other;
   const card = el('div', {
@@ -268,7 +360,7 @@ function renderPlaceCard(p) {
     onclick: e => {
       if (e.target.closest('.vp-place-actions') || e.target.closest('a') ||
           e.target.closest('.vp-place-star')) return;
-      openPlaceEditor(p.id);
+      openPlaceDetail(p.id);
     }
   });
 

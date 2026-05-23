@@ -10,6 +10,7 @@ import { isoDate, parseISO, addDays, timeToMin } from './dates.js';
 import { cardSpan, todayInTrip } from './derived.js';
 import { wallClockToUTC } from './timezone.js';
 import { openEditor } from './editor.js';
+import { openCardDetail } from './cardview.js';
 import { openAttachment } from './attachments.js';
 import { render, renderCityBanner } from './render.js';
 import { weatherSummary } from './weather.js';
@@ -225,7 +226,7 @@ function itemEl(entry, opts) {
     style: { borderLeftColor: tp.color },
     onclick: e => {
       if (e.target.closest('a') || e.target.closest('button')) return;
-      openEditor(entry.id);
+      openCardDetail(entry.id);
     }
   });
 

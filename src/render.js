@@ -8,6 +8,7 @@ import { buildDraftPreviews, clearDraftPreviews, compactCostLabel } from './plan
 import { save } from './storage.js';
 import { duplicateCard, removeCard, moveCard } from './cards.js';
 import { openEditor } from './editor.js';
+import { openCardDetail } from './cardview.js';
 import { renderTodayView, stopTodayTimer } from './today.js';
 import { renderPlacesView } from './places.js';
 import { renderPlanView } from './plan.js';
@@ -378,7 +379,7 @@ function renderCityBanner(id) {
   const banner = el('div', {
     class: 'vp-city-banner',
     style: { background: palette.bg, color: palette.text, borderLeftColor: palette.color },
-    onclick: () => openEditor(id)
+    onclick: () => openCardDetail(id)
   });
   banner.appendChild(el('i', { class: 'ti ti-map-pin' }));
   banner.appendChild(el('span', { class: 'vp-city-banner-name' }, c.title || c.city || 'City'));
@@ -515,7 +516,7 @@ function renderSpanCard(id, colStart, colSpan, continuesLeft, continuesRight) {
       borderTopRightRadius: continuesRight ? 0 : '',
       borderBottomRightRadius: continuesRight ? 0 : ''
     },
-    onclick: e => { if (e.target.closest('.vp-card-actions')) return; openEditor(id); }
+    onclick: e => { if (e.target.closest('.vp-card-actions')) return; openCardDetail(id); }
   });
   const title = el('div', { class: 'vp-card-title' });
   if (!continuesLeft) {
@@ -802,7 +803,7 @@ function renderCard(id) {
     draggable: 'true',
     'data-id': id,
     style: { background: bg, borderLeftColor: tp.color, color: fg },
-    onclick: e => { if (e.target.closest('.vp-card-actions')) return; openEditor(id); }
+    onclick: e => { if (e.target.closest('.vp-card-actions')) return; openCardDetail(id); }
   });
   const title = el('div', { class: 'vp-card-title' });
   title.appendChild(el('i', { class: 'ti ' + tp.icon, style: { fontSize: '13px' }, 'aria-hidden': 'true' }));
