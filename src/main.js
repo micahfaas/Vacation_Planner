@@ -13,6 +13,7 @@ import { loadSharedTrip, renderSharedTrip } from './share.js';
 import { confirmDialog } from './dialog.js';
 import { openImportModal } from './importer.js';
 import { openCoPlanner } from './coplanner.js';
+import { openWatchers } from './watchers.js';
 import { loadProfile, openProfileDialog } from './profile.js';
 import { loadFavorites } from './favorites.js';
 import { el } from './dom.js';
@@ -83,6 +84,7 @@ function bootApp() {
   document.getElementById('vp-currency-btn').addEventListener('click', openCurrencyConverter);
   document.getElementById('vp-import-btn').addEventListener('click', openImportModal);
   document.getElementById('vp-coplan-btn').addEventListener('click', openCoPlanner);
+  document.getElementById('vp-reminders-btn').addEventListener('click', openWatchers);
 
   const accountBtn = document.getElementById('vp-account-btn');
   accountBtn.addEventListener('click', () => openAccountMenu(accountBtn));

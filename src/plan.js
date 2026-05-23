@@ -12,6 +12,10 @@ import { weatherSummary } from './weather.js';
 import { placeCity } from './places.js';
 import { getPointsBalances, setPointsBalances } from './profile.js';
 import { CITY_STAY_COLORS } from './constants.js';
+import {
+  matchCurrency, matchProgram, transfersInto, reachableFrom,
+  ratioLabel, LAST_VERIFIED
+} from './transfers.js';
 
 function plan() {
   const t = activeTrip();
@@ -179,6 +183,49 @@ function balancesAfterDraft(d, balances) {
   return out;
 }
 
+// Balances the user holds that map onto a flexible bank currency in the
+// transfer graph — the only balances a transfer can *originate* from.
+function heldCurrencies(balances) {
+  const out = [];
+  balances.forEach(b => {
+    if (!b.name) return;
+    const currency = matchCurrency(b.name);
+    if (currency) out.push({ balance: b, currency });
+  });
+  return out;
+}
+
+// Transfers move in 1,000-point blocks; round needed amounts up to match.
+function roundTransfer(n) {
+  return Math.ceil(n / 1000) * 1000;
+}
+
+// Hook A: given an award program a draft burns and how many points are
+// missing, suggest held flexible currencies that transfer into it.
+function transferSuggestions(programText, needed, held) {
+  const prog = matchProgram(programText);
+  if (!prog) return null;
+  const options = transfersInto(prog.id, held);
+  if (!options.length) return null;
+  const wrap = el('div', { class: 'vp-transfer-suggest' });
+  options.forEach(o => {
+    const pts = roundTransfer(Math.ceil(needed / o.ratio));
+    const have = parseFloat(o.balance.balance) || 0;
+    const covers = have >= pts;
+    const line = el('div', { class: 'vp-transfer-opt' + (covers ? '' : ' vp-transfer-opt-short') });
+    line.appendChild(el('span', { class: 'vp-transfer-bulb' }, '↻'));
+    line.appendChild(el('span', {},
+      'Transfer ' + fmtPoints(pts) + ' from ' + o.currency.name +
+      ' (' + ratioLabel(o.ratio) + ', ' + o.speed + ')'));
+    if (!covers) {
+      line.appendChild(el('span', { class: 'vp-transfer-short' },
+        ' · only have ' + fmtPoints(have)));
+    }
+    wrap.appendChild(line);
+  });
+  return wrap;
+}
+
 function balanceRow(b, onChange, onRemove) {
   const row = el('div', { class: 'vp-balance-row' });
   const name = el('input', {
@@ -206,6 +253,7 @@ function renderBalancesPanel() {
     ? plan().drafts.find(d => d.id === ui.planSelectedDraftId)
     : null;
   const deltas = selectedDraft ? balancesAfterDraft(selectedDraft, balances) : null;
+  const held = heldCurrencies(balances);
 
   const panel = el('aside', { class: 'vp-plan-side' });
   panel.appendChild(el('h4', { class: 'vp-plan-side-h' }, 'Points & miles'));
@@ -229,6 +277,10 @@ function renderBalancesPanel() {
       const d = deltas.get(b.name);
       if (d && d.used > 0) {
         list.appendChild(renderDeltaLine(d));
+        if (d.after < 0) {
+          const sug = transferSuggestions(b.name, Math.abs(d.after), held);
+          if (sug) list.appendChild(sug);
+        }
       }
     }
   });
@@ -241,6 +293,8 @@ function renderBalancesPanel() {
         list.appendChild(el('div', { class: 'vp-balance-orphan' },
           el('strong', {}, prog),
           el('span', {}, ' uses ' + fmtPoints(d.used) + ' · no balance set')));
+        const sug = transferSuggestions(prog, d.used, held);
+        if (sug) list.appendChild(sug);
       }
     });
   }
@@ -251,6 +305,34 @@ function renderBalancesPanel() {
     class: 'vp-balance-add',
     onclick: () => persistBalances(balances.concat({ name: '', balance: 0 }))
   }, '+ add balance'));
+
+  // Hook B: explore what each held flexible currency can become.
+  if (held.length) {
+    const open = !!ui.planShowTransfers;
+    panel.appendChild(el('button', {
+      class: 'vp-transfer-toggle',
+      onclick: () => { ui.planShowTransfers = !open; render(); }
+    }, (open ? '▾ ' : '▸ ') + 'What can my points become?'));
+    if (open) {
+      const sec = el('div', { class: 'vp-transfer-explore' });
+      held.forEach(({ balance, currency }) => {
+        sec.appendChild(el('div', { class: 'vp-transfer-cur' },
+          currency.name + ' · ' + fmtPoints(parseFloat(balance.balance) || 0)));
+        reachableFrom(currency, balance.balance)
+          .sort((a, b) => b.miles - a.miles)
+          .forEach(r => {
+            const row = el('div', { class: 'vp-transfer-reach' });
+            row.appendChild(el('span', { class: 'vp-transfer-reach-name' }, r.name));
+            row.appendChild(el('span', { class: 'vp-transfer-reach-miles' },
+              fmtPoints(r.miles) + (r.ratio !== 1 ? ' · ' + ratioLabel(r.ratio) : '')));
+            sec.appendChild(row);
+          });
+      });
+      sec.appendChild(el('div', { class: 'vp-transfer-foot' },
+        'Partners as of ' + LAST_VERIFIED + ' · verify before booking'));
+      panel.appendChild(sec);
+    }
+  }
 
   if (selectedDraft) {
     panel.appendChild(el('button', {
