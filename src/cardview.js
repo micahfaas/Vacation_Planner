@@ -133,6 +133,7 @@ export function openCardDetail(id) {
 
   const bg = el('div', { class: 'vp-modal-bg', onclick: e => { if (e.target === bg) bg.remove(); } });
   const m = el('div', { class: 'vp-modal vp-card-detail' });
+  m.appendChild(el('button', { class: 'vp-cd-close', 'aria-label': 'Close', onclick: () => bg.remove() }, '×'));
 
   // Header: type accent + icon + title + booked badge.
   const header = el('div', { class: 'vp-cd-head', style: { borderLeftColor: palette.color } });

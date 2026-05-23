@@ -269,6 +269,7 @@ function openPlaceDetail(id) {
 
   const bg = el('div', { class: 'vp-modal-bg', onclick: e => { if (e.target === bg) bg.remove(); } });
   const m = el('div', { class: 'vp-modal vp-card-detail' });
+  m.appendChild(el('button', { class: 'vp-cd-close', 'aria-label': 'Close', onclick: () => bg.remove() }, '×'));
 
   const header = el('div', { class: 'vp-cd-head', style: { borderLeftColor: accent } });
   const titleRow = el('div', { class: 'vp-cd-titlerow' });
@@ -341,7 +342,7 @@ function openPlaceDetail(id) {
   const nav = navUrl(p);
   if (nav) right.appendChild(el('a', { href: nav, target: '_blank', rel: 'noopener noreferrer', class: 'vp-cd-actionlink' },
     el('i', { class: 'ti ti-navigation', 'aria-hidden': 'true' }), 'Navigate'));
-  right.appendChild(el('button', { onclick: () => { makeCardFromPlace(p); bg.remove(); } }, '+ Card'));
+  right.appendChild(el('button', { onclick: () => { makeCardFromPlace(p); bg.remove(); } }, 'Add to calendar'));
   right.appendChild(el('button', { class: 'vp-save', onclick: () => { bg.remove(); openPlaceEditor(id); } }, 'Edit'));
   actions.appendChild(right);
   m.appendChild(actions);
@@ -435,8 +436,8 @@ function renderPlaceCard(p) {
 
   const actions = el('div', { class: 'vp-place-actions' });
   actions.appendChild(el('button', {
-    title: 'Add as a trip card', onclick: e => { e.stopPropagation(); makeCardFromPlace(p); }
-  }, '+ card'));
+    title: 'Add to the calendar as a trip card', onclick: e => { e.stopPropagation(); makeCardFromPlace(p); }
+  }, 'Add to calendar'));
   actions.appendChild(el('button', {
     title: 'Delete', 'aria-label': 'Delete place',
     onclick: e => {
