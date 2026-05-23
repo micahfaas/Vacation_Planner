@@ -304,6 +304,13 @@ function renderPlaceCard(p) {
 
   card.appendChild(el('div', { class: 'vp-place-cat' }, cat.label));
 
+  const distKm = placeDistanceKm(p);
+  if (distKm != null) {
+    card.appendChild(el('div', { class: 'vp-place-dist' },
+      el('i', { class: 'ti ti-map-pin', 'aria-hidden': 'true' }),
+      el('span', {}, fmtDistance(distKm) + ' away')));
+  }
+
   const links = el('div', { class: 'vp-place-links' });
   if (p.url) links.appendChild(el('a',
     { href: normalizeUrl(p.url), target: '_blank', rel: 'noopener', class: 'vp-place-link',
@@ -465,8 +472,71 @@ function openFavoritesPicker() {
   document.body.appendChild(bg);
 }
 
+// ---------- current location + distances ----------
+// Straight-line ("as the crow flies") distance, in km, between two coords.
+function haversineKm(a, b) {
+  const R = 6371;
+  const toRad = d => d * Math.PI / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const s = Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(s));
+}
+
+function placeDistanceKm(p) {
+  const u = ui.userLocation;
+  if (!u || typeof p.lat !== 'number' || typeof p.lng !== 'number') return null;
+  return haversineKm(u, { lat: p.lat, lng: p.lng });
+}
+
+function fmtDistance(km) {
+  const f = n => (n < 10 ? n.toFixed(1) : Math.round(n).toString());
+  return f(km * 0.621371) + ' mi · ' + f(km) + ' km';
+}
+
+// Ask the browser for the user's location, then re-render so the map shows a
+// "you are here" dot and each place gets a distance. The location is used only
+// in the browser — it is never saved or sent anywhere.
+function locateUser(btn) {
+  if (!('geolocation' in navigator)) {
+    alertDialog('Your browser does not support location.');
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = 'Locating…';
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      ui.userLocation = {
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+        accuracy: pos.coords.accuracy
+      };
+      ui.placeSortNearest = true;
+      render();
+    },
+    err => {
+      btn.disabled = false;
+      btn.textContent = 'Near me';
+      alertDialog(err && err.code === 1
+        ? 'Location permission was denied. Allow location for this site to see how far you are from each place.'
+        : 'Could not get your location — try again, ideally outdoors with a good signal.');
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+  );
+}
+
 // ---------- map ----------
 let placesMap = null;
+
+function userMarkerIcon() {
+  return L.divIcon({
+    className: 'vp-user-marker',
+    html: '<span class="vp-user-dot"></span>',
+    iconSize: [18, 18],
+    iconAnchor: [9, 9]
+  });
+}
 
 // Marker colors mirror the place card tints so a glance ties a pin to a card.
 const MARKER_COLORS = {
@@ -514,6 +584,22 @@ function initPlacesMap(mapDiv, pts) {
       .bindTooltip(p.name || 'Place')
       .on('click', () => openPlaceEditor(p.id));
   });
+
+  // "You are here" — a blue dot plus a translucent accuracy circle.
+  const u = ui.userLocation;
+  if (u && typeof u.lat === 'number' && typeof u.lng === 'number') {
+    const ull = [u.lat, u.lng];
+    if (typeof u.accuracy === 'number' && u.accuracy > 0) {
+      L.circle(ull, {
+        radius: u.accuracy, color: '#1d8a9c', weight: 1,
+        fillColor: '#1d8a9c', fillOpacity: 0.12
+      }).addTo(map);
+    }
+    L.marker(ull, { icon: userMarkerIcon(), zIndexOffset: 1000 })
+      .addTo(map).bindTooltip('You are here');
+    latlngs.push(ull);
+  }
+
   if (latlngs.length) {
     map.fitBounds(L.latLngBounds(latlngs), { padding: [30, 30], maxZoom: 15 });
   } else {
@@ -555,6 +641,18 @@ export function renderPlacesView() {
   headBtns.appendChild(el('button', {
     class: 'vp-btn-primary', onclick: () => openPlaceEditor(null)
   }, '+ new place'));
+
+  // "Near me" — drop a current-location dot on the map and show distances.
+  const nearBtn = el('button', { class: 'vp-btn-primary' },
+    ui.userLocation ? 'Update location' : 'Near me');
+  nearBtn.addEventListener('click', () => locateUser(nearBtn));
+  headBtns.appendChild(nearBtn);
+  if (ui.userLocation) {
+    headBtns.appendChild(el('button', {
+      class: 'vp-btn-primary',
+      onclick: () => { ui.userLocation = null; ui.placeSortNearest = false; render(); }
+    }, 'Clear location'));
+  }
   head.appendChild(headBtns);
   panel.appendChild(head);
 
@@ -586,14 +684,33 @@ export function renderPlacesView() {
     ui.placeCityFilter = 'all';
   }
 
+  // Sort-by-distance toggle, only meaningful once a location is set.
+  if (ui.userLocation) {
+    filterRow.appendChild(el('button', {
+      class: 'vp-chip' + (ui.placeSortNearest ? ' vp-chip-on' : ''),
+      onclick: () => { ui.placeSortNearest = !ui.placeSortNearest; render(); }
+    }, 'nearest first'));
+  }
+
   panel.appendChild(filterRow);
 
   const visible = all.filter(p =>
     (ui.placeFilter === 'all' || p.category === ui.placeFilter) &&
     (ui.placeCityFilter === 'all' || placeCity(p) === ui.placeCityFilter)
   );
-  // Surface accommodation first for quick access to where you're staying.
-  visible.sort((a, b) => (b.category === 'staying' ? 1 : 0) - (a.category === 'staying' ? 1 : 0));
+  if (ui.userLocation && ui.placeSortNearest) {
+    // Nearest first; places without coordinates sink to the bottom.
+    visible.sort((a, b) => {
+      const da = placeDistanceKm(a), db = placeDistanceKm(b);
+      if (da == null && db == null) return 0;
+      if (da == null) return 1;
+      if (db == null) return -1;
+      return da - db;
+    });
+  } else {
+    // Surface accommodation first for quick access to where you're staying.
+    visible.sort((a, b) => (b.category === 'staying' ? 1 : 0) - (a.category === 'staying' ? 1 : 0));
+  }
 
   const withCoords = visible.filter(p => typeof p.lat === 'number' && typeof p.lng === 'number');
 
