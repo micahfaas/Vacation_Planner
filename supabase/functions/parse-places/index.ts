@@ -29,6 +29,7 @@ Return a JSON object: { "places": [ ... ] }. Each place has ALL of these fields:
 - notes: a concise one- or two-sentence description — what it is, why it's notable, any tips from the source text.
 
 Rules:
+- The text is often a markdown or bulleted list: lines may start with -, *, •, ▪, or a number, names may be wrapped in ** for bold, and links may appear as [text](url). Treat each bullet or line as a candidate place, and NEVER include markdown or bullet characters (*, _, #, •, -, backticks) in the name or notes — output clean plain text.
 - Extract every distinct place mentioned. Do not merge or skip places.
 - Choose categories carefully: "cafe" is for coffee shops; "bar" for bars and pubs; "cocktail" is for cocktail bars specifically; "attraction" for sights, museums, parks, tours; "shop" for stores and markets; "lodging" for hotels/hostels/Airbnbs; "other" only if none of the above fit.
 - Fill "address" only with a real, complete street address you are confident about — include the city. If you are not sure, leave it "". Never guess.

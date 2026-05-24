@@ -14,6 +14,23 @@ function sleep(ms) {
   return new Promise(r => setTimeout(r, ms));
 }
 
+// Research pasted from a chat is usually a markdown bulleted list with bold
+// names and links. Strip the formatting so the parser sees clean lines and
+// names don't carry stray *, •, or markdown characters.
+function cleanPastedText(text) {
+  return (text || '')
+    .split('\n')
+    .map(line => line
+      .replace(/^\s*(?:[-*•·▪●◦‣◆▶▸>–—]+|\d+[.)])\s+/, '') // leading bullet / number / quote
+      .replace(/^\s*#{1,6}\s+/, ''))                        // markdown headings
+    .join('\n')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 ($2)')         // [text](url) -> text (url)
+    .replace(/\*\*([^*]+)\*\*/g, '$1')                      // **bold**
+    .replace(/__([^_]+)__/g, '$1')                          // __bold__
+    .replace(/(^|[\s(])\*([^*\n]+)\*(?=[\s).,;:!?]|$)/g, '$1$2') // *italic*
+    .replace(/`([^`]+)`/g, '$1');                           // `code`
+}
+
 // Spanish / Latin-American street-type abbreviations that confuse Nominatim
 // in their short form ("Jr. Colina" misses, "Jirón Colina" hits).
 const ABBREV = [
@@ -118,7 +135,7 @@ export function openPlacesImport() {
       el('div', { class: 'vp-imp-status' }, 'Reading your research…'));
     let res;
     try {
-      res = await supabase.functions.invoke('parse-places', { body: { text } });
+      res = await supabase.functions.invoke('parse-places', { body: { text: cleanPastedText(text) } });
     } catch {
       showMessage(text, 'The import service is unavailable. Try again later.');
       return;
