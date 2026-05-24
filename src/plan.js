@@ -601,7 +601,7 @@ export function clearDraftPreviews() {
 }
 
 // ---------- editors ----------
-function costRow(initialCost, initialUnit) {
+function costRow(initialCost, initialUnit, initialProgram) {
   const cost = el('input', { type: 'number', min: '0', value: initialCost || '', placeholder: '0' });
   const unit = el('select', {});
   [['usd', '$ USD'], ['points', 'points']].forEach(([k, label]) => {
@@ -609,8 +609,25 @@ function costRow(initialCost, initialUnit) {
     if ((initialUnit || 'usd') === k) o.selected = true;
     unit.appendChild(o);
   });
-  const row = el('div', { class: 'vp-cost-row' }, cost, unit);
-  return { row, cost, unit };
+  // Which program the points come from (e.g. Avios) — only relevant when the
+  // unit is "points". Autocompletes from the user's saved balances so the spend
+  // matches a named balance + the transfer advisor.
+  const program = el('input', {
+    type: 'text', class: 'vp-cost-program', list: 'vp-balance-programs',
+    value: initialProgram || '', placeholder: 'Program (e.g. Avios)'
+  });
+  function sync() { program.style.display = unit.value === 'points' ? '' : 'none'; }
+  unit.addEventListener('change', sync);
+  sync();
+  const row = el('div', { class: 'vp-cost-row' }, cost, unit, program);
+  return { row, cost, unit, program };
+}
+
+// Datalist of saved balance names, so the program field autocompletes.
+function balanceDatalist() {
+  const dl = el('datalist', { id: 'vp-balance-programs' });
+  getPointsBalances().forEach(b => { if (b && b.name) dl.appendChild(el('option', { value: b.name })); });
+  return dl;
 }
 
 function openDraftEditor(id) {
@@ -679,11 +696,11 @@ function openStopEditor(draftId, stopId) {
   const nightsIn = el('input', { type: 'number', min: '0', value: s.nights || 1 });
 
   const trLabel = el('input', { type: 'text', value: s.transport.label || '', placeholder: 'e.g. LATAM direct flight' });
-  const trCost = costRow(s.transport.cost, s.transport.costUnit);
+  const trCost = costRow(s.transport.cost, s.transport.costUnit, s.transport.pointsProgram);
   let trStars = s.transport.stars || 0;
 
   const lgLabel = el('input', { type: 'text', value: s.lodging.label || '', placeholder: 'e.g. Hotel B&B / Airbnb' });
-  const lgCost = costRow(s.lodging.cost, s.lodging.costUnit);
+  const lgCost = costRow(s.lodging.cost, s.lodging.costUnit, s.lodging.pointsProgram);
   const lgUrl = el('input', { type: 'text', value: s.lodging.url || '', placeholder: 'Booking link (optional)' });
   let lgStars = s.lodging.stars || 0;
 
@@ -710,6 +727,8 @@ function openStopEditor(draftId, stopId) {
   m.appendChild(el('label', {}, 'Rating'));
   m.appendChild(starInput(lgStars, v => { lgStars = v; }));
 
+  m.appendChild(balanceDatalist());
+
   const actions = el('div', { class: 'vp-modal-actions' });
   const left = el('div', { style: { display: 'flex', gap: '8px' } });
   left.appendChild(el('button', {
@@ -732,12 +751,14 @@ function openStopEditor(draftId, stopId) {
           label: trLabel.value.trim(),
           cost: parseFloat(trCost.cost.value) || 0,
           costUnit: trCost.unit.value,
+          pointsProgram: trCost.unit.value === 'points' ? trCost.program.value.trim() : '',
           stars: trStars
         },
         lodging: {
           label: lgLabel.value.trim(),
           cost: parseFloat(lgCost.cost.value) || 0,
           costUnit: lgCost.unit.value,
+          pointsProgram: lgCost.unit.value === 'points' ? lgCost.program.value.trim() : '',
           url: lgUrl.value.trim(),
           stars: lgStars
         }
