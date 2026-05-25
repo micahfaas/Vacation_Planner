@@ -4,8 +4,28 @@ This is the prompt to paste as the **first message** in a fresh session when you
 want to start building the React Native + Expo mobile app. It captures the plan
 we agreed on so the new session can pick up without re-deriving anything.
 
-Open decision that session will raise: **where the mobile code lives** — a new
-repo vs an `/app` folder here. (See the pros/cons notes you have separately.)
+## Decision: build it in a NEW, separate repo
+
+We decided the mobile app lives in its **own new repo**, not an `/app` folder in
+this one. Reasoning:
+
+- **Clean tooling.** Expo/Metro sit at the repo root with no chance of colliding
+  with this app's Vite build or the GitHub Pages deploy. Avoiding the Vite+Metro
+  coexistence mess is the single biggest practical win.
+- **Independent everything** (history, CI, releases); a mobile change can never
+  disturb the web build, and vice-versa.
+- **Clean path to retire the web app** once mobile reaches parity — just archive
+  this repo.
+- **Backend is shared by deployed endpoint anyway** — the Supabase edge functions
+  are deployed to Supabase, so the mobile repo just calls them by URL; it doesn't
+  need the function source.
+- The only cost is **copying the small shared JS logic** (`transfers.js`,
+  `transfer-partners.json`, points math, `dates.js`) into the new repo once. It's
+  small and stable, so drift risk is low; if it ever bites, extract it into a tiny
+  shared package then.
+
+A monorepo would only pay off with heavy ongoing *parallel* development of both
+web and mobile — which is not the plan (web is being replaced).
 
 ---
 
@@ -109,8 +129,12 @@ LOW-RISK ON-RAMP I WANT
   commit further.
 
 WORKFLOW NOTES (from the web app)
-- Put the mobile app in a new repo or an /app folder; keep supabase/ as the single
-  shared backend source.
+- DECIDED: build the mobile app in a NEW, separate repo (not an /app folder in the
+  web repo) — for clean Expo/Metro tooling and a clean path to retire the web app.
+  Copy the small shared JS logic (transfers.js, transfer-partners.json, points
+  math, dates.js) into it once. The Supabase backend is shared by deployed
+  endpoint, so the mobile repo only needs the supabase-js client config, not the
+  edge-function source.
 - I ship via PR + rebase-merge. Fetch origin and confirm local main matches before
   branching (my local has lagged before). Avoid apostrophes in heredoc commit
   messages (they break bash).
