@@ -14,6 +14,7 @@ import { confirmDialog } from './dialog.js';
 import { openImportModal } from './importer.js';
 import { openCoPlanner } from './coplanner.js';
 import { openWatchers } from './watchers.js';
+import { startTour, tourSeen } from './tour.js';
 import { loadProfile, openProfileDialog } from './profile.js';
 import { loadFavorites } from './favorites.js';
 import { el } from './dom.js';
@@ -79,15 +80,26 @@ if (shareToken) {
 
 function bootApp() {
   document.getElementById('vp-trips-btn').addEventListener('click', openTripsMenu);
-  document.getElementById('vp-export-btn').addEventListener('click', exportJSON);
-  document.getElementById('vp-ics-btn').addEventListener('click', exportICS);
-  document.getElementById('vp-currency-btn').addEventListener('click', openCurrencyConverter);
   document.getElementById('vp-import-btn').addEventListener('click', openImportModal);
   document.getElementById('vp-coplan-btn').addEventListener('click', openCoPlanner);
-  document.getElementById('vp-reminders-btn').addEventListener('click', openWatchers);
+
+  // Secondary actions tucked behind a "More" dropdown to keep the bar clean.
+  const moreBtn = document.getElementById('vp-more-btn');
+  moreBtn.addEventListener('click', () => popupMenu(moreBtn, [
+    ['Booking reminders', 'ti-bell', openWatchers],
+    ['Currency converter', 'ti-coins', openCurrencyConverter],
+    ['Export JSON', 'ti-download', exportJSON],
+    ['Export to calendar', 'ti-calendar-down', exportICS],
+    ['Replay walkthrough', 'ti-route', () => startTour(true)],
+  ]));
 
   const accountBtn = document.getElementById('vp-account-btn');
-  accountBtn.addEventListener('click', () => openAccountMenu(accountBtn));
+  accountBtn.addEventListener('click', () => popupMenu(accountBtn, [
+    ['About me', 'ti-user', openProfileDialog],
+    ['Sign out', 'ti-logout', () =>
+      confirmDialog('Sign out of Trip Planner?', { confirmText: 'Sign out' })
+        .then(ok => { if (ok) signOut(); })],
+  ]));
 
   async function showApp(user) {
     document.body.classList.remove('vp-signed-out');
@@ -96,6 +108,10 @@ function bootApp() {
     root.innerHTML = '<div class="vp-loading">Loading your trips…</div>';
     await Promise.all([loadTrips(user.id), loadProfile(user.id), loadFavorites(user.id)]);
     render();
+    // First-time walk-through (skipped if a share/photo import is pending).
+    if (!tourSeen() && !pendingShare && !pendingSharedPhotoCount) {
+      startTour(false);
+    }
     if (pendingShare) {
       const text = pendingShare;
       pendingShare = null;
@@ -117,7 +133,8 @@ function bootApp() {
     renderAuthScreen();
   }
 
-  function openAccountMenu(anchor) {
+  // Generic dropdown anchored under a header button. items: [[label, icon, fn]].
+  function popupMenu(anchor, items) {
     const rect = anchor.getBoundingClientRect();
     const bg = el('div', {
       class: 'vp-menu-bg',
@@ -130,17 +147,12 @@ function bootApp() {
         right: (window.innerWidth - rect.right) + 'px'
       }
     });
-    function item(label, icon, fn) {
+    items.forEach(([label, icon, fn]) => {
       const b = el('button', { class: 'vp-menu-item' },
         el('i', { class: 'ti ' + icon }), el('span', {}, label));
       b.addEventListener('click', () => { bg.remove(); fn(); });
-      return b;
-    }
-    menu.appendChild(item('About me', 'ti-user', openProfileDialog));
-    menu.appendChild(item('Sign out', 'ti-logout', () => {
-      confirmDialog('Sign out of Trip Planner?', { confirmText: 'Sign out' })
-        .then(ok => { if (ok) signOut(); });
-    }));
+      menu.appendChild(b);
+    });
     bg.appendChild(menu);
     document.body.appendChild(bg);
   }
