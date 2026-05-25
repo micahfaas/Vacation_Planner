@@ -113,6 +113,8 @@ function position() {
     backdrop.style.background = 'rgba(20, 14, 6, 0.62)';
     spotlight.style.display = 'none';
     arrow.style.display = 'none';
+    tip.style.right = 'auto';
+    tip.style.width = '';
     tip.style.left = '50%';
     tip.style.top = '50%';
     tip.style.transform = 'translate(-50%, -50%)';
@@ -120,10 +122,13 @@ function position() {
   }
   // The spotlight's box-shadow provides the dimming when a target exists.
   backdrop.style.background = 'transparent';
+  tip.style.transform = 'none';
 
-  target.scrollIntoView({ block: 'center', inline: 'center' });
+  target.scrollIntoView({ block: 'center', inline: 'nearest' });
   requestAnimationFrame(() => {
     const r = target.getBoundingClientRect();
+    const VW = window.innerWidth, VH = window.innerHeight;
+    const narrow = VW <= 640;
     const pad = 6;
     spotlight.style.display = 'block';
     spotlight.style.left = (r.left - pad) + 'px';
@@ -131,20 +136,39 @@ function position() {
     spotlight.style.width = (r.width + pad * 2) + 'px';
     spotlight.style.height = (r.height + pad * 2) + 'px';
 
-    tip.style.transform = 'none';
+    // Horizontal: on phones, span edge-to-edge so the card can never clip.
+    let tipLeft;
+    if (narrow) {
+      tip.style.left = '12px';
+      tip.style.right = '12px';
+      tip.style.width = 'auto';
+      tipLeft = 12;
+    } else {
+      tip.style.right = 'auto';
+      tip.style.width = '';
+      const w = tip.getBoundingClientRect().width;
+      tipLeft = Math.max(12, Math.min(r.left + r.width / 2 - w / 2, VW - w - 12));
+      tip.style.left = tipLeft + 'px';
+    }
+
+    // Vertical: below the target, else above, else pinned to the bottom.
     const tr = tip.getBoundingClientRect();
-    const margin = 12;
-    const below = r.bottom + margin + tr.height <= window.innerHeight - 8;
-    const top = below ? r.bottom + margin : Math.max(8, r.top - margin - tr.height);
-    const left = Math.min(Math.max(8, r.left + r.width / 2 - tr.width / 2), window.innerWidth - tr.width - 8);
-    tip.style.left = left + 'px';
+    const gap = 12;
+    let top, side;
+    if (VH - r.bottom >= tr.height + gap) { top = r.bottom + gap; side = 'below'; }
+    else if (r.top >= tr.height + gap) { top = r.top - gap - tr.height; side = 'above'; }
+    else { top = VH - tr.height - 12; side = 'none'; }
     tip.style.top = top + 'px';
 
-    arrow.style.display = 'block';
-    arrow.className = 'vp-tour-arrow ' + (below ? 'vp-tour-arrow-up' : 'vp-tour-arrow-down');
-    const ax = Math.min(Math.max(14, r.left + r.width / 2 - left - 7), tr.width - 28);
-    arrow.style.left = ax + 'px';
-    arrow.style.top = below ? '-9px' : (tr.height - 1) + 'px';
+    if (side === 'none') {
+      arrow.style.display = 'none';
+    } else {
+      arrow.style.display = 'block';
+      arrow.className = 'vp-tour-arrow ' + (side === 'below' ? 'vp-tour-arrow-up' : 'vp-tour-arrow-down');
+      const ax = Math.min(Math.max(14, r.left + r.width / 2 - tipLeft - 7), tr.width - 28);
+      arrow.style.left = ax + 'px';
+      arrow.style.top = side === 'below' ? '-9px' : (tr.height - 1) + 'px';
+    }
   });
 }
 
