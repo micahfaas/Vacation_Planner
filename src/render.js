@@ -9,6 +9,7 @@ import { save } from './storage.js';
 import { duplicateCard, removeCard, moveCard } from './cards.js';
 import { openEditor } from './editor.js';
 import { openCardDetail } from './cardview.js';
+import { openHelp } from './help.js';
 import { renderTodayView, stopTodayTimer } from './today.js';
 import { renderPlacesView } from './places.js';
 import { renderPlanView } from './plan.js';
@@ -69,8 +70,13 @@ export function render() {
     ed.addEventListener('change', e => { t.endDate = e.target.value; save(); render(); });
     tb.appendChild(ed);
     tb.appendChild(el('button', { class: 'vp-btn-ghost vp-tc-btn', onclick: openTripCheck }, 'Check trip'));
-    tb.appendChild(el('button', { class: 'vp-btn-primary', onclick: () => openEditor(null, { kind: 'lib' }) }, '+ new card'));
+    tb.appendChild(el('button', { class: 'vp-btn-primary vp-newcard-btn', onclick: () => openEditor(null, { kind: 'lib' }) }, '+ new card'));
   }
+  tb.appendChild(el('button', {
+    class: 'vp-btn-ghost vp-help-btn',
+    title: 'How to use this page', 'aria-label': 'How to use this page',
+    onclick: () => openHelp(ui.view)
+  }, [el('i', { class: 'ti ti-help-circle', 'aria-hidden': 'true' }), ' How to use']));
   root.appendChild(tb);
 
   if (ui.view === 'today') {

@@ -780,7 +780,7 @@ export function renderPlacesView() {
   }, '+ new place'));
 
   // "Near me" — drop a current-location dot on the map and show distances.
-  const nearBtn = el('button', { class: 'vp-btn-primary' },
+  const nearBtn = el('button', { class: 'vp-btn-primary vp-nearme-btn' },
     ui.userLocation ? 'Update location' : 'Near me');
   nearBtn.addEventListener('click', () => locateUser(nearBtn));
   headBtns.appendChild(nearBtn);
