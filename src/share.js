@@ -170,6 +170,6 @@ export function renderSharedTrip(trip) {
     wrap.appendChild(grid);
   }
 
-  wrap.appendChild(el('div', { class: 'vp-shared-foot' }, 'Made with Trip Planner'));
+  wrap.appendChild(el('div', { class: 'vp-shared-foot' }, 'Made with Odynaut'));
   root.appendChild(wrap);
 }

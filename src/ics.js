@@ -83,7 +83,7 @@ export function exportICS() {
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Trip Planner//EN',
+    'PRODID:-//Odynaut//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     fold('X-WR-CALNAME:' + esc(t.name || 'Trip'))

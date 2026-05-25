@@ -97,7 +97,7 @@ function bootApp() {
   accountBtn.addEventListener('click', () => popupMenu(accountBtn, [
     ['About me', 'ti-user', openProfileDialog],
     ['Sign out', 'ti-logout', () =>
-      confirmDialog('Sign out of Trip Planner?', { confirmText: 'Sign out' })
+      confirmDialog('Sign out of Odynaut?', { confirmText: 'Sign out' })
         .then(ok => { if (ok) signOut(); })],
   ]));
 

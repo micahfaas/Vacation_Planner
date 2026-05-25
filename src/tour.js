@@ -18,7 +18,7 @@ function markSeen() { try { localStorage.setItem(SEEN_KEY, '1'); } catch { /* ig
 // Each step: which tab to show, what to point at (CSS selector; null = centered),
 // and the copy. Targets are stable buttons/areas that exist regardless of data.
 const STEPS = [
-  { view: 'calendar', target: null, title: 'Welcome to Hopscotch 👋',
+  { view: 'calendar', target: null, title: 'Welcome to Odynaut 👋',
     body: 'A quick tour of how to plan a points-savvy trip. We loaded a sample trip so you can see everything in action.' },
   { view: 'calendar', target: '.vp-view-toggle', title: 'Your trip tabs',
     body: 'Switch between Day, Calendar, Places, Plan and more. Every tab also has a “How to use” button for details.' },
