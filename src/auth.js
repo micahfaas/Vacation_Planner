@@ -17,7 +17,10 @@ export function renderAuthScreen() {
 
   function draw(notice) {
     card.innerHTML = '';
-    card.appendChild(el('h2', {}, 'Trip Planner'));
+    card.appendChild(el('img', {
+      src: 'odynaut-logo.png', alt: 'Odynaut',
+      style: { display: 'block', margin: '0 auto 6px', width: '170px', height: 'auto' }
+    }));
     card.appendChild(el('p', { class: 'vp-auth-sub' },
       mode === 'signin'
         ? 'Sign in to sync your trips across devices.'
