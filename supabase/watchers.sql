@@ -69,3 +69,34 @@ create policy "Users insert own subs"
   on public.push_subscriptions for insert with check (auth.uid() = user_id);
 create policy "Users delete own subs"
   on public.push_subscriptions for delete using (auth.uid() = user_id);
+
+
+-- ---------------------------------------------------------------------------
+-- Mobile push support (added 2026-05-26)
+-- Make push_subscriptions polymorphic so the Odynaut mobile app can register
+-- Expo push tokens alongside the existing web (VAPID) subscriptions. Existing
+-- web rows are unaffected: they default to platform='web' and keep their
+-- endpoint/p256dh/auth values. Mobile rows leave those null and populate
+-- expo_push_token instead. Re-runnable.
+-- ---------------------------------------------------------------------------
+
+alter table public.push_subscriptions
+  add column if not exists platform        text not null default 'web',
+  add column if not exists expo_push_token text;
+
+alter table public.push_subscriptions
+  alter column endpoint drop not null,
+  alter column p256dh   drop not null,
+  alter column auth     drop not null;
+
+do $$ begin
+  alter table public.push_subscriptions
+    add constraint push_subscriptions_platform_check
+    check (platform in ('web','ios','android'));
+exception when duplicate_object then null; end $$;
+
+-- One row per (user, mobile device). Web rows are deduped by the existing
+-- inline unique on endpoint; mobile rows are deduped by expo_push_token.
+create unique index if not exists push_subscriptions_expo_token_uidx
+  on public.push_subscriptions (user_id, expo_push_token)
+  where expo_push_token is not null;
