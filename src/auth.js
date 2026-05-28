@@ -126,6 +126,15 @@ export function renderAuthScreen(initialMode) {
       draw();
     });
     card.appendChild(toggle);
+
+    // Privacy policy footer link — required by Apple before an account is created.
+    const privacy = el('a', {
+      class: 'vp-auth-privacy',
+      href: 'privacy.html',
+      target: '_blank',
+      rel: 'noopener',
+    }, 'Privacy policy');
+    card.appendChild(privacy);
   }
 
   draw();

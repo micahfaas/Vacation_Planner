@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Privacy Policy — Odynaut</title>
+<meta name="theme-color" content="#1d8a9c" />
+<link rel="icon" href="odynaut-globe.png" />
+<style>
+  :root {
+    --ink: #1f2933;
+    --muted: #6c757d;
+    --teal: #1d8a9c;
+    --teal-dark: #166a78;
+    --cream: #fefaf2;
+    --line: #e5dfd0;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    line-height: 1.55;
+  }
+  main {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 48px 24px 96px;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+  header img { width: 36px; height: 36px; }
+  header h1 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--teal-dark);
+  }
+  h2 { font-size: 18px; margin: 32px 0 8px; color: var(--teal-dark); }
+  h3 { font-size: 15px; margin: 20px 0 6px; }
+  p, li { font-size: 15px; }
+  ul { padding-left: 22px; }
+  a { color: var(--teal); }
+  .meta {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: -16px;
+    margin-bottom: 24px;
+  }
+  hr { border: 0; border-top: 1px solid var(--line); margin: 32px 0; }
+  .back { display: inline-block; margin-top: 32px; font-size: 14px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <img src="odynaut-globe.png" alt="" />
+    <h1>Odynaut — Privacy Policy</h1>
+  </header>
+  <p class="meta">Last updated: May 27, 2026</p>
+
+  <p>
+    Odynaut is a trip-planning app available as a website and as a native iOS app. This
+    policy explains what data Odynaut collects, why, and how you can delete it. The same
+    policy applies to the web app and the mobile app, which share one account.
+  </p>
+
+  <h2>What we collect</h2>
+  <ul>
+    <li><strong>Account info</strong> — your email address, and (if you sign in with Apple or Google) the identifier those providers return. We do not see or store your Apple / Google password.</li>
+    <li><strong>Trip content you create</strong> — trip names, dates, cards (flights, hotels, activities, notes), saved places, plan drafts, and points-balance entries.</li>
+    <li><strong>Notes you write for the AI co-planner and trip-ideas tools</strong> — sent to the AI model so it can answer you. Not used for training.</li>
+    <li><strong>Push-notification token</strong> — if you allow notifications, we store the device token issued by Apple Push or the equivalent web push endpoint so we can send you alerts you have asked for (e.g. award-flight availability).</li>
+    <li><strong>Approximate location</strong> — only when you use the “Near me” feature, and only while you are using it. Location is sent to find nearby venues and is not stored.</li>
+  </ul>
+
+  <h2>What we do <em>not</em> collect</h2>
+  <ul>
+    <li>We do not run analytics or ad tracking.</li>
+    <li>We do not sell your data, and there is no third-party advertising in the app.</li>
+    <li>We do not access your contacts, photos, calendar, or microphone.</li>
+  </ul>
+
+  <h2>Where your data lives</h2>
+  <p>
+    Your account and trip content are stored on
+    <a href="https://supabase.com" target="_blank" rel="noopener">Supabase</a>
+    (PostgreSQL), in the US region. Row-level security limits each row to the user that
+    owns it. The connection between your device and Supabase uses HTTPS.
+  </p>
+
+  <h3>Third-party services we use</h3>
+  <ul>
+    <li><strong>Supabase</strong> — authentication, database, push delivery.</li>
+    <li><strong>Anthropic</strong> — powers the AI co-planner and trip-ideas features. Requests you send are processed by Anthropic to generate a response and are not used to train models.</li>
+    <li><strong>Google Places</strong> — only used when you use “Near me” or autocomplete an address; we forward your search to Google and return the result.</li>
+    <li><strong>Apple Push Notification service</strong> and <strong>Web Push (VAPID)</strong> — delivery channels for the alerts you opt into.</li>
+    <li><strong>Sign in with Apple</strong> / <strong>Sign in with Google</strong> — optional sign-in providers. They tell us only the identifier and (if you choose) your email address.</li>
+  </ul>
+
+  <h2>How to delete your account</h2>
+  <p>
+    You can permanently delete your account and everything in it directly from inside
+    Odynaut:
+  </p>
+  <ul>
+    <li><strong>Mobile</strong>: open the <strong>More</strong> tab → tap <strong>Delete account</strong>. You will be asked to confirm twice.</li>
+    <li><strong>Web</strong>: open the <strong>Account</strong> menu → <strong>Delete account</strong>.</li>
+  </ul>
+  <p>
+    Deletion is immediate and removes your trips, saved places, profile, push tokens, and
+    the account itself. There is no recovery — deleted data cannot be restored. If you
+    prefer, you can also email us at the address below and we will delete it for you.
+  </p>
+
+  <h2>How long we keep your data</h2>
+  <p>
+    Account data is kept for as long as your account exists. When you delete the account
+    (in-app or by email request), the data is deleted at the same time. Operational logs
+    that mention your user id are kept for up to 30 days for debugging and then expire.
+  </p>
+
+  <h2>Children</h2>
+  <p>
+    Odynaut is not directed at children under 13 and we do not knowingly collect data
+    from anyone under 13.
+  </p>
+
+  <h2>Contact</h2>
+  <p>
+    If you have any questions, want to request your data, or want us to delete your
+    account on your behalf, email
+    <a href="mailto:micahfaas@gmail.com">micahfaas@gmail.com</a>.
+  </p>
+
+  <h2>Changes</h2>
+  <p>
+    If we update this policy in a material way we will update the “Last updated” date at
+    the top, and (for active accounts) we will surface a notice in the app. The current
+    version always lives at this URL.
+  </p>
+
+  <hr />
+  <a class="back" href="./">← Back to Odynaut</a>
+</main>
+</body>
+</html>
