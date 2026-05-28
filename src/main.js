@@ -10,7 +10,7 @@ import { exportICS } from './ics.js';
 import { openCurrencyConverter } from './currency.js';
 import { openTripsMenu } from './trips.js';
 import { loadSharedTrip, renderSharedTrip } from './share.js';
-import { confirmDialog } from './dialog.js';
+import { confirmDialog, alertDialog } from './dialog.js';
 import { openImportModal } from './importer.js';
 import { openCoPlanner } from './coplanner.js';
 import { openWatchers } from './watchers.js';
@@ -96,10 +96,39 @@ function bootApp() {
   const accountBtn = document.getElementById('vp-account-btn');
   accountBtn.addEventListener('click', () => popupMenu(accountBtn, [
     ['About me', 'ti-user', openProfileDialog],
+    ['Privacy policy', 'ti-shield-lock', () => window.open('privacy.html', '_blank')],
     ['Sign out', 'ti-logout', () =>
       confirmDialog('Sign out of Odynaut?', { confirmText: 'Sign out' })
         .then(ok => { if (ok) signOut(); })],
+    ['Delete account', 'ti-trash', deleteAccount],
   ]));
+
+  // Two-step destructive flow that calls the delete-account edge function.
+  // Apple App Store guideline 5.1.1(v) requires in-app deletion; on the web
+  // we mirror it for cross-platform parity.
+  async function deleteAccount() {
+    const ok1 = await confirmDialog(
+      'This permanently removes your account, all trips, places, and saved settings. This cannot be undone.',
+      { title: 'Delete account?', confirmText: 'Delete account', danger: true }
+    );
+    if (!ok1) return;
+    const ok2 = await confirmDialog(
+      'Last chance — your data will be deleted immediately and cannot be recovered.',
+      { title: 'Are you sure?', confirmText: 'Yes, delete', cancelText: 'Keep my account', danger: true }
+    );
+    if (!ok2) return;
+    try {
+      const { data, error } = await supabase.functions.invoke('delete-account', { method: 'POST' });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error || 'Delete failed.');
+      // Server already removed the auth user; signOut clears the local session
+      // and onAuthStateChange swaps in the signed-out screen.
+      await signOut();
+    } catch (err) {
+      const msg = err && err.message ? err.message : 'Something went wrong.';
+      alertDialog(msg, { title: 'Could not delete account' });
+    }
+  }
 
   async function showApp(user) {
     document.body.classList.remove('vp-signed-out');
