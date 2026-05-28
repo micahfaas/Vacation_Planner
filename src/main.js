@@ -2,7 +2,7 @@
 // A ?share=<token> URL skips the gate and renders a read-only shared trip.
 import './styles.css';
 import { supabase } from './supabase.js';
-import { renderAuthScreen, signOut } from './auth.js';
+import { renderAuthScreen, renderResetScreen, signOut } from './auth.js';
 import { loadTrips } from './storage.js';
 import { render } from './render.js';
 import { exportJSON } from './io.js';
@@ -159,8 +159,26 @@ function bootApp() {
 
   // onAuthStateChange fires immediately with the current session, then again on
   // sign-in/out. Dedupe by user id so token refreshes don't re-fetch trips.
+  // PASSWORD_RECOVERY pauses the normal flow so the user can set a new
+  // password before being routed into the app.
   let currentUserId;
+  let recoveryMode = false;
   supabase.auth.onAuthStateChange((event, session) => {
+    if (event === 'PASSWORD_RECOVERY') {
+      recoveryMode = true;
+      document.body.classList.add('vp-signed-out');
+      accountBtn.hidden = true;
+      renderResetScreen();
+      return;
+    }
+    if (recoveryMode && event === 'USER_UPDATED') {
+      recoveryMode = false;
+      // Force-show the app for the existing recovery session.
+      currentUserId = session && session.user ? session.user.id : null;
+      if (session && session.user) showApp(session.user);
+      return;
+    }
+    if (recoveryMode) return;
     const uid = session && session.user ? session.user.id : null;
     if (uid === currentUserId) return;
     currentUserId = uid;

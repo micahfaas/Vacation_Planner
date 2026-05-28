@@ -1070,6 +1070,10 @@ body.vp-shared .vp-footer { display: none; }
   cursor: pointer;
   font-family: inherit;
 }
+.vp-auth-forgot {
+  margin-top: 4px;
+  color: var(--text-2);
+}
 .vp-auth-msg {
   font-size: 12px;
   color: var(--text-2);
