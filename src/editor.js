@@ -2,7 +2,7 @@
 import { activeTrip } from './state.js';
 import { TYPES, CITY_STAY_COLORS } from './constants.js';
 import { getPointsBalances, getProfile } from './profile.js';
-import { el } from './dom.js';
+import { el, collapsible } from './dom.js';
 import { addCard, removeCard, duplicateCard } from './cards.js';
 import { save } from './storage.js';
 import { render } from './render.js';
@@ -194,15 +194,17 @@ export function openEditor(id, addTarget) {
       dynamic.appendChild(loungeContainer);
       refreshLounges();
 
-      // Points payment subsection. Leaving these blank means cash-only;
-      // filling them in marks this leg as a points (or mixed) redemption
-      // and feeds the Plan tab's running-balance math.
-      dynamic.appendChild(el('div', { class: 'vp-editor-section' }, 'Points payment (optional)'));
-      dynamic.appendChild(fieldRow(
+      // Points payment subsection — collapsible, open when the card already
+      // carries a points cost/program. Leaving it blank means cash-only;
+      // filling it marks this leg as a points (or mixed) redemption and feeds
+      // the Plan tab's running-balance math.
+      const ptsSec = collapsible('Points payment (optional)', !!(c.pointsCost || c.pointsProgram));
+      ptsSec.body.appendChild(fieldRow(
         field('Points cost', pointsCostIn),
         field('Program', pointsProgramIn)
       ));
-      dynamic.appendChild(buildPointsDatalist());
+      ptsSec.body.appendChild(buildPointsDatalist());
+      dynamic.appendChild(ptsSec.el);
     } else {
       dynamic.appendChild(cityLabel);
       dynamic.appendChild(cityIn);
@@ -227,8 +229,9 @@ export function openEditor(id, addTarget) {
   });
 
   const attachField = createAttachmentsField(c.attachments);
-  m.appendChild(el('label', {}, 'Attachments'));
-  m.appendChild(attachField.el);
+  const attachSec = collapsible('Attachments', !!(c.attachments && c.attachments.length));
+  attachSec.body.appendChild(attachField.el);
+  m.appendChild(attachSec.el);
 
   const costLabel = el('label', {}, 'Cost (USD)');
   m.appendChild(costLabel);
