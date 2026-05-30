@@ -2,7 +2,7 @@
 // A draft is a sequence of stops (city + nights), each with a transport
 // and lodging pick, a cost, and a 1-5 star rating.
 import { activeTrip, ui } from './state.js';
-import { el } from './dom.js';
+import { el, collapsible } from './dom.js';
 import { save } from './storage.js';
 import { render } from './render.js';
 import { addCard } from './cards.js';
@@ -719,23 +719,28 @@ function openStopEditor(draftId, stopId) {
   m.appendChild(el('label', {}, 'Nights'));
   m.appendChild(nightsIn);
 
-  m.appendChild(el('div', { class: 'vp-plan-section' }, 'Getting there'));
-  m.appendChild(el('label', {}, 'Transport'));
-  m.appendChild(trLabel);
-  m.appendChild(el('label', {}, 'Cost'));
-  m.appendChild(trCost.row);
-  m.appendChild(el('label', {}, 'Rating'));
-  m.appendChild(starInput(trStars, v => { trStars = v; }));
+  // Getting there + Lodging are collapsible — open when the slot already has
+  // a label or cost, so a fresh stop stays tidy (just City + Nights + two
+  // section toggles) while an existing one shows its filled-in details.
+  const trSec = collapsible('Getting there', !!(s.transport.label || s.transport.cost));
+  trSec.body.appendChild(el('label', {}, 'Transport'));
+  trSec.body.appendChild(trLabel);
+  trSec.body.appendChild(el('label', {}, 'Cost'));
+  trSec.body.appendChild(trCost.row);
+  trSec.body.appendChild(el('label', {}, 'Rating'));
+  trSec.body.appendChild(starInput(trStars, v => { trStars = v; }));
+  m.appendChild(trSec.el);
 
-  m.appendChild(el('div', { class: 'vp-plan-section' }, 'Lodging'));
-  m.appendChild(el('label', {}, 'Place'));
-  m.appendChild(lgLabel);
-  m.appendChild(el('label', {}, 'Cost'));
-  m.appendChild(lgCost.row);
-  m.appendChild(el('label', {}, 'Booking link'));
-  m.appendChild(lgUrl);
-  m.appendChild(el('label', {}, 'Rating'));
-  m.appendChild(starInput(lgStars, v => { lgStars = v; }));
+  const lgSec = collapsible('Lodging', !!(s.lodging.label || s.lodging.cost));
+  lgSec.body.appendChild(el('label', {}, 'Place'));
+  lgSec.body.appendChild(lgLabel);
+  lgSec.body.appendChild(el('label', {}, 'Cost'));
+  lgSec.body.appendChild(lgCost.row);
+  lgSec.body.appendChild(el('label', {}, 'Booking link'));
+  lgSec.body.appendChild(lgUrl);
+  lgSec.body.appendChild(el('label', {}, 'Rating'));
+  lgSec.body.appendChild(starInput(lgStars, v => { lgStars = v; }));
+  m.appendChild(lgSec.el);
 
   m.appendChild(balanceDatalist());
 
