@@ -601,7 +601,7 @@ export function clearDraftPreviews() {
 }
 
 // ---------- editors ----------
-function costRow(initialCost, initialUnit, initialProgram) {
+function costRow(initialCost, initialUnit, initialProgram, initialTaxes) {
   const cost = el('input', { type: 'number', min: '0', value: initialCost || '', placeholder: '0' });
   const unit = el('select', {});
   [['usd', '$ USD'], ['points', 'points']].forEach(([k, label]) => {
@@ -616,11 +616,21 @@ function costRow(initialCost, initialUnit, initialProgram) {
     type: 'text', class: 'vp-cost-program', list: 'vp-balance-programs',
     value: initialProgram || '', placeholder: 'Program (e.g. Avios)'
   });
-  function sync() { program.style.display = unit.value === 'points' ? '' : 'none'; }
+  // Cash taxes/fees paid alongside a points redemption (award flights almost
+  // always carry some cash). Only shown for points; counts toward the USD total.
+  const taxes = el('input', {
+    type: 'number', min: '0', class: 'vp-cost-taxes',
+    value: initialTaxes || '', placeholder: '+ cash taxes / fees ($)'
+  });
+  function sync() {
+    const isPoints = unit.value === 'points';
+    program.style.display = isPoints ? '' : 'none';
+    taxes.style.display = isPoints ? '' : 'none';
+  }
   unit.addEventListener('change', sync);
   sync();
-  const row = el('div', { class: 'vp-cost-row' }, cost, unit, program);
-  return { row, cost, unit, program };
+  const row = el('div', { class: 'vp-cost-row' }, cost, unit, program, taxes);
+  return { row, cost, unit, program, taxes };
 }
 
 // Datalist of saved balance names, so the program field autocompletes.
@@ -696,11 +706,11 @@ function openStopEditor(draftId, stopId) {
   const nightsIn = el('input', { type: 'number', min: '0', value: s.nights || 1 });
 
   const trLabel = el('input', { type: 'text', value: s.transport.label || '', placeholder: 'e.g. LATAM direct flight' });
-  const trCost = costRow(s.transport.cost, s.transport.costUnit, s.transport.pointsProgram);
+  const trCost = costRow(s.transport.cost, s.transport.costUnit, s.transport.pointsProgram, s.transport.cashTaxes);
   let trStars = s.transport.stars || 0;
 
   const lgLabel = el('input', { type: 'text', value: s.lodging.label || '', placeholder: 'e.g. Hotel B&B / Airbnb' });
-  const lgCost = costRow(s.lodging.cost, s.lodging.costUnit, s.lodging.pointsProgram);
+  const lgCost = costRow(s.lodging.cost, s.lodging.costUnit, s.lodging.pointsProgram, s.lodging.cashTaxes);
   const lgUrl = el('input', { type: 'text', value: s.lodging.url || '', placeholder: 'Booking link (optional)' });
   let lgStars = s.lodging.stars || 0;
 
@@ -752,6 +762,7 @@ function openStopEditor(draftId, stopId) {
           cost: parseFloat(trCost.cost.value) || 0,
           costUnit: trCost.unit.value,
           pointsProgram: trCost.unit.value === 'points' ? trCost.program.value.trim() : '',
+          cashTaxes: trCost.unit.value === 'points' ? (parseFloat(trCost.taxes.value) || 0) : 0,
           stars: trStars
         },
         lodging: {
@@ -759,6 +770,7 @@ function openStopEditor(draftId, stopId) {
           cost: parseFloat(lgCost.cost.value) || 0,
           costUnit: lgCost.unit.value,
           pointsProgram: lgCost.unit.value === 'points' ? lgCost.program.value.trim() : '',
+          cashTaxes: lgCost.unit.value === 'points' ? (parseFloat(lgCost.taxes.value) || 0) : 0,
           url: lgUrl.value.trim(),
           stars: lgStars
         }
