@@ -834,6 +834,11 @@ function costLabel(x) {
   return parts.join(' ');
 }
 
+// Tracks the in-progress drag so dragover/drop don't have to read dataTransfer
+// (Safari/WebKit hides custom data types during dragover, which silently breaks
+// the drop). { kind: 'stop'|'draft', draftId, stopId? }
+let planDrag = null;
+
 function renderStopBlock(draft, stop, dayCursor) {
   const block = el('div', {
     class: 'vp-stop',
@@ -845,27 +850,27 @@ function renderStopBlock(draft, stop, dayCursor) {
     }
   });
 
-  // Drag to reorder within this draft. The custom type carries the draft id so
-  // a stop can only be dropped on another stop in the same column.
-  const stopType = 'vp/stop-' + draft.id;
+  // Drag to reorder within this draft. A stop can only drop on another stop in
+  // the same column (planDrag carries the source draft id).
   block.addEventListener('dragstart', e => {
     e.stopPropagation();
-    e.dataTransfer.setData(stopType, stop.id);
+    planDrag = { kind: 'stop', draftId: draft.id, stopId: stop.id };
     e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', stop.id); // required to start a drag in some browsers
     block.classList.add('vp-dragging');
   });
-  block.addEventListener('dragend', () => block.classList.remove('vp-dragging'));
+  block.addEventListener('dragend', () => { planDrag = null; block.classList.remove('vp-dragging'); });
   block.addEventListener('dragover', e => {
-    if (!e.dataTransfer.types.includes(stopType)) return;
+    if (!planDrag || planDrag.kind !== 'stop' || planDrag.draftId !== draft.id) return;
     e.preventDefault();
     block.classList.add('vp-drag-over');
   });
   block.addEventListener('dragleave', () => block.classList.remove('vp-drag-over'));
   block.addEventListener('drop', e => {
-    if (!e.dataTransfer.types.includes(stopType)) return;
+    if (!planDrag || planDrag.kind !== 'stop' || planDrag.draftId !== draft.id) return;
     e.preventDefault();
     block.classList.remove('vp-drag-over');
-    reorderStops(draft.id, e.dataTransfer.getData(stopType), stop.id);
+    reorderStops(draft.id, planDrag.stopId, stop.id);
   });
 
   const head = el('div', { class: 'vp-stop-head' });
@@ -942,7 +947,7 @@ function renderDraftColumn(draft) {
   // Drag-reorder draft columns left/right. Only reacts to the draft drag type,
   // so stop drags bubbling up from inside the column are ignored.
   col.addEventListener('dragover', e => {
-    if (!e.dataTransfer.types.includes('vp/draft')) return;
+    if (!planDrag || planDrag.kind !== 'draft') return;
     e.preventDefault();
     col.classList.add('vp-drag-over');
   });
@@ -950,10 +955,10 @@ function renderDraftColumn(draft) {
     if (!col.contains(e.relatedTarget)) col.classList.remove('vp-drag-over');
   });
   col.addEventListener('drop', e => {
-    if (!e.dataTransfer.types.includes('vp/draft')) return;
+    if (!planDrag || planDrag.kind !== 'draft') return;
     e.preventDefault();
     col.classList.remove('vp-drag-over');
-    reorderDrafts(e.dataTransfer.getData('vp/draft'), draft.id);
+    reorderDrafts(planDrag.draftId, draft.id);
   });
 
   const head = el('div', { class: 'vp-draft-head' });
@@ -966,12 +971,13 @@ function renderDraftColumn(draft) {
     role: 'button', draggable: 'true', onclick: e => e.stopPropagation()
   }, '⠿');
   grip.addEventListener('dragstart', e => {
-    e.dataTransfer.setData('vp/draft', draft.id);
+    planDrag = { kind: 'draft', draftId: draft.id };
     e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', draft.id); // required to start a drag in some browsers
     if (e.dataTransfer.setDragImage) e.dataTransfer.setDragImage(col, 20, 20);
     col.classList.add('vp-dragging');
   });
-  grip.addEventListener('dragend', () => col.classList.remove('vp-dragging'));
+  grip.addEventListener('dragend', () => { planDrag = null; col.classList.remove('vp-dragging'); });
   head.appendChild(grip);
   // Comparison toggle — a checkbox that pulls this draft into the multi-draft
   // calendar overlay. Independent from "selected" (single-focus for deltas).

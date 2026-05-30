@@ -1757,7 +1757,7 @@ body.vp-shared .vp-footer { display: none; }
   box-shadow: 0 0 0 2px rgba(29, 138, 156, 0.18);
 }
 /* Drag-to-reorder affordances for stops (up/down) and drafts (left/right) */
-.vp-stop { cursor: grab; }
+.vp-stop { cursor: grab; -webkit-user-drag: element; }
 .vp-stop-grip,
 .vp-draft-grip {
   cursor: grab;
@@ -1776,6 +1776,7 @@ body.vp-shared .vp-footer { display: none; }
   border-radius: 6px;
   user-select: none;
   touch-action: none;
+  -webkit-user-drag: element;
 }
 .vp-draft-grip:hover { background: var(--surface-2); color: var(--text); }
 .vp-draft-grip:active { cursor: grabbing; }
