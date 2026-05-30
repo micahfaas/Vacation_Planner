@@ -256,7 +256,9 @@ function calendarGrid() {
       const day = el('div', {
         class: 'vp-day' + (out ? ' vp-out' : '') + (conflicts[iso] && !out ? ' vp-conflict' : ''),
         'data-date': iso,
-        style: spanLayerHeight ? { paddingTop: (8 + spanLayerHeight) + 'px' } : {}
+        // Always reserve the top strip for the (absolutely-positioned) date
+        // number, plus extra room below it for the multi-day banner layer.
+        style: { paddingTop: (28 + spanLayerHeight) + 'px' }
       });
       const headRow = el('div', { class: 'vp-day-num' });
       const lbl = d.getDate() === 1 || iso === t.startDate ? fmtShort(d) : String(d.getDate());
