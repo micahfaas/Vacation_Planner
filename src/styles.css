@@ -832,6 +832,17 @@ a:focus-visible,
   margin-bottom: 4px;
   margin-top: 10px;
 }
+/* Two-up field rows in the editors: side by side when there's room, stacking
+   on narrow screens. Each .vp-field stacks its own label + input. */
+.vp-modal .vp-field-row {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.vp-modal .vp-field-row > .vp-field {
+  flex: 1 1 180px;
+  min-width: 0;
+}
 .vp-modal input,
 .vp-modal select,
 .vp-modal textarea {

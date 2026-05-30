@@ -160,21 +160,30 @@ export function openEditor(id, addTarget) {
     lookupBtn.disabled = false;
   });
 
+  // Pair related fields onto one row to keep the form compact. Each field is a
+  // label + input stacked in a column; .vp-field-row lays them side by side and
+  // wraps to stacked on narrow screens.
+  function field(labelText, node) {
+    return el('div', { class: 'vp-field' }, el('label', {}, labelText), node);
+  }
+  function fieldRow() {
+    return el('div', { class: 'vp-field-row' }, ...Array.from(arguments));
+  }
+
   function renderDynamic() {
     dynamic.innerHTML = '';
     loungeContainer = null; // detached on rebuild; re-created below for flights
     const tp = typeSel.value;
     if (tp === 'flight' || tp === 'transit') {
-      dynamic.appendChild(el('label', {}, 'Origin city'));
-      dynamic.appendChild(originPicker.el);
-      dynamic.appendChild(el('label', {}, 'Destination city'));
-      dynamic.appendChild(destPicker.el);
-      dynamic.appendChild(el('label', {}, tp === 'flight' ? 'Flight number' : 'Carrier / reference'));
-      dynamic.appendChild(flightNoIn);
-      dynamic.appendChild(el('label', {}, 'Depart — local time at origin'));
-      dynamic.appendChild(departIn);
-      dynamic.appendChild(el('label', {}, 'Arrive — local time at destination'));
-      dynamic.appendChild(arriveIn);
+      dynamic.appendChild(fieldRow(
+        field('Origin city', originPicker.el),
+        field('Destination city', destPicker.el)
+      ));
+      dynamic.appendChild(field(tp === 'flight' ? 'Flight number' : 'Carrier / reference', flightNoIn));
+      dynamic.appendChild(fieldRow(
+        field('Depart — local time at origin', departIn),
+        field('Arrive — local time at destination', arriveIn)
+      ));
       if (tp === 'flight') {
         setLookupMsg('', false);
         dynamic.appendChild(el('div', { class: 'vp-flight-lookup-row' }, lookupBtn, lookupMsg));
@@ -189,10 +198,10 @@ export function openEditor(id, addTarget) {
       // filling them in marks this leg as a points (or mixed) redemption
       // and feeds the Plan tab's running-balance math.
       dynamic.appendChild(el('div', { class: 'vp-editor-section' }, 'Points payment (optional)'));
-      dynamic.appendChild(el('label', {}, 'Points cost'));
-      dynamic.appendChild(pointsCostIn);
-      dynamic.appendChild(el('label', {}, 'Program'));
-      dynamic.appendChild(pointsProgramIn);
+      dynamic.appendChild(fieldRow(
+        field('Points cost', pointsCostIn),
+        field('Program', pointsProgramIn)
+      ));
       dynamic.appendChild(buildPointsDatalist());
     } else {
       dynamic.appendChild(cityLabel);
@@ -351,28 +360,13 @@ export function openEditor(id, addTarget) {
 // city maps to a curated airport with eligible lounges.
 function renderLoungeBlock(card) {
   const profile = getProfile();
-  if (!hasLoungeProfile(profile)) {
-    return el('div', { class: 'vp-lounge-empty' },
-      'Lounges: add the cards and elite status you hold under About me to see eligible lounges for this flight.');
-  }
+  // Keep the editor uncluttered: only surface the lounge subsection when there
+  // are actual eligible lounges. The empty/no-profile/not-covered cases stay
+  // silent (lounges are discoverable via the About me section).
+  if (!hasLoungeProfile(profile)) return null;
 
   const groups = eligibleLoungesForFlight(card, profile);
-  if (!groups.length) {
-    // Explain *why* it's empty rather than showing nothing. Distinguish
-    // "we don't cover these airports yet" from "your cards don't get you in".
-    const cities = [card.originCity, card.destCity].filter(Boolean);
-    const covered = cities.filter(c => airportsForCity(c).length);
-    if (!cities.length) return null; // no route entered yet — stay quiet
-    if (!covered.length) {
-      return el('div', { class: 'vp-lounge-empty' },
-        'Lounges: ' + (cities.join(' and ') || 'these airports') +
-        ' aren’t in the lounge dataset yet (it covers ~30 major hubs for now).');
-    }
-    const airports = covered.flatMap(c => airportsForCity(c));
-    return el('div', { class: 'vp-lounge-empty' },
-      'Lounges: none of your saved cards or status get you into a lounge at ' +
-      airports.join(', ') + '. Add more under About me.');
-  }
+  if (!groups.length) return null;
 
   const block = el('div', { class: 'vp-lounge-block' });
   block.appendChild(el('div', { class: 'vp-editor-section' }, 'Lounges you can access'));
