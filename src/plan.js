@@ -959,9 +959,11 @@ function renderDraftColumn(draft) {
   const head = el('div', { class: 'vp-draft-head' });
   // Drag handle — only the grip starts a column drag, so it doesn't fight with
   // the title button, compare checkbox, or click-to-focus inside the column.
-  const grip = el('button', {
+  // A span (not a button) — browsers drag spans reliably, but are finicky
+  // about native-dragging <button> elements.
+  const grip = el('span', {
     class: 'vp-draft-grip', title: 'Drag to reorder', 'aria-label': 'Reorder draft',
-    draggable: 'true', onclick: e => e.stopPropagation()
+    role: 'button', draggable: 'true', onclick: e => e.stopPropagation()
   }, '⠿');
   grip.addEventListener('dragstart', e => {
     e.dataTransfer.setData('vp/draft', draft.id);
@@ -1099,7 +1101,14 @@ export function renderPlanView() {
   const layout = el('div', { class: 'vp-plan-layout' });
   layout.appendChild(renderBalancesPanel());
 
-  const main = el('div', { class: 'vp-plan-main' });
+  // Clicking empty space in the drafts area deselects the focused draft.
+  const main = el('div', {
+    class: 'vp-plan-main',
+    onclick: e => {
+      if (e.target.closest('.vp-draft')) return;
+      if (ui.planSelectedDraftId) { ui.planSelectedDraftId = null; render(); }
+    }
+  });
   if (!p.drafts.length) {
     main.appendChild(el('div', { class: 'vp-places-empty' },
       'No drafts yet. Add a draft to sketch a candidate itinerary, then compare.'));

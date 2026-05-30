@@ -1769,11 +1769,16 @@ body.vp-shared .vp-footer { display: none; }
   all: unset;
   cursor: grab;
   color: var(--text-2);
-  font-size: 14px;
-  padding: 0 4px;
+  font-size: 20px;
+  padding: 4px 10px;
   margin-right: 2px;
   line-height: 1;
+  border-radius: 6px;
+  user-select: none;
+  touch-action: none;
 }
+.vp-draft-grip:hover { background: var(--surface-2); color: var(--text); }
+.vp-draft-grip:active { cursor: grabbing; }
 .vp-dragging { opacity: 0.45; }
 .vp-stop.vp-drag-over,
 .vp-draft.vp-drag-over {
