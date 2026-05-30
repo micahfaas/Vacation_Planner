@@ -33,12 +33,14 @@ export function createCityPicker(opts = {}) {
 
   function updateCaption() {
     caption.classList.remove('vp-citypicker-tz-freeform');
-    if (!value.name) { caption.textContent = ''; return; }
-    if (selected) {
+    // Only surface the timezone when it's a resolved match in a zone that
+    // differs from the device — that's the only time it's actually useful for
+    // reading depart/arrive. A defaulted device zone is just noise (and was
+    // misleading, e.g. showing "America/Los_Angeles" for a city it didn't match).
+    if (value.name && selected && value.timezone && value.timezone !== browserTz()) {
       caption.textContent = 'Timezone: ' + value.timezone;
     } else {
-      caption.textContent = 'Not matched — using your timezone (' + value.timezone + ')';
-      caption.classList.add('vp-citypicker-tz-freeform');
+      caption.textContent = '';
     }
   }
   updateCaption();
