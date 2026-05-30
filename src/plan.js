@@ -83,6 +83,31 @@ function removeStop(draftId, stopId) {
   if (d) { d.stops = d.stops.filter(x => x.id !== stopId); save(); render(); }
 }
 
+// Move a stop within its draft so it lands at the target stop's position.
+function reorderStops(draftId, draggedId, targetId) {
+  if (draggedId === targetId) return;
+  const d = plan().drafts.find(x => x.id === draftId);
+  if (!d) return;
+  const from = d.stops.findIndex(s => s.id === draggedId);
+  const to = d.stops.findIndex(s => s.id === targetId);
+  if (from < 0 || to < 0) return;
+  const [moved] = d.stops.splice(from, 1);
+  d.stops.splice(to, 0, moved);
+  save(); render();
+}
+
+// Move a draft column so it lands at the target draft's position.
+function reorderDrafts(draggedId, targetId) {
+  if (draggedId === targetId) return;
+  const p = plan();
+  const from = p.drafts.findIndex(x => x.id === draggedId);
+  const to = p.drafts.findIndex(x => x.id === targetId);
+  if (from < 0 || to < 0) return;
+  const [moved] = p.drafts.splice(from, 1);
+  p.drafts.splice(to, 0, moved);
+  save(); render();
+}
+
 // ---------- derived ----------
 // A cost slot can hold:
 //   - cash:     cost > 0 and costUnit === 'usd'   → usd
@@ -812,10 +837,39 @@ function costLabel(x) {
 function renderStopBlock(draft, stop, dayCursor) {
   const block = el('div', {
     class: 'vp-stop',
-    onclick: e => { if (e.target.closest('.vp-stop-rm')) return; openStopEditor(draft.id, stop.id); }
+    draggable: 'true',
+    'data-stop-id': stop.id,
+    onclick: e => {
+      if (e.target.closest('.vp-stop-rm') || e.target.closest('.vp-stop-grip')) return;
+      openStopEditor(draft.id, stop.id);
+    }
+  });
+
+  // Drag to reorder within this draft. The custom type carries the draft id so
+  // a stop can only be dropped on another stop in the same column.
+  const stopType = 'vp/stop-' + draft.id;
+  block.addEventListener('dragstart', e => {
+    e.stopPropagation();
+    e.dataTransfer.setData(stopType, stop.id);
+    e.dataTransfer.effectAllowed = 'move';
+    block.classList.add('vp-dragging');
+  });
+  block.addEventListener('dragend', () => block.classList.remove('vp-dragging'));
+  block.addEventListener('dragover', e => {
+    if (!e.dataTransfer.types.includes(stopType)) return;
+    e.preventDefault();
+    block.classList.add('vp-drag-over');
+  });
+  block.addEventListener('dragleave', () => block.classList.remove('vp-drag-over'));
+  block.addEventListener('drop', e => {
+    if (!e.dataTransfer.types.includes(stopType)) return;
+    e.preventDefault();
+    block.classList.remove('vp-drag-over');
+    reorderStops(draft.id, e.dataTransfer.getData(stopType), stop.id);
   });
 
   const head = el('div', { class: 'vp-stop-head' });
+  head.appendChild(el('span', { class: 'vp-stop-grip', title: 'Drag to reorder', 'aria-hidden': 'true' }, '⠿'));
   head.appendChild(el('span', { class: 'vp-stop-city' }, stop.city || 'Untitled stop'));
   const n = parseInt(stop.nights, 10) || 0;
   head.appendChild(el('span', { class: 'vp-stop-nights' }, n + (n === 1 ? ' night' : ' nights')));
@@ -885,7 +939,38 @@ function renderDraftColumn(draft) {
     }
   });
 
+  // Drag-reorder draft columns left/right. Only reacts to the draft drag type,
+  // so stop drags bubbling up from inside the column are ignored.
+  col.addEventListener('dragover', e => {
+    if (!e.dataTransfer.types.includes('vp/draft')) return;
+    e.preventDefault();
+    col.classList.add('vp-drag-over');
+  });
+  col.addEventListener('dragleave', e => {
+    if (!col.contains(e.relatedTarget)) col.classList.remove('vp-drag-over');
+  });
+  col.addEventListener('drop', e => {
+    if (!e.dataTransfer.types.includes('vp/draft')) return;
+    e.preventDefault();
+    col.classList.remove('vp-drag-over');
+    reorderDrafts(e.dataTransfer.getData('vp/draft'), draft.id);
+  });
+
   const head = el('div', { class: 'vp-draft-head' });
+  // Drag handle — only the grip starts a column drag, so it doesn't fight with
+  // the title button, compare checkbox, or click-to-focus inside the column.
+  const grip = el('button', {
+    class: 'vp-draft-grip', title: 'Drag to reorder', 'aria-label': 'Reorder draft',
+    draggable: 'true', onclick: e => e.stopPropagation()
+  }, '⠿');
+  grip.addEventListener('dragstart', e => {
+    e.dataTransfer.setData('vp/draft', draft.id);
+    e.dataTransfer.effectAllowed = 'move';
+    if (e.dataTransfer.setDragImage) e.dataTransfer.setDragImage(col, 20, 20);
+    col.classList.add('vp-dragging');
+  });
+  grip.addEventListener('dragend', () => col.classList.remove('vp-dragging'));
+  head.appendChild(grip);
   // Comparison toggle — a checkbox that pulls this draft into the multi-draft
   // calendar overlay. Independent from "selected" (single-focus for deltas).
   const compareToggle = el('input', {

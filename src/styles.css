@@ -1756,6 +1756,30 @@ body.vp-shared .vp-footer { display: none; }
   border-color: var(--accent, var(--link));
   box-shadow: 0 0 0 2px rgba(29, 138, 156, 0.18);
 }
+/* Drag-to-reorder affordances for stops (up/down) and drafts (left/right) */
+.vp-stop { cursor: grab; }
+.vp-stop-grip,
+.vp-draft-grip {
+  cursor: grab;
+  color: var(--text-3, var(--text-2));
+  user-select: none;
+}
+.vp-stop-grip { margin-right: 6px; font-size: 12px; }
+.vp-draft-grip {
+  all: unset;
+  cursor: grab;
+  color: var(--text-2);
+  font-size: 14px;
+  padding: 0 4px;
+  margin-right: 2px;
+  line-height: 1;
+}
+.vp-dragging { opacity: 0.45; }
+.vp-stop.vp-drag-over,
+.vp-draft.vp-drag-over {
+  outline: 2px dashed var(--accent, var(--link));
+  outline-offset: 2px;
+}
 .vp-draft-comparing {
   border-color: var(--border-strong);
 }
