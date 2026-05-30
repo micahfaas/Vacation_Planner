@@ -121,10 +121,10 @@ export function render() {
     root.appendChild(renderPreviewBar());
   }
 
-  // Multi-draft comparison: each draft gets its own compact, trip-card-free
-  // calendar so the city-order differences read instantly. Single-draft
-  // preview keeps the overlay-on-real-trip behavior (handled below).
-  if (previewIds.length >= 2) {
+  // Preview / comparison always renders on its own trip-card-free calendar so
+  // the draft route(s) read cleanly without the saved trip schedule showing
+  // underneath — for a single "View on calendar" as well as multi-draft compare.
+  if (previewIds.length >= 1) {
     root.appendChild(renderComparisonView(previewIds));
     return;
   }
