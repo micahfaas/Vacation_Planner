@@ -4,6 +4,16 @@
 // free-text request via supabase.functions.invoke() with { prompt, context };
 // the function answers HTTP 200 with { ok: true, reply, suggestions } or
 // { ok: false, error }. ANTHROPIC_API_KEY is a server-side secret.
+import { createClient } from 'jsr:@supabase/supabase-js@2';
+
+// AI usage quotas (cost guardrails). The co-planner runs Sonnet (~2-3c/call),
+// so it is the main cost dial. Enforced before the Anthropic call; only
+// successful calls are counted. Tunable here with a redeploy, no app update.
+// See supabase/usage.sql + project_ai_cost_guardrails.
+const FEATURE = 'co-planner';
+const USER_MONTHLY_LIMIT = 50;
+const GLOBAL_DAILY_LIMIT = 40;
+
 const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -88,6 +98,51 @@ Deno.serve(async (req) => {
   const key = Deno.env.get('ANTHROPIC_API_KEY');
   if (!key) return json({ ok: false, error: 'The AI co-planner is not configured.' });
 
+  // Identify the caller (from their JWT) and enforce usage quotas before
+  // spending on the model. Fails open if Supabase identity/metering is
+  // unavailable, so core planning never breaks on an infra hiccup.
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  const authHeader = req.headers.get('Authorization') ?? '';
+
+  let uid: string | null = null;
+  let admin: ReturnType<typeof createClient> | null = null;
+  if (supabaseUrl && anonKey && serviceKey && authHeader.startsWith('Bearer ')) {
+    try {
+      const userClient = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: authHeader } },
+        auth: { persistSession: false, autoRefreshToken: false },
+      });
+      const { data: userData } = await userClient.auth.getUser();
+      uid = userData?.user?.id ?? null;
+      admin = createClient(supabaseUrl, serviceKey, {
+        auth: { persistSession: false, autoRefreshToken: false },
+      });
+    } catch {
+      admin = null;
+    }
+  }
+
+  if (admin) {
+    try {
+      const { data: status } = await admin.rpc('ai_quota_check', {
+        p_user_id: uid,
+        p_feature: FEATURE,
+        p_user_limit: USER_MONTHLY_LIMIT,
+        p_global_limit: GLOBAL_DAILY_LIMIT,
+      });
+      if (status === 'user_limit') {
+        return json({ ok: false, error: "You have reached this month's AI co-planner limit. It resets on the 1st." });
+      }
+      if (status === 'global_limit') {
+        return json({ ok: false, error: 'The AI co-planner is taking a breather right now — please try again later.' });
+      }
+    } catch {
+      // Fail open: a metering hiccup should not block planning.
+    }
+  }
+
   let prompt = '', context = '';
   try {
     const body = await req.json();
@@ -140,6 +195,13 @@ Deno.serve(async (req) => {
     parsed = JSON.parse(block.text);
   } catch {
     return json({ ok: false, error: 'The AI returned malformed output.' });
+  }
+
+  // Successful call — count it against the quotas (best effort).
+  if (admin) {
+    try {
+      await admin.rpc('ai_quota_increment', { p_user_id: uid, p_feature: FEATURE });
+    } catch { /* metering is best-effort */ }
   }
 
   return json({
