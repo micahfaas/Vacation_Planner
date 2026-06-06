@@ -139,14 +139,36 @@ Deno.serve(async (req) => {
   }
 
   let text = '';
+  let image = '';
+  let mediaType = 'image/jpeg';
   try {
     const body = await req.json();
     text = String(body.text || '');
+    image = String(body.image || '');
+    if (body.mediaType) mediaType = String(body.mediaType);
   } catch {
     return json({ ok: false, error: 'Bad request.' });
   }
-  if (!text.trim()) return json({ ok: false, error: 'No text to read.' });
+  const hasImage = image.length > 0;
+  if (!hasImage && !text.trim()) return json({ ok: false, error: 'Nothing to read.' });
   text = text.slice(0, 20000); // cap input to bound tokens and cost
+  // Photo path (mobile "read a photo of a booking"): Claude reads the image
+  // directly. Validate the media type and bound the size to keep cost sane.
+  const ALLOWED_MEDIA = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+  if (hasImage && !ALLOWED_MEDIA.includes(mediaType)) mediaType = 'image/jpeg';
+  if (hasImage && image.length > 7_000_000) {
+    return json({ ok: false, error: 'That photo is too large — try a smaller or lower-resolution image.' });
+  }
+
+  // When reading a photo, give the model today's date (the text path expects
+  // the caller to include it) and send the image as a vision content block.
+  const today = new Date().toISOString().slice(0, 10);
+  const userContent = hasImage
+    ? [
+        { type: 'image', source: { type: 'base64', media_type: mediaType, data: image } },
+        { type: 'text', text: `Today is ${today}. Extract every travel booking shown in this image.` },
+      ]
+    : text;
 
   let res: Response;
   try {
@@ -162,7 +184,7 @@ Deno.serve(async (req) => {
         max_tokens: 16000,
         system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }],
         output_config: { format: { type: 'json_schema', schema: SCHEMA } },
-        messages: [{ role: 'user', content: text }],
+        messages: [{ role: 'user', content: userContent }],
       }),
     });
   } catch {
