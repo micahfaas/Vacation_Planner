@@ -528,7 +528,7 @@ function renderSpanCard(id, colStart, colSpan, continuesLeft, continuesRight) {
   });
   const title = el('div', { class: 'vp-card-title' });
   if (!continuesLeft) {
-    title.appendChild(el('i', { class: 'ti ' + tp.icon, style: { fontSize: '13px' }, 'aria-hidden': 'true' }));
+    title.appendChild(el('i', { class: 'ti ' + tp.icon, style: { fontSize: '16px' }, 'aria-hidden': 'true' }));
   }
   title.appendChild(el('span', {}, (continuesLeft ? '… ' : '') + (c.title || tp.label) + (continuesRight ? ' …' : '')));
   if (c.booked && !continuesLeft) {
@@ -814,7 +814,7 @@ function renderCard(id) {
     onclick: e => { if (e.target.closest('.vp-card-actions')) return; openCardDetail(id); }
   });
   const title = el('div', { class: 'vp-card-title' });
-  title.appendChild(el('i', { class: 'ti ' + tp.icon, style: { fontSize: '13px' }, 'aria-hidden': 'true' }));
+  title.appendChild(el('i', { class: 'ti ' + tp.icon, style: { fontSize: '16px' }, 'aria-hidden': 'true' }));
   title.appendChild(el('span', {}, c.title || tp.label));
   if (c.booked) {
     title.appendChild(el('span', { class: 'vp-booked-badge', title: 'Booked' }, '✓'));

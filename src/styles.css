@@ -302,7 +302,7 @@ a:focus-visible,
   letter-spacing: 0.01em;
 }
 .vp-span-card.vp-span-city .vp-card-title i {
-  font-size: 14px !important;
+  font-size: 16px !important;
   opacity: 0.85;
 }
 
@@ -442,13 +442,8 @@ a:focus-visible,
 .vp-card:active { cursor: grabbing; }
 .vp-card.vp-dragging { opacity: 0.4; }
 
-/* Booked state - subtle green wash + bold green left edge */
-.vp-card.vp-booked,
-.vp-span-card.vp-booked {
-  background: var(--booked-bg) !important;
-  color: #1a5e34 !important;
-  border-left-color: var(--booked) !important;
-}
+/* Booked state is shown only by the green check badge below, so each card
+   keeps its type color (flight/hotel/activity) for at-a-glance distinction. */
 .vp-booked-badge {
   display: inline-flex;
   align-items: center;
