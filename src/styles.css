@@ -3460,6 +3460,77 @@ a.vp-res-link-title:hover span { text-decoration: underline; }
 .vp-vault-copy:hover { background: var(--surface-2); color: var(--text); }
 .vp-vault-copied { color: var(--booked); font-size: 10px; }
 
+/* Benefits & credits tracker */
+.vp-benefits { width: min(560px, 92vw); }
+.vp-bnf-body { display: flex; flex-direction: column; gap: 8px; }
+.vp-bnf-soon { display: flex; align-items: center; gap: 10px; padding: 4px 2px; }
+.vp-bnf-days {
+  flex: 0 0 auto;
+  min-width: 38px;
+  text-align: center;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--link);
+  background: var(--accent-bg);
+  border-radius: 999px;
+  padding: 3px 8px;
+}
+.vp-bnf-days-hot { color: #fff; background: var(--warning); }
+.vp-bnf-soon-title { font-size: var(--text-sm); color: var(--text); font-weight: 500; }
+.vp-bnf-soon-note { font-size: var(--text-xs); color: var(--text-2); }
+.vp-bnf-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 8px; }
+.vp-bnf-bell {
+  all: unset;
+  cursor: pointer;
+  text-align: center;
+  color: var(--link);
+  font-size: 14px;
+  border-radius: 3px;
+  padding: 2px 4px;
+}
+.vp-bnf-bell:hover { background: var(--surface-2); }
+.vp-bnf-bell-off { color: var(--text-3); }
+.vp-bnf-card, .vp-bnf-perk {
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--surface);
+}
+.vp-bnf-card-top, .vp-bnf-perk-top, .vp-bnf-credit-top {
+  display: grid;
+  grid-template-columns: 1fr 76px 28px 24px;
+  gap: 6px;
+  align-items: center;
+}
+.vp-bnf-perk-top { grid-template-columns: 1fr 28px 24px; }
+.vp-bnf-card-renew label, .vp-bnf-credit-bottom label, .vp-bnf-perk-bottom label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--text-xs);
+  color: var(--text-2);
+  flex: 1;
+}
+.vp-bnf-credit-bottom, .vp-bnf-perk-bottom { display: flex; gap: 8px; }
+.vp-bnf-credits { display: flex; flex-direction: column; gap: 8px; }
+.vp-bnf-credit {
+  border-left: 2px solid var(--accent-bg);
+  padding-left: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.vp-bnf-points {
+  display: grid;
+  grid-template-columns: 1fr 130px 28px 24px;
+  gap: 6px;
+  align-items: center;
+}
+.vp-benefits input, .vp-benefits select { font-size: 13px; }
+
 /* Collapsible sections in the About-me editor. Headers are tinted so they
    read as section headers; the open one is highlighted in the accent teal so
    it stands out from the field labels inside it. */

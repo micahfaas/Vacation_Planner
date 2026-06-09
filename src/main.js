@@ -18,6 +18,7 @@ import { startTour, tourSeen } from './tour.js';
 import { loadProfile, openProfileDialog } from './profile.js';
 import { loadFavorites } from './favorites.js';
 import { loadVault } from './vault.js';
+import { openBenefits } from './benefits.js';
 import { el } from './dom.js';
 
 // Register the service worker for offline support (production builds only,
@@ -88,6 +89,7 @@ function bootApp() {
   const moreBtn = document.getElementById('vp-more-btn');
   moreBtn.addEventListener('click', () => popupMenu(moreBtn, [
     ['Booking reminders', 'ti-bell', openWatchers],
+    ['Benefits & credits', 'ti-credit-card', openBenefits],
     ['Currency converter', 'ti-coins', openCurrencyConverter],
     ['Export JSON', 'ti-download', exportJSON],
     ['Export to calendar', 'ti-calendar-down', exportICS],
