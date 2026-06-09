@@ -215,6 +215,19 @@ function chipMultiSelect(options, initial, placeholder) {
   return { el: wrap, getSelected: () => [...selected] };
 }
 
+// A collapsible section for the About-me editor. The header toggles its body
+// open/closed so the window stays tidy with everything collapsed by default.
+function accordionSection(title, bodyEl, startOpen) {
+  const sec = el('div', { class: 'vp-acc' + (startOpen ? ' open' : '') });
+  const head = el('button', { type: 'button', class: 'vp-acc-head' },
+    el('span', { class: 'vp-acc-title' }, title),
+    el('i', { class: 'ti ti-chevron-down vp-acc-chevron' }));
+  head.addEventListener('click', () => sec.classList.toggle('open'));
+  sec.appendChild(head);
+  sec.appendChild(el('div', { class: 'vp-acc-body' }, bodyEl));
+  return sec;
+}
+
 export function openProfileDialog() {
   const p = getProfile();
   const bg = el('div', { class: 'vp-modal-bg', onclick: e => { if (e.target === bg) bg.remove(); } });
@@ -222,7 +235,7 @@ export function openProfileDialog() {
 
   m.appendChild(el('h3', {}, 'About me'));
   m.appendChild(el('p', { class: 'vp-profile-sub' },
-    'A short profile that the trip co-planner uses to tailor its suggestions. Everything is optional.'));
+    'Your preferences, lounge access, and travel documents — all optional. Tap a section to open it.'));
 
   const form = el('div', { class: 'vp-profile-form' });
 
@@ -245,29 +258,30 @@ export function openProfileDialog() {
   const about = row('Anything else',
     el('textarea', { rows: 3, placeholder: 'Anything else the co-planner should know about you' }, p.about || ''));
 
-  m.appendChild(form);
-
   // ---- Lounge access ----
-  m.appendChild(el('h4', { class: 'vp-profile-section' }, 'Lounge access'));
-  m.appendChild(el('p', { class: 'vp-profile-sub' },
+  const loungeBody = el('div');
+  loungeBody.appendChild(el('p', { class: 'vp-profile-sub' },
     'Pick the cards you hold and any airline elite status — the planner uses these to show which lounges you can access on each flight.'));
-
   const cardsField = chipMultiSelect(LOUNGE_CARDS, p.loungeCards || [], 'Search cards…');
-  m.appendChild(el('label', {}, 'Cards'));
-  m.appendChild(cardsField.el);
-
+  loungeBody.appendChild(el('label', {}, 'Cards'));
+  loungeBody.appendChild(cardsField.el);
   const statusField = chipMultiSelect(LOUNGE_STATUSES, p.loungeStatuses || [], 'Search elite status…');
-  m.appendChild(el('label', {}, 'Airline status'));
-  m.appendChild(statusField.el);
+  loungeBody.appendChild(el('label', {}, 'Airline status'));
+  loungeBody.appendChild(statusField.el);
 
   // ---- Travel documents & IDs (the vault) ----
   // Stored in its own table (vault.js), never in the co-planner context or any
   // share snapshot. Kept here so "your travel identity" lives in one place.
-  m.appendChild(el('h4', { class: 'vp-profile-section' }, 'Travel documents & IDs'));
-  m.appendChild(el('p', { class: 'vp-profile-sub' },
+  const vaultBody = el('div');
+  vaultBody.appendChild(el('p', { class: 'vp-profile-sub' },
     'Loyalty numbers, trusted-traveler IDs, and document files — private to you, never shared or sent to the AI planner.'));
   const vaultField = createVaultSection(getVault());
-  m.appendChild(vaultField.el);
+  vaultBody.appendChild(vaultField.el);
+
+  // Group everything into collapsible sections so the window opens tidy.
+  m.appendChild(accordionSection('Travel preferences', form, false));
+  m.appendChild(accordionSection('Lounge access', loungeBody, false));
+  m.appendChild(accordionSection('Travel documents & IDs', vaultBody, false));
 
   const status = el('div', { class: 'vp-profile-status' });
 
