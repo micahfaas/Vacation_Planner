@@ -17,6 +17,7 @@ import { openWatchers } from './watchers.js';
 import { startTour, tourSeen } from './tour.js';
 import { loadProfile, openProfileDialog } from './profile.js';
 import { loadFavorites } from './favorites.js';
+import { loadVault } from './vault.js';
 import { el } from './dom.js';
 
 // Register the service worker for offline support (production builds only,
@@ -135,7 +136,7 @@ function bootApp() {
     document.getElementById('vp-account-email').textContent = user.email || 'Account';
     accountBtn.hidden = false;
     root.innerHTML = '<div class="vp-loading">Loading your trips…</div>';
-    await Promise.all([loadTrips(user.id), loadProfile(user.id), loadFavorites(user.id)]);
+    await Promise.all([loadTrips(user.id), loadProfile(user.id), loadFavorites(user.id), loadVault(user.id)]);
     render();
     // First-time walk-through (skipped if a share/photo import is pending).
     if (!tourSeen() && !pendingShare && !pendingSharedPhotoCount) {
