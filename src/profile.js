@@ -5,6 +5,7 @@ import { supabase } from './supabase.js';
 import { el } from './dom.js';
 import { getUserId } from './storage.js';
 import { CARDS as LOUNGE_CARDS, STATUSES as LOUNGE_STATUSES } from './lounges.js';
+import { getVault, saveVault, createVaultSection } from './vault.js';
 
 let cached = null;        // last-known profile JSON (null until loaded)
 const CACHE_KEY = 'vacation_planner_profile_';
@@ -259,6 +260,15 @@ export function openProfileDialog() {
   m.appendChild(el('label', {}, 'Airline status'));
   m.appendChild(statusField.el);
 
+  // ---- Travel documents & IDs (the vault) ----
+  // Stored in its own table (vault.js), never in the co-planner context or any
+  // share snapshot. Kept here so "your travel identity" lives in one place.
+  m.appendChild(el('h4', { class: 'vp-profile-section' }, 'Travel documents & IDs'));
+  m.appendChild(el('p', { class: 'vp-profile-sub' },
+    'Loyalty numbers, trusted-traveler IDs, and document files — private to you, never shared or sent to the AI planner.'));
+  const vaultField = createVaultSection(getVault());
+  m.appendChild(vaultField.el);
+
   const status = el('div', { class: 'vp-profile-status' });
 
   const saveBtn = el('button', { class: 'vp-save' }, 'Save');
@@ -277,10 +287,13 @@ export function openProfileDialog() {
         loungeCards: cardsField.getSelected(),
         loungeStatuses: statusField.getSelected()
       });
+      // Vault lives in its own table — saved separately so it never rides along
+      // with the AI-readable profile.
+      await saveVault(vaultField.getValue());
       bg.remove();
     } catch (e) {
       status.textContent = 'Could not save — ' + (e.message || e) +
-        '. Make sure supabase/profile.sql has been run in your Supabase project.';
+        '. Make sure supabase/profile.sql and supabase/vault.sql have been run in your Supabase project.';
       status.classList.add('vp-profile-status-err');
       saveBtn.disabled = false;
     }

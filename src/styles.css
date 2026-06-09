@@ -3404,6 +3404,52 @@ a.vp-res-link-title:hover span { text-decoration: underline; }
   color: var(--text);
 }
 
+/* Travel documents & loyalty vault (inside the About-me editor) */
+.vp-vault { display: flex; flex-direction: column; gap: 8px; }
+.vp-vault > label {
+  font-size: var(--text-xs);
+  color: var(--text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.vp-vault-loyalty-list { display: flex; flex-direction: column; gap: 6px; }
+.vp-vault-loyalty-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 28px 24px;
+  gap: 4px;
+  align-items: center;
+}
+.vp-vault-loyalty-row input {
+  font-size: 12px;
+  padding: 4px 6px;
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  width: 100%;
+  box-sizing: border-box;
+}
+.vp-vault-id-inner { display: grid; grid-template-columns: 1fr 28px; gap: 4px; align-items: center; }
+.vp-vault-id-inner input {
+  font-size: 13px;
+  padding: 6px 8px;
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  width: 100%;
+  box-sizing: border-box;
+}
+.vp-vault-copy {
+  all: unset;
+  cursor: pointer;
+  text-align: center;
+  color: var(--text-3);
+  font-size: 12px;
+  border-radius: 3px;
+  padding: 4px 0;
+}
+.vp-vault-copy:hover { background: var(--surface-2); color: var(--text); }
+.vp-vault-copied { color: var(--booked); font-size: 10px; }
+
 /* lounge block in the editor */
 .vp-lounge-empty {
   margin: 8px 0;
