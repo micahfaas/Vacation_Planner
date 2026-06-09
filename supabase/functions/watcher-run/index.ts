@@ -57,6 +57,9 @@ Deno.serve(async (req) => {
       body: w.note || 'A booking window is opening — tap to open.',
       url: w.url || './',
       tag: 'watcher-' + w.id,
+      // Watcher type ('reservation' | 'benefit') so clients can deep-link to
+      // the right screen. Older clients ignore the extra field.
+      kind: w.type || 'reservation',
     };
     const payloadJson = JSON.stringify(payload);
 
@@ -91,7 +94,7 @@ Deno.serve(async (req) => {
               title: payload.title,
               body: payload.body,
               sound: 'default',
-              data: { url: payload.url, tag: payload.tag },
+              data: { url: payload.url, tag: payload.tag, kind: payload.kind },
             }),
           });
           const result = await res.json().catch(() => null) as
