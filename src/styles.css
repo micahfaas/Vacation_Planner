@@ -861,9 +861,19 @@ a:focus-visible,
   color: var(--text-2);
   background: var(--surface-2);
 }
+.vp-collapse-head:hover { background: var(--surface-3); }
+/* Open state matches the About-me accordion: teal-highlighted header so the
+   open section stands out from the fields inside it. */
+.vp-collapse-open { border-color: var(--accent); }
+.vp-collapse-open .vp-collapse-head {
+  background: var(--accent-bg);
+  color: var(--link);
+  border-bottom: 0.5px solid var(--accent);
+}
+.vp-collapse-open .vp-collapse-head:hover { background: var(--accent-bg); opacity: 0.92; }
 .vp-collapse-chevron { transition: transform 0.15s; }
-.vp-collapse-open .vp-collapse-chevron { transform: rotate(90deg); }
-.vp-collapse-body { display: none; padding: 2px 12px 12px; }
+.vp-collapse-open .vp-collapse-chevron { color: var(--link); transform: rotate(90deg); }
+.vp-collapse-body { display: none; padding: 10px 12px 12px; }
 .vp-collapse-open .vp-collapse-body { display: block; }
 .vp-modal input,
 .vp-modal select,
