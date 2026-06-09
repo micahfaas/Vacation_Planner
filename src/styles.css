@@ -3450,6 +3450,34 @@ a.vp-res-link-title:hover span { text-decoration: underline; }
 .vp-vault-copy:hover { background: var(--surface-2); color: var(--text); }
 .vp-vault-copied { color: var(--booked); font-size: 10px; }
 
+/* Collapsible sections in the About-me editor */
+.vp-acc {
+  border: 0.5px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: 10px;
+  overflow: hidden;
+  background: var(--surface);
+}
+.vp-acc-head {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 13px 14px;
+  font-size: var(--text-md);
+  font-weight: 500;
+  color: var(--text);
+}
+.vp-acc-head:hover { background: var(--surface-2); }
+.vp-acc.open .vp-acc-head { border-bottom: 0.5px solid var(--border); }
+.vp-acc-chevron { color: var(--text-3); transition: transform 0.18s ease; }
+.vp-acc.open .vp-acc-chevron { transform: rotate(180deg); }
+.vp-acc-body { display: none; padding: 12px 14px 14px; }
+.vp-acc.open .vp-acc-body { display: block; }
+
 /* lounge block in the editor */
 .vp-lounge-empty {
   margin: 8px 0;
