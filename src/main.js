@@ -19,6 +19,7 @@ import { loadProfile, openProfileDialog } from './profile.js';
 import { loadFavorites } from './favorites.js';
 import { loadVault } from './vault.js';
 import { openBenefits } from './benefits.js';
+import { openDestinationGuide } from './destination-guide.js';
 import { el } from './dom.js';
 
 // Register the service worker for offline support (production builds only,
@@ -90,6 +91,7 @@ function bootApp() {
   moreBtn.addEventListener('click', () => popupMenu(moreBtn, [
     ['Booking reminders', 'ti-bell', openWatchers],
     ['Benefits & credits', 'ti-credit-card', openBenefits],
+    ['Destination guide', 'ti-compass', openDestinationGuide],
     ['Currency converter', 'ti-coins', openCurrencyConverter],
     ['Export JSON', 'ti-download', exportJSON],
     ['Export to calendar', 'ti-calendar-down', exportICS],
