@@ -3450,7 +3450,9 @@ a.vp-res-link-title:hover span { text-decoration: underline; }
 .vp-vault-copy:hover { background: var(--surface-2); color: var(--text); }
 .vp-vault-copied { color: var(--booked); font-size: 10px; }
 
-/* Collapsible sections in the About-me editor */
+/* Collapsible sections in the About-me editor. Headers are tinted so they
+   read as section headers; the open one is highlighted in the accent teal so
+   it stands out from the field labels inside it. */
 .vp-acc {
   border: 0.5px solid var(--border);
   border-radius: var(--radius-md);
@@ -3458,6 +3460,7 @@ a.vp-res-link-title:hover span { text-decoration: underline; }
   overflow: hidden;
   background: var(--surface);
 }
+.vp-acc.open { border-color: var(--accent); }
 .vp-acc-head {
   all: unset;
   box-sizing: border-box;
@@ -3470,11 +3473,18 @@ a.vp-res-link-title:hover span { text-decoration: underline; }
   font-size: var(--text-md);
   font-weight: 500;
   color: var(--text);
+  background: var(--surface-2);
 }
-.vp-acc-head:hover { background: var(--surface-2); }
-.vp-acc.open .vp-acc-head { border-bottom: 0.5px solid var(--border); }
+.vp-acc-head:hover { background: var(--surface-3); }
+.vp-acc.open .vp-acc-head {
+  background: var(--accent-bg);
+  color: var(--link);
+  font-weight: 600;
+  border-bottom: 0.5px solid var(--accent);
+}
+.vp-acc.open .vp-acc-head:hover { background: var(--accent-bg); opacity: 0.92; }
 .vp-acc-chevron { color: var(--text-3); transition: transform 0.18s ease; }
-.vp-acc.open .vp-acc-chevron { transform: rotate(180deg); }
+.vp-acc.open .vp-acc-chevron { color: var(--link); transform: rotate(180deg); }
 .vp-acc-body { display: none; padding: 12px 14px 14px; }
 .vp-acc.open .vp-acc-body { display: block; }
 
