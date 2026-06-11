@@ -96,6 +96,16 @@ export function placeCity(p) {
   if (!addr) return '';
   const parts = addr.split(/,\s*/).map(s => s.trim()).filter(Boolean);
   if (!parts.length) return '';
+  // Postal-code-FIRST formats ("Z9301 El Chalten", "75001 Paris",
+  // "10117 Berlin"): the chunk carrying a leading postal code is the city —
+  // provinces/countries never carry one. Without this, addresses that also
+  // list a province ("..., Z9301 El Chalten, Santa Cruz, Argentina") would
+  // wrongly pick the province from the second-to-last slot. Only the last two
+  // chunks between street and country are considered, so a street number
+  // ("1567 Broadway") can never false-match.
+  const postalCity = parts.slice(1, -1).slice(-2).find(s =>
+    /^(\d{4,7}|[A-Z]\d{3,6}[A-Z]*)\s+\D/.test(s));
+  if (postalCity) return cleanCityName(postalCity);
   // Second-to-last is the typical city slot. In US-style addresses
   // ("..., City, State ZIP, Country") the "State ZIP" lands there and the
   // city sits one further back.
@@ -227,7 +237,7 @@ function openPlaceEditor(id) {
       locCaption.textContent = 'Tip: paste a Google Maps link to pin this place on the map.';
     }
   }
-  urlIn.addEventListener('input', () => {
+  function applyMapsUrl() {
     const parsed = parseMapsUrl(urlIn.value);
     if (parsed.lat != null && parsed.lng != null) {
       coords.lat = parsed.lat;
@@ -235,8 +245,13 @@ function openPlaceEditor(id) {
     }
     if (parsed.name && !nameIn.value.trim()) nameIn.value = parsed.name;
     updateLocCaption();
-  });
-  updateLocCaption();
+  }
+  urlIn.addEventListener('input', applyMapsUrl);
+  // A link can land in the field without an input event (prefilled from an
+  // import or favorite, browser autofill) — parse once on open so an existing
+  // Maps URL still pins the place.
+  if (coords.lat == null && urlIn.value) applyMapsUrl();
+  else updateLocCaption();
 
   m.appendChild(el('label', {}, 'Name'));
   m.appendChild(nameIn);
@@ -278,6 +293,15 @@ function openPlaceEditor(id) {
         address: addrIn.value.trim(),
         notes: notesIn.value.trim()
       };
+      // Safety net: if no pin yet, re-try the Maps URL at save time so a
+      // pasted link always plots regardless of how it got into the field.
+      if (coords.lat == null && out.url) {
+        const parsed = parseMapsUrl(out.url);
+        if (parsed.lat != null && parsed.lng != null) {
+          coords.lat = parsed.lat;
+          coords.lng = parsed.lng;
+        }
+      }
       if (coords.lat != null && coords.lng != null) {
         out.lat = coords.lat;
         out.lng = coords.lng;
