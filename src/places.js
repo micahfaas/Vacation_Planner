@@ -494,7 +494,10 @@ function renderPlaceCard(p) {
     onclick: e => {
       if (e.target.closest('.vp-place-actions') || e.target.closest('a') ||
           e.target.closest('.vp-place-star')) return;
-      openPlaceDetail(p.id);
+      // Clicking a card flies the map to it (and opens its pin). Places with
+      // no coordinates have nothing to show on the map, so fall back to the
+      // full details view.
+      if (!focusPlaceOnMap(p)) openPlaceDetail(p.id);
     }
   });
 
@@ -568,6 +571,9 @@ function renderPlaceCard(p) {
   if (p.notes) card.appendChild(el('div', { class: 'vp-place-notes' }, p.notes));
 
   const actions = el('div', { class: 'vp-place-actions' });
+  actions.appendChild(el('button', {
+    title: 'View full details, photo, and edit', onclick: e => { e.stopPropagation(); openPlaceDetail(p.id); }
+  }, 'Details'));
   actions.appendChild(el('button', {
     title: 'Add to the calendar as a trip card', onclick: e => { e.stopPropagation(); makeCardFromPlace(p); }
   }, 'Add to calendar'));
@@ -754,6 +760,53 @@ function locateUser(btn) {
 
 // ---------- map ----------
 let placesMap = null;
+let placeMarkers = {};   // place id -> Leaflet marker, so a card can target its pin
+
+// Small popup shown when a pin is clicked: name + quick actions.
+function buildPlacePopup(p) {
+  const cat = PLACE_CATEGORIES[p.category] || PLACE_CATEGORIES.other;
+  const wrap = el('div', { class: 'vp-place-popup' });
+  wrap.appendChild(el('div', { class: 'vp-place-popup-name' }, p.name || 'Place'));
+  wrap.appendChild(el('div', { class: 'vp-place-popup-cat' }, cat.label));
+  const row = el('div', { class: 'vp-place-popup-actions' });
+  const close = () => { if (placesMap) placesMap.closePopup(); };
+  row.appendChild(el('button', {
+    onclick: () => { close(); makeCardFromPlace(p); }
+  }, 'Add to calendar'));
+  row.appendChild(el('button', {
+    onclick: () => { close(); openPlaceEditor(p.id); }
+  }, 'Edit'));
+  row.appendChild(el('button', {
+    onclick: () => { close(); openPlaceDetail(p.id); }
+  }, 'Details'));
+  const link = p.url || p.website;
+  if (link) row.appendChild(el('a', {
+    href: normalizeUrl(link), target: '_blank', rel: 'noopener', class: 'vp-place-popup-link'
+  }, 'Open link'));
+  wrap.appendChild(row);
+  return wrap;
+}
+
+// Fly the map to a place, open its pin's popup, and highlight its card.
+// Returns false when the place has no coordinates (caller falls back to the
+// detail view). Deliberately avoids render() so the map isn't rebuilt.
+function focusPlaceOnMap(p) {
+  if (!placesMap || typeof p.lat !== 'number' || typeof p.lng !== 'number') return false;
+  document.querySelectorAll('.vp-place-focus').forEach(c => c.classList.remove('vp-place-focus'));
+  const card = document.querySelector('.vp-place[data-place-id="' + p.id + '"]');
+  if (card) card.classList.add('vp-place-focus');
+  ui.focusPlaceId = p.id;
+  const targetZoom = Math.max(placesMap.getZoom() || 0, 15);
+  placesMap.flyTo([p.lat, p.lng], targetZoom, { duration: 0.6 });
+  const mk = placeMarkers[p.id];
+  if (mk) setTimeout(() => mk.openPopup(), 650);   // after the fly settles
+  // Stacked layout: the map is below the list — bring it into view.
+  const mapDiv = document.querySelector('.vp-places-map');
+  if (mapDiv && window.matchMedia('(max-width: 800px)').matches) {
+    mapDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+  return true;
+}
 
 function userMarkerIcon() {
   return L.divIcon({
@@ -803,12 +856,14 @@ function initPlacesMap(mapDiv, pts) {
   }).addTo(map);
 
   const latlngs = [];
+  placeMarkers = {};
   pts.forEach(p => {
     const ll = [p.lat, p.lng];
     latlngs.push(ll);
-    L.marker(ll, { icon: placeMarkerIcon(p.category) }).addTo(map)
+    const mk = L.marker(ll, { icon: placeMarkerIcon(p.category) }).addTo(map)
       .bindTooltip(p.name || 'Place')
-      .on('click', () => openPlaceEditor(p.id));
+      .bindPopup(() => buildPlacePopup(p), { minWidth: 210, closeButton: true });
+    placeMarkers[p.id] = mk;
   });
 
   // "You are here" — a blue dot plus a translucent accuracy circle.
