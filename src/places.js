@@ -36,7 +36,7 @@ import { addCard } from './cards.js';
 import { deepLinksFor } from './deeplinks.js';
 import { confirmDialog, alertDialog } from './dialog.js';
 import { openPlacesImport, tryGeocode } from './places-import.js';
-import { geocodePlace } from './geocoding.js';
+import { geocodePlace, reverseGeocode } from './geocoding.js';
 import { getFavorites, addFavorite, removeFavorite, isFavoriteId } from './favorites.js';
 import { loadPlacePhoto, linkifyNotes } from './cardview.js';
 import { getDays } from './derived.js';
@@ -56,6 +56,13 @@ function normalizeUrl(u) {
 
 function isShortMapsUrl(u) {
   return /(maps\.app\.goo\.gl|goo\.gl\/maps)/i.test(u || '');
+}
+
+// True for anything that looks like a Google Maps link, so a URL pasted into
+// the Address field (a common mistake) can be re-routed to the Link field.
+function looksLikeMapsUrl(u) {
+  const s = u || '';
+  return /\/maps\//i.test(s) || isShortMapsUrl(s) || /!3d-?\d/.test(s);
 }
 
 // Pull a place name and coordinates out of a full Google Maps URL.
@@ -225,10 +232,18 @@ function openPlaceEditor(id) {
     lat: typeof p.lat === 'number' ? p.lat : null,
     lng: typeof p.lng === 'number' ? p.lng : null
   };
+  // An explicit city captured from reverse-geocoding the pin; saved on the
+  // place so the city filter is exact (beats parsing it out of the address).
+  let explicitCity = (p.city || '').trim();
+  let reverseSeq = 0;     // guards against out-of-order reverse-geocode replies
+  let looking = false;
+
   const locCaption = el('div', { class: 'vp-place-loc' });
   function updateLocCaption() {
     locCaption.classList.remove('vp-place-loc-warn');
-    if (coords.lat != null && coords.lng != null) {
+    if (looking) {
+      locCaption.textContent = 'Looking up the address…';
+    } else if (coords.lat != null && coords.lng != null) {
       locCaption.textContent = `Pinned at ${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)} — shows on the map.`;
     } else if (isShortMapsUrl(urlIn.value)) {
       locCaption.textContent = 'Shortened link — open it in a browser and paste the full URL to pin this place.';
@@ -237,6 +252,25 @@ function openPlaceEditor(id) {
       locCaption.textContent = 'Tip: paste a Google Maps link to pin this place on the map.';
     }
   }
+
+  // Reverse-geocode the current pin into the (empty) Address field + capture
+  // the city. Only fills when the user hasn't typed their own address.
+  async function prefillAddressFromCoords() {
+    if (coords.lat == null || coords.lng == null) return;
+    if (addrIn.value.trim()) return;
+    const seq = ++reverseSeq;
+    looking = true;
+    updateLocCaption();
+    const r = await reverseGeocode(coords.lat, coords.lng);
+    if (seq !== reverseSeq) return;             // a newer paste superseded us
+    looking = false;
+    if (r) {
+      if (!addrIn.value.trim() && r.address) addrIn.value = r.address;
+      if (r.city) explicitCity = r.city;
+    }
+    updateLocCaption();
+  }
+
   function applyMapsUrl() {
     const parsed = parseMapsUrl(urlIn.value);
     if (parsed.lat != null && parsed.lng != null) {
@@ -245,8 +279,21 @@ function openPlaceEditor(id) {
     }
     if (parsed.name && !nameIn.value.trim()) nameIn.value = parsed.name;
     updateLocCaption();
+    if (parsed.lat != null) prefillAddressFromCoords();
   }
   urlIn.addEventListener('input', applyMapsUrl);
+
+  // A Maps link pasted into the Address field (a common mistake — people think
+  // of it as "the address") is re-routed to the Link field so it still pins,
+  // then the real address is filled in by reverse-geocoding.
+  addrIn.addEventListener('input', () => {
+    if (!looksLikeMapsUrl(addrIn.value)) return;
+    const link = addrIn.value.trim();
+    if (!urlIn.value.trim()) urlIn.value = link;
+    addrIn.value = '';
+    applyMapsUrl();
+  });
+
   // A link can land in the field without an input event (prefilled from an
   // import or favorite, browser autofill) — parse once on open so an existing
   // Maps URL still pins the place.
@@ -293,6 +340,12 @@ function openPlaceEditor(id) {
         address: addrIn.value.trim(),
         notes: notesIn.value.trim()
       };
+      // A Maps link may still be sitting in the Address field if the user hit
+      // Save before the input handler re-routed it — move it now.
+      if (looksLikeMapsUrl(out.address) && !out.url) {
+        out.url = out.address;
+        out.address = '';
+      }
       // Safety net: if no pin yet, re-try the Maps URL at save time so a
       // pasted link always plots regardless of how it got into the field.
       if (coords.lat == null && out.url) {
@@ -305,6 +358,17 @@ function openPlaceEditor(id) {
       if (coords.lat != null && coords.lng != null) {
         out.lat = coords.lat;
         out.lng = coords.lng;
+        // Pinned but no address yet (fast save before the live lookup) — fill
+        // the address + city from the pin so the user never has to type one.
+        if (!out.address) {
+          saveBtn.disabled = true;
+          saveBtn.textContent = 'Saving…';
+          const r = await reverseGeocode(coords.lat, coords.lng);
+          if (r) {
+            if (r.address) out.address = r.address;
+            if (r.city) explicitCity = r.city;
+          }
+        }
       } else if (out.address) {
         // Try to pin the place from its address so the map and Navigate work.
         saveBtn.disabled = true;
@@ -312,6 +376,7 @@ function openPlaceEditor(id) {
         const found = await geocodePlace([out.name, out.address].filter(Boolean).join(', '));
         if (found) { out.lat = found.lat; out.lng = found.lng; }
       }
+      if (explicitCity) out.city = explicitCity;
       if (isNew) addPlace(out);
       else updatePlace(id, out);
       bg.remove();
