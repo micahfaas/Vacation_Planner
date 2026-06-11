@@ -3881,3 +3881,22 @@ a.vp-res-link-title:hover span { text-decoration: underline; }
   0%, 35% { background: var(--accent-bg); }
   100% { background: var(--surface); }
 }
+
+/* Map pin popup — name + quick actions */
+.vp-place-popup-name { font-weight: 600; font-size: var(--text-sm); color: var(--text); }
+.vp-place-popup-cat { font-size: var(--text-xs); color: var(--text-2); margin-bottom: 6px; }
+.vp-place-popup-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.vp-place-popup-actions button,
+.vp-place-popup-link {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  font-size: var(--text-xs);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  border: 0.5px solid var(--border);
+  color: var(--link);
+  background: var(--surface);
+}
+.vp-place-popup-actions button:hover,
+.vp-place-popup-link:hover { background: var(--surface-2); }
