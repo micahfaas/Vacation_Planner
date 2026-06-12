@@ -5,7 +5,7 @@ import { supabase } from './supabase.js';
 import { el } from './dom.js';
 import { getUserId } from './storage.js';
 import { CARDS as LOUNGE_CARDS, STATUSES as LOUNGE_STATUSES } from './lounges.js';
-import { getVault, saveVault, createVaultSection } from './vault.js';
+import { getVault, saveVault, createVaultSection, reauthForVault } from './vault.js';
 
 let cached = null;        // last-known profile JSON (null until loaded)
 const CACHE_KEY = 'vacation_planner_profile_';
@@ -217,12 +217,23 @@ function chipMultiSelect(options, initial, placeholder) {
 
 // A collapsible section for the About-me editor. The header toggles its body
 // open/closed so the window stays tidy with everything collapsed by default.
-function accordionSection(title, bodyEl, startOpen) {
+// An optional `gate` (a function returning Promise<boolean>) must resolve true
+// before the section can be opened the first time — used to lock the vault
+// behind a re-auth prompt. Once unlocked it toggles freely for the session.
+function accordionSection(title, bodyEl, startOpen, gate) {
   const sec = el('div', { class: 'vp-acc' + (startOpen ? ' open' : '') });
   const head = el('button', { type: 'button', class: 'vp-acc-head' },
     el('span', { class: 'vp-acc-title' }, title),
     el('i', { class: 'ti ti-chevron-down vp-acc-chevron' }));
-  head.addEventListener('click', () => sec.classList.toggle('open'));
+  let unlocked = !gate;
+  head.addEventListener('click', async () => {
+    const willOpen = !sec.classList.contains('open');
+    if (willOpen && !unlocked) {
+      if (!(await gate())) return; // re-auth cancelled/failed — stay closed
+      unlocked = true;
+    }
+    sec.classList.toggle('open');
+  });
   sec.appendChild(head);
   sec.appendChild(el('div', { class: 'vp-acc-body' }, bodyEl));
   return sec;
@@ -281,7 +292,9 @@ export function openProfileDialog() {
   // Group everything into collapsible sections so the window opens tidy.
   m.appendChild(accordionSection('Travel preferences', form, false));
   m.appendChild(accordionSection('Lounge access', loungeBody, false));
-  m.appendChild(accordionSection('Travel documents & IDs', vaultBody, false));
+  // The vault section is gated behind a re-auth prompt (the web counterpart to
+  // the mobile biometric lock) before its contents are revealed.
+  m.appendChild(accordionSection('Travel documents & IDs', vaultBody, false, reauthForVault));
 
   const status = el('div', { class: 'vp-profile-status' });
 

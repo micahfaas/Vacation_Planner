@@ -199,3 +199,90 @@ export function createVaultSection(initial) {
     })
   };
 }
+
+// Re-authentication gate for opening the vault section — the web counterpart to
+// the mobile biometric lock: prove it is really you before the most sensitive
+// data is revealed. Email/password accounts re-enter their password; Google /
+// Apple accounts (no password to re-enter, already strongly authenticated) get
+// a lightweight confirm. Resolves to true when unlocked, false on cancel.
+export function reauthForVault() {
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (val) => { if (settled) return; settled = true; bg.remove(); resolve(val); };
+
+    const bg = el('div', { class: 'vp-modal-bg', onclick: e => { if (e.target === bg) finish(false); } });
+    const m = el('div', { class: 'vp-modal vp-vault-reauth' });
+    m.appendChild(el('h3', {}, 'Unlock your travel documents'));
+    const sub = el('p', { class: 'vp-profile-sub' },
+      'For your security, confirm it is you before viewing your loyalty numbers and document files.');
+    m.appendChild(sub);
+    const status = el('div', { class: 'vp-profile-status' });
+    const unlock = el('button', { class: 'vp-save' }, 'Unlock');
+
+    // State filled in once we know how the account signs in.
+    let pwInput = null;
+    let email = '';
+    let hasPassword = false;
+
+    const attempt = async () => {
+      if (!hasPassword) { finish(true); return; }
+      const pw = pwInput.value;
+      if (!pw) {
+        status.textContent = 'Enter your password.';
+        status.classList.add('vp-profile-status-err');
+        return;
+      }
+      unlock.disabled = true;
+      status.textContent = '';
+      status.classList.remove('vp-profile-status-err');
+      // Verifies the password against the current account. Re-issues a session
+      // for the SAME user, which main.js dedupes by user id (no UI disruption).
+      const { error } = await supabase.auth.signInWithPassword({ email, password: pw });
+      if (error) {
+        status.textContent = 'That password did not match. Try again.';
+        status.classList.add('vp-profile-status-err');
+        unlock.disabled = false;
+        return;
+      }
+      finish(true);
+    };
+    unlock.addEventListener('click', attempt);
+
+    const actions = el('div', { class: 'vp-modal-actions' });
+    const right = el('div', { class: 'vp-right' });
+    right.appendChild(el('button', { onclick: () => finish(false) }, 'Cancel'));
+    right.appendChild(unlock);
+    actions.appendChild(right);
+
+    // Always render the buttons synchronously so the dialog is never blank; a
+    // password field is slotted in above the status line if the account uses one.
+    m.appendChild(status);
+    m.appendChild(actions);
+    bg.appendChild(m);
+    document.body.appendChild(bg);
+
+    // Resolve the account's sign-in methods, then tailor the dialog.
+    supabase.auth.getUser().then(({ data }) => {
+      const user = data && data.user;
+      const providers = [];
+      if (user) {
+        const am = user.app_metadata || {};
+        if (Array.isArray(am.providers)) providers.push(...am.providers);
+        else if (am.provider) providers.push(am.provider);
+        if (Array.isArray(user.identities)) {
+          for (const i of user.identities) if (i && i.provider) providers.push(i.provider);
+        }
+        email = user.email || '';
+      }
+      hasPassword = providers.includes('email') && !!email;
+      if (hasPassword) {
+        sub.textContent =
+          'For your security, re-enter your password to view your loyalty numbers and document files.';
+        pwInput = el('input', { type: 'password', placeholder: 'Password', autocomplete: 'current-password' });
+        pwInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') attempt(); });
+        m.insertBefore(pwInput, status);
+        pwInput.focus();
+      }
+    });
+  });
+}
