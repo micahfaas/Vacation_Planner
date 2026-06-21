@@ -1395,14 +1395,10 @@ body.vp-shared .vp-footer { display: none; }
 .vp-place-cat-bakery     .vp-place-icon { color: #c98a3a; }
 .vp-place-cat-dessert    { background: #fce3f0; border-left: 4px solid #d96aa6; }
 .vp-place-cat-dessert    .vp-place-icon { color: #d96aa6; }
-.vp-place-cat-pub        { background: #f7e8c6; border-left: 4px solid #c8881f; }
-.vp-place-cat-pub        .vp-place-icon { color: #c8881f; }
 .vp-place-cat-brewery    { background: #f0e3c8; border-left: 4px solid #a9701f; }
 .vp-place-cat-brewery    .vp-place-icon { color: #a9701f; }
 .vp-place-cat-wine       { background: #f3dde4; border-left: 4px solid #8e3b5a; }
 .vp-place-cat-wine       .vp-place-icon { color: #8e3b5a; }
-.vp-place-cat-tea        { background: #e8f0db; border-left: 4px solid #6f9b54; }
-.vp-place-cat-tea        .vp-place-icon { color: #6f9b54; }
 .vp-place-cat-viewpoint  { background: #dcf0f0; border-left: 4px solid #4a8a8a; }
 .vp-place-cat-viewpoint  .vp-place-icon { color: #4a8a8a; }
 .vp-place-cat-park       { background: #ddf2d8; border-left: 4px solid #3f8f3a; }

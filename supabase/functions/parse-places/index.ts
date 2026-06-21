@@ -34,14 +34,14 @@ const SYSTEM = `You extract places of interest from a traveler's research notes 
 Return a JSON object: { "places": [ ... ] }. Each place has ALL of these fields:
 
 - name: the place's name.
-- category: one of "restaurant", "cafe", "coffee", "bakery", "dessert", "bar", "pub", "brewery", "wine", "cocktail", "tea", "attraction", "viewpoint", "park", "museum", "market", "shop", "lodging", "other".
+- category: one of "restaurant", "cafe", "coffee", "bakery", "dessert", "bar", "brewery", "wine", "cocktail", "attraction", "viewpoint", "park", "museum", "market", "shop", "lodging", "other".
 - address: the full street address including the city, if you know it for this well-known place. "" otherwise. Never invent an address.
 - notes: a concise one- or two-sentence description — what it is, why it's notable, any tips from the source text.
 
 Rules:
 - The text is often a markdown or bulleted list: lines may start with -, *, •, ▪, or a number, names may be wrapped in ** for bold, and links may appear as [text](url). Treat each bullet or line as a candidate place, and NEVER include markdown or bullet characters (*, _, #, •, -, backticks) in the name or notes — output clean plain text.
 - Extract every distinct place mentioned. Do not merge or skip places.
-- Choose categories carefully: "cafe" = sit-down cafés and brunch spots; "coffee" = dedicated specialty coffee, espresso bars, and roasters; "bakery" = bakeries and patisseries; "dessert" = ice cream, gelato, and dessert shops; "bar" = general bars; "pub" = pubs and beer bars; "brewery" = breweries and taprooms; "wine" = wine bars; "cocktail" = cocktail bars specifically; "tea" = tea houses; "attraction" = general sights and tours; "viewpoint" = scenic overlooks and lookouts; "park" = parks, gardens, beaches, and nature; "museum" = museums and galleries; "market" = food markets and night markets; "shop" = stores; "lodging" = hotels/hostels/Airbnbs; "other" only if none fit.
+- Choose categories carefully: "cafe" = sit-down cafés and brunch spots; "coffee" = dedicated specialty coffee, espresso bars, and roasters; "bakery" = bakeries and patisseries; "dessert" = ice cream, gelato, and dessert shops; "bar" = general bars and pubs; "brewery" = breweries and taprooms; "wine" = wine bars; "cocktail" = cocktail bars specifically; "attraction" = general sights and tours; "viewpoint" = scenic overlooks and lookouts; "park" = parks, gardens, beaches, and nature; "museum" = museums and galleries; "market" = food markets and night markets; "shop" = stores; "lodging" = hotels/hostels/Airbnbs; "other" only if none fit.
 - Fill "address" only with a real, complete street address you are confident about — include the city. If you are not sure, leave it "". Never guess.
 - If the text contains no places, return { "places": [] }.`;
 
@@ -54,7 +54,7 @@ const SCHEMA = {
         type: 'object',
         properties: {
           name: { type: 'string' },
-          category: { type: 'string', enum: ['restaurant', 'cafe', 'coffee', 'bakery', 'dessert', 'bar', 'pub', 'brewery', 'wine', 'cocktail', 'tea', 'attraction', 'viewpoint', 'park', 'museum', 'market', 'shop', 'lodging', 'other'] },
+          category: { type: 'string', enum: ['restaurant', 'cafe', 'coffee', 'bakery', 'dessert', 'bar', 'brewery', 'wine', 'cocktail', 'attraction', 'viewpoint', 'park', 'museum', 'market', 'shop', 'lodging', 'other'] },
           address: { type: 'string' },
           notes: { type: 'string' },
         },
