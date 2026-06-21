@@ -216,11 +216,13 @@ function openPlaceEditor(id) {
 
   const nameIn = el('input', { type: 'text', value: p.name || '', placeholder: 'e.g. Café Tortoni' });
   const catSel = el('select', {});
-  Object.entries(PLACE_CATEGORIES).forEach(([k, v]) => {
-    const opt = el('option', { value: k }, v.label);
-    if (p.category === k) opt.selected = true;
-    catSel.appendChild(opt);
-  });
+  Object.entries(PLACE_CATEGORIES)
+    .sort((a, b) => a[1].label.localeCompare(b[1].label))
+    .forEach(([k, v]) => {
+      const opt = el('option', { value: k }, v.label);
+      if (p.category === k) opt.selected = true;
+      catSel.appendChild(opt);
+    });
   const urlIn = el('input', { type: 'text', value: p.url || '', placeholder: 'Paste a Google Maps link, review, or blog URL' });
   const siteIn = el('input', { type: 'text', value: p.website || '', placeholder: 'Official website (optional)' });
   const addrIn = el('input', { type: 'text', value: p.address || '', placeholder: 'Address (optional)' });
@@ -938,7 +940,11 @@ export function renderPlacesView() {
   panel.appendChild(head);
 
   const filterRow = el('div', { class: 'vp-lib-filter' });
-  const cats = [['all', 'all']].concat(Object.entries(PLACE_CATEGORIES).map(([k, v]) => [k, v.label.toLowerCase()]));
+  const cats = [['all', 'all']].concat(
+    Object.entries(PLACE_CATEGORIES)
+      .map(([k, v]) => [k, v.label.toLowerCase()])
+      .sort((a, b) => a[1].localeCompare(b[1]))
+  );
   cats.forEach(([k, label]) => {
     filterRow.appendChild(el('button', {
       class: 'vp-chip' + (ui.placeFilter === k ? ' vp-chip-on' : ''),
@@ -989,8 +995,13 @@ export function renderPlacesView() {
       return da - db;
     });
   } else {
-    // Surface accommodation first for quick access to where you're staying.
-    visible.sort((a, b) => (b.category === 'staying' ? 1 : 0) - (a.category === 'staying' ? 1 : 0));
+    // Accommodation pinned on top for quick access; everything else A-Z by name.
+    visible.sort((a, b) => {
+      const sa = a.category === 'staying' ? 0 : 1;
+      const sb = b.category === 'staying' ? 0 : 1;
+      if (sa !== sb) return sa - sb;
+      return (a.name || '').localeCompare(b.name || '');
+    });
   }
 
   const withCoords = visible.filter(p => typeof p.lat === 'number' && typeof p.lng === 'number');
