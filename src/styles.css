@@ -1407,6 +1407,20 @@ body.vp-shared .vp-footer { display: none; }
 .vp-place-cat-museum     .vp-place-icon { color: #6b6f9c; }
 .vp-place-cat-market     { background: #d8f2ec; border-left: 4px solid #2f9c8a; }
 .vp-place-cat-market     .vp-place-icon { color: #2f9c8a; }
+.vp-place-search {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 8px 0 4px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--text-base);
+}
+.vp-place-search:focus { outline: none; border-color: var(--accent); }
+.vp-chip-fav.vp-chip-on { background: #f4c84a; border-color: #d9a72a; color: #5a4410; }
 .vp-place-cat-shop       { background: #dff0fa; border-left: 4px solid #1f7fb5; }
 .vp-place-cat-shop       .vp-place-icon { color: #1f7fb5; }
 .vp-place-cat-lodging    { background: #fce5f0; border-left: 4px solid #c7549f; }
