@@ -3,6 +3,8 @@
 // drop into any trip's research list.
 import { supabase } from './supabase.js';
 import { getUserId } from './storage.js';
+import { el } from './dom.js';
+import { PLACE_CATEGORIES } from './constants.js';
 
 let cached = { places: [] };
 const CACHE_KEY = 'vacation_planner_favs_';
@@ -80,4 +82,42 @@ export async function removeFavorite(id) {
 
 export function isFavoriteId(id) {
   return !!id && cached.places.some(f => f.id === id);
+}
+
+// A low-visibility, read-only view of every starred place across all trips.
+// Opened from the More menu. The star toggle on any place card feeds this pool.
+export function openSavedPlaces() {
+  const favs = getFavorites().slice().sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  const bg = el('div', { class: 'vp-modal-bg', onclick: e => { if (e.target === bg) bg.remove(); } });
+  const m = el('div', { class: 'vp-modal' });
+  m.appendChild(el('h3', {}, 'Saved places'));
+  m.appendChild(el('p', { class: 'vp-profile-sub' },
+    'Everything you’ve starred, across all your trips. Add any of them to a trip from the Places tab’s “From favorites”.'));
+
+  if (!favs.length) {
+    m.appendChild(el('div', { class: 'vp-places-empty' },
+      'No saved places yet. Tap the star on any place to save it here for next time.'));
+  } else {
+    const list = el('div', { class: 'vp-saved-list' });
+    favs.forEach(f => {
+      const cat = PLACE_CATEGORIES[f.category] || PLACE_CATEGORIES.other;
+      const row = el('div', { class: 'vp-saved-item' });
+      row.appendChild(el('i', { class: 'ti ' + cat.icon + ' vp-saved-icon', 'aria-hidden': 'true' }));
+      const txt = el('div', {});
+      txt.appendChild(el('div', { style: { fontWeight: 500 } }, f.name || 'Place'));
+      const sub = [f.city, f.address].filter(Boolean).join(' · ');
+      if (sub) txt.appendChild(el('div', { style: { fontSize: '11px', color: 'var(--text-2)' } }, sub));
+      row.appendChild(txt);
+      list.appendChild(row);
+    });
+    m.appendChild(list);
+  }
+
+  const actions = el('div', { class: 'vp-modal-actions' });
+  const right = el('div', { class: 'vp-right' });
+  right.appendChild(el('button', { onclick: () => bg.remove() }, 'Close'));
+  actions.appendChild(right);
+  m.appendChild(actions);
+  bg.appendChild(m);
+  document.body.appendChild(bg);
 }

@@ -1429,6 +1429,10 @@ body.vp-shared .vp-footer { display: none; }
   letter-spacing: 0.04em;
 }
 .vp-trip-archived { opacity: 0.6; }
+.vp-saved-list { display: flex; flex-direction: column; gap: 2px; max-height: 50vh; overflow-y: auto; margin-top: 6px; }
+.vp-saved-item { display: flex; align-items: center; gap: 10px; padding: 8px 4px; border-bottom: 1px solid var(--border); }
+.vp-saved-item:last-child { border-bottom: none; }
+.vp-saved-icon { color: var(--accent); width: 18px; text-align: center; }
 .vp-place-cat-shop       { background: #dff0fa; border-left: 4px solid #1f7fb5; }
 .vp-place-cat-shop       .vp-place-icon { color: #1f7fb5; }
 .vp-place-cat-lodging    { background: #fce5f0; border-left: 4px solid #c7549f; }
