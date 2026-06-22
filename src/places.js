@@ -951,6 +951,11 @@ export function renderPlacesView() {
       onclick: () => { ui.placeFilter = k; render(); }
     }, label));
   });
+  // Favorites-only toggle — filters both the list and the map to starred places.
+  filterRow.appendChild(el('button', {
+    class: 'vp-chip vp-chip-fav' + (ui.placeFavOnly ? ' vp-chip-on' : ''),
+    onclick: () => { ui.placeFavOnly = !ui.placeFavOnly; render(); }
+  }, '★ favorites'));
 
   // City dropdown — only shown when the saved places span at least two cities.
   const cities = Array.from(new Set(all.map(placeCity).filter(Boolean))).sort();
@@ -981,9 +986,18 @@ export function renderPlacesView() {
 
   panel.appendChild(filterRow);
 
+  // Live name/notes search over the rendered list. Filters cards in place so it
+  // stays snappy and never rebuilds the map on each keystroke.
+  const searchIn = el('input', {
+    type: 'search', class: 'vp-place-search',
+    placeholder: 'Search saved places…', value: ui.placeSearch || ''
+  });
+  if (all.length) panel.appendChild(searchIn);
+
   const visible = all.filter(p =>
     (ui.placeFilter === 'all' || p.category === ui.placeFilter) &&
-    (ui.placeCityFilter === 'all' || placeCity(p) === ui.placeCityFilter)
+    (ui.placeCityFilter === 'all' || placeCity(p) === ui.placeCityFilter) &&
+    (!ui.placeFavOnly || !!p.favoriteId)
   );
   if (ui.userLocation && ui.placeSortNearest) {
     // Nearest first; places without coordinates sink to the bottom.
@@ -1019,8 +1033,34 @@ export function renderPlacesView() {
       all.length ? 'No places match the current filter.'
                  : 'No places yet. Click + new place to start your research list.'));
   } else {
-    visible.forEach(p => listCol.appendChild(renderPlaceCard(p)));
+    visible.forEach(p => {
+      const card = renderPlaceCard(p);
+      card.dataset.placeSearch = [p.name, p.address, p.notes, placeCity(p)]
+        .filter(Boolean).join(' ').toLowerCase();
+      listCol.appendChild(card);
+    });
   }
+
+  // Wire the search box now that the cards exist (live show/hide, no re-render).
+  const applySearch = () => {
+    const q = searchIn.value.trim().toLowerCase();
+    ui.placeSearch = searchIn.value;
+    let shown = 0;
+    listCol.querySelectorAll('[data-place-search]').forEach(card => {
+      const match = !q || card.dataset.placeSearch.includes(q);
+      card.style.display = match ? '' : 'none';
+      if (match) shown++;
+    });
+    let none = listCol.querySelector('.vp-places-search-none');
+    if (q && shown === 0 && !none) {
+      listCol.appendChild(el('div', { class: 'vp-places-empty vp-places-search-none' },
+        'No places match your search.'));
+    } else if ((!q || shown > 0) && none) {
+      none.remove();
+    }
+  };
+  searchIn.addEventListener('input', applySearch);
+  if (ui.placeSearch) applySearch();
 
   if (withCoords.length) {
     const mapDiv = el('div', { class: 'vp-map vp-places-map' });
