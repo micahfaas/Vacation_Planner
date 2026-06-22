@@ -16,7 +16,7 @@ import { openCoPlanner } from './coplanner.js';
 import { openWatchers } from './watchers.js';
 import { startTour, tourSeen } from './tour.js';
 import { loadProfile, openProfileDialog } from './profile.js';
-import { loadFavorites } from './favorites.js';
+import { loadFavorites, openSavedPlaces } from './favorites.js';
 import { loadVault } from './vault.js';
 import { openBenefits } from './benefits.js';
 import { openDestinationGuide } from './destination-guide.js';
@@ -91,6 +91,7 @@ function bootApp() {
   moreBtn.addEventListener('click', () => popupMenu(moreBtn, [
     ['Booking reminders', 'ti-bell', openWatchers],
     ['Benefits & credits', 'ti-credit-card', openBenefits],
+    ['Saved places', 'ti-star', openSavedPlaces],
     ['Destination guide', 'ti-compass', openDestinationGuide],
     ['Currency converter', 'ti-coins', openCurrencyConverter],
     ['Export JSON', 'ti-download', exportJSON],
