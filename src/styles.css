@@ -1421,6 +1421,14 @@ body.vp-shared .vp-footer { display: none; }
 }
 .vp-place-search:focus { outline: none; border-color: var(--accent); }
 .vp-chip-fav.vp-chip-on { background: #f4c84a; border-color: #d9a72a; color: #5a4410; }
+.vp-trips-archived-head {
+  margin: 14px 0 6px;
+  font-size: 12px;
+  color: var(--text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.vp-trip-archived { opacity: 0.6; }
 .vp-place-cat-shop       { background: #dff0fa; border-left: 4px solid #1f7fb5; }
 .vp-place-cat-shop       .vp-place-icon { color: #1f7fb5; }
 .vp-place-cat-lodging    { background: #fce5f0; border-left: 4px solid #c7549f; }

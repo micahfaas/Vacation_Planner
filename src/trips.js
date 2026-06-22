@@ -14,12 +14,16 @@ export function openTripsMenu() {
   const m = el('div', { class: 'vp-modal' });
   m.appendChild(el('h3', {}, 'Trips'));
 
-  const list = el('div', { class: 'vp-trips-list' });
-  Object.values(data.trips).forEach(tr => {
+  const firstActiveId = () =>
+    Object.keys(data.trips).find(id => !data.trips[id].archived)
+    || Object.keys(data.trips)[0] || null;
+
+  function tripRow(tr, isArchived) {
     const item = el('div', {
-      class: 'vp-trip-item' + (tr.id === data.activeTripId ? ' vp-trip-active' : ''),
+      class: 'vp-trip-item' + (tr.id === data.activeTripId ? ' vp-trip-active' : '')
+        + (isArchived ? ' vp-trip-archived' : ''),
       onclick: e => {
-        if (e.target.closest('.vp-trip-item-actions')) return;
+        if (isArchived || e.target.closest('.vp-trip-item-actions')) return;
         data.activeTripId = tr.id;
         save(); render(); bg.remove();
       }
@@ -33,44 +37,73 @@ export function openTripsMenu() {
     item.appendChild(left);
 
     const itemActions = el('div', { class: 'vp-trip-item-actions' });
-    itemActions.appendChild(el('button', {
-      title: 'Share a read-only link', 'aria-label': 'Share a read-only link',
-      onclick: e => { e.stopPropagation(); openShareDialog(tr); }
-    }, el('i', { class: 'ti ti-share', 'aria-hidden': 'true' })));
-    itemActions.appendChild(el('button', {
-      title: 'Rename', 'aria-label': 'Rename trip',
-      onclick: async e => {
-        e.stopPropagation();
-        const name = await promptDialog('Trip name', tr.name, { title: 'Rename trip' });
-        if (name && name.trim()) { tr.name = name.trim(); markTripDirty(tr.id); save(); openTripsMenu(); bg.remove(); }
-      }
-    }, el('i', { class: 'ti ti-edit' })));
-    if (Object.keys(data.trips).length > 1) {
+    if (!isArchived) {
       itemActions.appendChild(el('button', {
-        title: 'Delete', 'aria-label': 'Delete trip',
+        title: 'Share a read-only link', 'aria-label': 'Share a read-only link',
+        onclick: e => { e.stopPropagation(); openShareDialog(tr); }
+      }, el('i', { class: 'ti ti-share', 'aria-hidden': 'true' })));
+      itemActions.appendChild(el('button', {
+        title: 'Rename', 'aria-label': 'Rename trip',
+        onclick: async e => {
+          e.stopPropagation();
+          const name = await promptDialog('Trip name', tr.name, { title: 'Rename trip' });
+          if (name && name.trim()) { tr.name = name.trim(); markTripDirty(tr.id); save(); openTripsMenu(); bg.remove(); }
+        }
+      }, el('i', { class: 'ti ti-edit' })));
+      // Archive (instead of delete) — keeps the trip and all its places, hidden.
+      if (Object.values(data.trips).filter(t => !t.archived).length > 1) {
+        itemActions.appendChild(el('button', {
+          title: 'Archive', 'aria-label': 'Archive trip',
+          onclick: e => {
+            e.stopPropagation();
+            tr.archived = true;
+            markTripDirty(tr.id);
+            if (data.activeTripId === tr.id) data.activeTripId = firstActiveId();
+            save(); render(); openTripsMenu(); bg.remove();
+          }
+        }, el('i', { class: 'ti ti-archive' })));
+      }
+    } else {
+      itemActions.appendChild(el('button', {
+        title: 'Restore', 'aria-label': 'Restore trip',
         onclick: e => {
           e.stopPropagation();
-          confirmDialog('Delete trip “' + tr.name + '” and all its cards?',
-            { danger: true, confirmText: 'Delete' }).then(ok => {
+          tr.archived = false;
+          markTripDirty(tr.id);
+          save(); render(); openTripsMenu(); bg.remove();
+        }
+      }, el('i', { class: 'ti ti-archive-off' })));
+      itemActions.appendChild(el('button', {
+        title: 'Delete permanently', 'aria-label': 'Delete trip permanently',
+        onclick: e => {
+          e.stopPropagation();
+          confirmDialog('Permanently delete “' + tr.name + '” and all its cards? This cannot be undone.',
+            { danger: true, confirmText: 'Delete forever' }).then(ok => {
             if (!ok) return;
-            // Best-effort: free any journal photos this trip stored.
-            if ((tr.photos || []).length) {
-              import('./photos.js').then(m => m.deleteAllTripPhotos(tr));
-            }
+            if ((tr.photos || []).length) import('./photos.js').then(m => m.deleteAllTripPhotos(tr));
             markTripDeleted(tr.id);
             delete data.trips[tr.id];
-            if (data.activeTripId === tr.id) {
-              data.activeTripId = Object.keys(data.trips)[0];
-            }
-            save(); render(); bg.remove();
+            if (data.activeTripId === tr.id) data.activeTripId = firstActiveId();
+            save(); render(); openTripsMenu(); bg.remove();
           });
         }
       }, el('i', { class: 'ti ti-trash' })));
     }
     item.appendChild(itemActions);
-    list.appendChild(item);
-  });
+    return item;
+  }
+
+  const list = el('div', { class: 'vp-trips-list' });
+  Object.values(data.trips).filter(t => !t.archived).forEach(tr => list.appendChild(tripRow(tr, false)));
   m.appendChild(list);
+
+  const archived = Object.values(data.trips).filter(t => t.archived);
+  if (archived.length) {
+    m.appendChild(el('div', { class: 'vp-trips-archived-head' }, 'Archived'));
+    const archList = el('div', { class: 'vp-trips-list' });
+    archived.forEach(tr => archList.appendChild(tripRow(tr, true)));
+    m.appendChild(archList);
+  }
 
   const actions = el('div', { class: 'vp-modal-actions' });
   const left = el('div', {});
