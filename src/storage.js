@@ -111,9 +111,12 @@ function migrateLegacyTrips() {
 function reconcileActiveTrip() {
   let active = null;
   try { active = localStorage.getItem(activeKey()); } catch { /* ignore */ }
-  data.activeTripId = (active && data.trips[active])
+  // Never land on an archived trip; fall back to the first non-archived one.
+  const ok = active && data.trips[active] && !data.trips[active].archived;
+  data.activeTripId = ok
     ? active
-    : (Object.keys(data.trips)[0] || null);
+    : (Object.keys(data.trips).find(id => !data.trips[id].archived)
+       || Object.keys(data.trips)[0] || null);
 }
 
 function loadFromCache() {
