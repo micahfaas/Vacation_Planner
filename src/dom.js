@@ -30,3 +30,21 @@ export function collapsible(title, open) {
   setOpen(open);
   return { el: wrap, body, setOpen };
 }
+
+// Brief, non-blocking notification that auto-dismisses. For background events
+// the user should notice but not be interrupted by (e.g. a trip reloaded after
+// a change on another device).
+export function toast(message, ms) {
+  let host = document.querySelector('.vp-toast-host');
+  if (!host) {
+    host = el('div', { class: 'vp-toast-host' });
+    document.body.appendChild(host);
+  }
+  const t = el('div', { class: 'vp-toast' }, message);
+  host.appendChild(t);
+  requestAnimationFrame(() => t.classList.add('vp-toast-in'));
+  setTimeout(() => {
+    t.classList.remove('vp-toast-in');
+    setTimeout(() => t.remove(), 300);
+  }, ms || 5000);
+}
