@@ -3042,6 +3042,34 @@ a.vp-res-link-title:hover span { text-decoration: underline; }
 .vp-help-item strong { color: var(--text); }
 .vp-help-note { font-size: var(--text-xs); color: var(--text-3); font-style: italic; line-height: 1.5; margin-top: var(--space-3); padding-top: var(--space-2); border-top: 0.5px solid var(--border); }
 
+/* Non-blocking toast notifications (e.g. a trip reloaded after a change on
+   another device). Stacked bottom-center, auto-dismissing, above modals. */
+.vp-toast-host {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 2100;
+  pointer-events: none;
+  max-width: min(92vw, 420px);
+}
+.vp-toast {
+  background: var(--text);
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  line-height: 1.4;
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.25s, transform 0.25s;
+}
+.vp-toast-in { opacity: 1; transform: translateY(0); }
+
 /* Guided tour */
 .vp-tour-backdrop { position: fixed; inset: 0; z-index: 10000; background: transparent; }
 .vp-tour-spotlight {

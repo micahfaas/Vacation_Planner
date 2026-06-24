@@ -6,6 +6,7 @@ import { STORAGE_KEY } from './constants.js';
 import { isoDate } from './dates.js';
 import { browserTz } from './timezone.js';
 import { supabase } from './supabase.js';
+import { toast } from './dom.js';
 
 // Legacy flight/transit cards stored depart/arrive as plain wall-clock
 // strings with no timezone. Default both ends to the browser timezone,
@@ -25,6 +26,12 @@ let userId = null;
 const dirty = new Set();    // trip ids needing an upsert
 const deleted = new Set();  // trip ids needing a delete
 let flushTimer = 0;
+// trip id -> the updated_at we last saw from the server. Lets us detect when
+// another device wrote the same trip between our load and our next write, so a
+// stale tab can no longer silently overwrite newer work.
+const loadedVersions = {};
+let lastRefresh = 0;
+let listenersWired = false;
 
 function cacheKey() { return 'vacation_planner_cache_' + userId; }
 function activeKey() { return 'vacation_planner_active_' + userId; }
@@ -63,10 +70,10 @@ export async function loadTrips(uid) {
   let loaded = false;
   try {
     const { data: rows, error } = await supabase
-      .from('trips').select('id, data').eq('user_id', uid);
+      .from('trips').select('id, data, updated_at').eq('user_id', uid);
     if (error) throw error;
     if (rows && rows.length) {
-      rows.forEach(r => { data.trips[r.id] = r.data; });
+      rows.forEach(r => { data.trips[r.id] = r.data; loadedVersions[r.id] = r.updated_at; });
       loaded = true;
     } else {
       loaded = migrateLegacyTrips();
@@ -85,6 +92,7 @@ export async function loadTrips(uid) {
   Object.values(data.trips).forEach(ensureTripFields);
   reconcileActiveTrip();
   writeCache();
+  wireSyncListeners();
 }
 
 // One-time import of pre-accounts localStorage data into a fresh account.
@@ -165,22 +173,129 @@ async function flush() {
   const toDelete = [...deleted];
   dirty.clear();
   deleted.clear();
+  const conflicts = [];
   try {
-    if (toUpsert.length) {
-      const rows = toUpsert.map(id => ({
-        id, user_id: userId, data: data.trips[id], updated_at: new Date().toISOString()
-      }));
-      const { error } = await supabase.from('trips').upsert(rows);
-      if (error) throw error;
+    for (const id of toUpsert) {
+      const trip = data.trips[id];
+      const stamp = new Date().toISOString();
+      const base = loadedVersions[id];
+      if (base) {
+        // Only overwrite if no other device has written this trip since we
+        // last saw it. The updated_at guard turns a blind last-write-wins
+        // upsert into a detectable conflict.
+        const { data: rows, error } = await supabase.from('trips')
+          .update({ data: trip, updated_at: stamp })
+          .eq('id', id).eq('user_id', userId).eq('updated_at', base)
+          .select('updated_at');
+        if (error) throw error;
+        if (rows && rows.length) loadedVersions[id] = rows[0].updated_at;
+        else conflicts.push(id);
+      } else {
+        // First sync of a locally-created trip: insert it (or adopt an
+        // existing row of the same id, which only happens on a retry).
+        const { data: rows, error } = await supabase.from('trips')
+          .upsert({ id, user_id: userId, data: trip, updated_at: stamp })
+          .select('updated_at');
+        if (error) throw error;
+        if (rows && rows.length) loadedVersions[id] = rows[0].updated_at;
+      }
     }
     if (toDelete.length) {
       const { error } = await supabase.from('trips').delete().in('id', toDelete);
       if (error) throw error;
+      toDelete.forEach(id => { delete loadedVersions[id]; });
     }
   } catch (e) {
     console.warn('Cloud sync failed; will retry.', e);
     toUpsert.forEach(id => dirty.add(id));
     toDelete.forEach(id => deleted.add(id));
     scheduleFlush();
+    return;
   }
+  if (conflicts.length) resolveConflicts(conflicts);
+}
+
+// A trip we tried to write had been changed on another device since we loaded
+// it. Two JSONB snapshots cannot be safely merged, so we reload the server's
+// version (never silently destroying synced work) and tell the user, who can
+// re-apply a small change if needed. Refresh-on-focus makes this rare.
+async function resolveConflicts(ids) {
+  let rows;
+  try {
+    const res = await supabase.from('trips')
+      .select('id, data, updated_at').in('id', ids).eq('user_id', userId);
+    if (res.error) throw res.error;
+    rows = res.data || [];
+  } catch (e) {
+    console.warn('Could not reload conflicting trips.', e);
+    return;
+  }
+  const names = [];
+  rows.forEach(r => {
+    data.trips[r.id] = r.data;
+    ensureTripFields(data.trips[r.id]);
+    loadedVersions[r.id] = r.updated_at;
+    if (r.data && r.data.name) names.push(r.data.name);
+  });
+  reconcileActiveTrip();
+  writeCache();
+  const { render } = await import('./render.js');
+  render();
+  const label = names.length ? '“' + names.join('”, “') + '”' : 'A trip';
+  toast(label + ' was updated on another device, so the latest version was loaded here. Re-apply your change if it is missing.');
+}
+
+// Pull the latest trips from the cloud and fold in anything changed on another
+// device, without disturbing edits still pending on this one. Runs when the
+// app regains focus / visibility / connectivity, which closes the window where
+// a stale tab would overwrite newer work.
+export async function refreshFromCloud() {
+  if (!userId || document.hidden || navigator.onLine === false) return;
+  const now = Date.now();
+  if (now - lastRefresh < 8000) return;
+  lastRefresh = now;
+  let rows;
+  try {
+    const res = await supabase.from('trips')
+      .select('id, data, updated_at').eq('user_id', userId);
+    if (res.error) throw res.error;
+    rows = res.data || [];
+  } catch {
+    return; // offline or transient: keep the local copy
+  }
+  let changed = false;
+  const remoteIds = new Set();
+  rows.forEach(r => {
+    remoteIds.add(r.id);
+    if (dirty.has(r.id)) return;                  // don't clobber pending local edits
+    if (loadedVersions[r.id] !== r.updated_at) {  // newer (or new) on the server
+      data.trips[r.id] = r.data;
+      ensureTripFields(data.trips[r.id]);
+      loadedVersions[r.id] = r.updated_at;
+      changed = true;
+    }
+  });
+  // Trips removed on another device: drop locally only if we had synced them
+  // and have no pending local edit/delete for them.
+  Object.keys(data.trips).forEach(id => {
+    if (!remoteIds.has(id) && loadedVersions[id] && !dirty.has(id) && !deleted.has(id)) {
+      delete data.trips[id];
+      delete loadedVersions[id];
+      changed = true;
+    }
+  });
+  if (changed) {
+    reconcileActiveTrip();
+    writeCache();
+    const { render } = await import('./render.js');
+    render();
+  }
+}
+
+function wireSyncListeners() {
+  if (listenersWired) return;
+  listenersWired = true;
+  document.addEventListener('visibilitychange', refreshFromCloud);
+  window.addEventListener('focus', refreshFromCloud);
+  window.addEventListener('online', refreshFromCloud);
 }
