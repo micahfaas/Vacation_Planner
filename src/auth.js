@@ -111,6 +111,33 @@ export function renderAuthScreen(initialMode) {
     card.appendChild(msg);
     card.appendChild(submit);
 
+    // Social sign-in (not on the password-reset screen). The Google provider is
+    // configured in the Supabase dashboard; on success the browser redirects to
+    // Google and back to redirectTo, where supabase-js completes the session and
+    // the onAuthStateChange listener in main.js routes into the app.
+    if (mode !== 'forgot') {
+      card.appendChild(el('div', { class: 'vp-auth-divider' }, el('span', {}, 'or')));
+      const googleBtn = el('button', { type: 'button', class: 'vp-auth-oauth' },
+        el('i', { class: 'ti ti-brand-google', 'aria-hidden': 'true' }),
+        el('span', {}, 'Continue with Google'));
+      googleBtn.addEventListener('click', async () => {
+        googleBtn.disabled = true;
+        setMsg('', false);
+        try {
+          const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: { redirectTo: location.origin + location.pathname }
+          });
+          if (error) throw error;
+          // Success: the browser is redirecting to Google now.
+        } catch (err) {
+          setMsg(err && err.message ? err.message : 'Could not start Google sign-in.', true);
+          googleBtn.disabled = false;
+        }
+      });
+      card.appendChild(googleBtn);
+    }
+
     if (mode === 'signin') {
       const forgot = el('button', { class: 'vp-auth-toggle vp-auth-forgot' }, 'Forgot password?');
       forgot.addEventListener('click', () => { mode = 'forgot'; draw(); });
