@@ -111,31 +111,35 @@ export function renderAuthScreen(initialMode) {
     card.appendChild(msg);
     card.appendChild(submit);
 
-    // Social sign-in (not on the password-reset screen). The Google provider is
+    // Social sign-in (not on the password-reset screen). Each provider is
     // configured in the Supabase dashboard; on success the browser redirects to
-    // Google and back to redirectTo, where supabase-js completes the session and
-    // the onAuthStateChange listener in main.js routes into the app.
+    // the provider and back to redirectTo, where supabase-js completes the
+    // session and the onAuthStateChange listener in main.js routes into the app.
     if (mode !== 'forgot') {
       card.appendChild(el('div', { class: 'vp-auth-divider' }, el('span', {}, 'or')));
-      const googleBtn = el('button', { type: 'button', class: 'vp-auth-oauth' },
-        el('i', { class: 'ti ti-brand-google', 'aria-hidden': 'true' }),
-        el('span', {}, 'Continue with Google'));
-      googleBtn.addEventListener('click', async () => {
-        googleBtn.disabled = true;
-        setMsg('', false);
-        try {
-          const { error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: { redirectTo: location.origin + location.pathname }
-          });
-          if (error) throw error;
-          // Success: the browser is redirecting to Google now.
-        } catch (err) {
-          setMsg(err && err.message ? err.message : 'Could not start Google sign-in.', true);
-          googleBtn.disabled = false;
-        }
-      });
-      card.appendChild(googleBtn);
+      const oauthButton = (provider, name, icon) => {
+        const btn = el('button', { type: 'button', class: 'vp-auth-oauth' },
+          el('i', { class: 'ti ' + icon, 'aria-hidden': 'true' }),
+          el('span', {}, 'Continue with ' + name));
+        btn.addEventListener('click', async () => {
+          btn.disabled = true;
+          setMsg('', false);
+          try {
+            const { error } = await supabase.auth.signInWithOAuth({
+              provider,
+              options: { redirectTo: location.origin + location.pathname }
+            });
+            if (error) throw error;
+            // Success: the browser is redirecting to the provider now.
+          } catch (err) {
+            setMsg(err && err.message ? err.message : 'Could not start ' + name + ' sign-in.', true);
+            btn.disabled = false;
+          }
+        });
+        return btn;
+      };
+      card.appendChild(oauthButton('google', 'Google', 'ti-brand-google'));
+      card.appendChild(oauthButton('apple', 'Apple', 'ti-brand-apple'));
     }
 
     if (mode === 'signin') {
