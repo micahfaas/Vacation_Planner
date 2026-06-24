@@ -5,6 +5,8 @@
 // { flightNumber, date }; the function answers with HTTP 200 and a body of
 // { ok: true, flights } or { ok: false, error } so the client can branch
 // on a single field. The key is read from the AERODATABOX_KEY secret.
+import { createClient } from 'jsr:@supabase/supabase-js@2';
+
 const HOST = 'aerodatabox.p.rapidapi.com';
 
 const cors = {
@@ -20,12 +22,37 @@ function json(body: unknown, status = 200) {
   });
 }
 
+// Reject anyone who is not a signed-in Supabase user. The public anon key
+// resolves to no user, so this blocks anonymous callers (the cost-abuse
+// vector), while the signed-in app passes through untouched because
+// supabase.functions.invoke() always sends the user's JWT. Returns a Response
+// to send back on rejection, or null when the caller is authenticated.
+async function requireUser(req: Request): Promise<Response | null> {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
+  const authHeader = req.headers.get('Authorization') ?? '';
+  if (supabaseUrl && anonKey && authHeader.startsWith('Bearer ')) {
+    try {
+      const userClient = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: authHeader } },
+        auth: { persistSession: false, autoRefreshToken: false },
+      });
+      const { data } = await userClient.auth.getUser();
+      if (data?.user?.id) return null;
+    } catch { /* fall through to rejection */ }
+  }
+  return json({ ok: false, error: 'Please sign in to use this.' });
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   if (req.method !== 'POST') return json({ ok: false, error: 'Method not allowed.' });
 
   const key = Deno.env.get('AERODATABOX_KEY');
   if (!key) return json({ ok: false, error: 'Flight lookup is not configured.' });
+
+  const denied = await requireUser(req);
+  if (denied) return denied;
 
   let flightNumber = '', date = '';
   try {
