@@ -7,6 +7,8 @@
 // Returns { ok, places: [{ name, address, lat, lng, category }] }.
 // Maps Google place types onto Odynaut's PLACE_CATEGORIES enum so the mobile
 // app can save them directly.
+import { createClient } from 'jsr:@supabase/supabase-js@2';
+
 const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -17,6 +19,28 @@ function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status, headers: { ...cors, 'Content-Type': 'application/json' },
   });
+}
+
+// Reject anyone who is not a signed-in Supabase user. The public anon key
+// resolves to no user, so this blocks anonymous callers (the cost-abuse
+// vector), while the signed-in app passes through untouched because
+// supabase.functions.invoke() always sends the user's JWT. Returns a Response
+// to send back on rejection, or null when the caller is authenticated.
+async function requireUser(req: Request): Promise<Response | null> {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
+  const authHeader = req.headers.get('Authorization') ?? '';
+  if (supabaseUrl && anonKey && authHeader.startsWith('Bearer ')) {
+    try {
+      const userClient = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: authHeader } },
+        auth: { persistSession: false, autoRefreshToken: false },
+      });
+      const { data } = await userClient.auth.getUser();
+      if (data?.user?.id) return null;
+    } catch { /* fall through to rejection */ }
+  }
+  return json({ ok: false, error: 'Please sign in to use this.' });
 }
 
 // Google place types -> Odynaut place categories. Order matters: first match
@@ -71,6 +95,9 @@ Deno.serve(async (req) => {
 
   const key = Deno.env.get('GOOGLE_PLACES_KEY');
   if (!key) return json({ ok: false, error: 'Place search is not configured.' });
+
+  const denied = await requireUser(req);
+  if (denied) return denied;
 
   let lat = 0, lng = 0, radius = 1500, category = '';
   try {

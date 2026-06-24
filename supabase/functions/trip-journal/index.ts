@@ -3,6 +3,16 @@
 // Generates a day-by-day narrative journal of a completed trip using Claude.
 // Input: { trip } with cards, schedule, dates, locations. Output: markdown
 // the client renders as styled HTML. ANTHROPIC_API_KEY is a server-side secret.
+import { createClient } from 'jsr:@supabase/supabase-js@2';
+
+// AI usage quotas (cost guardrails). The journal is a deliberate, once-per-trip
+// Claude call, so a per-user monthly cap fits cleanly. Enforced before the
+// Anthropic call; only successful calls are counted. Tunable here with a
+// redeploy. See supabase/usage.sql + project_ai_cost_guardrails.
+const FEATURE = 'trip-journal';
+const USER_MONTHLY_LIMIT = 30;
+const GLOBAL_DAILY_LIMIT = 100;
+
 const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -52,6 +62,54 @@ Deno.serve(async (req) => {
   const key = Deno.env.get('ANTHROPIC_API_KEY');
   if (!key) return json({ ok: false, error: 'Trip journal is not configured.' });
 
+  // Require a signed-in user (fail closed) and enforce usage quotas before
+  // spending on the model. The public anon key resolves to no user, so
+  // anonymous callers (the cost-abuse vector) are rejected here. The signed-in
+  // app always sends the user's JWT via supabase.functions.invoke().
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  const authHeader = req.headers.get('Authorization') ?? '';
+
+  let uid: string | null = null;
+  if (supabaseUrl && anonKey && authHeader.startsWith('Bearer ')) {
+    try {
+      const userClient = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: authHeader } },
+        auth: { persistSession: false, autoRefreshToken: false },
+      });
+      const { data: userData } = await userClient.auth.getUser();
+      uid = userData?.user?.id ?? null;
+    } catch {
+      uid = null;
+    }
+  }
+  if (!uid) return json({ ok: false, error: 'Please sign in to use this.' });
+
+  const admin = (supabaseUrl && serviceKey)
+    ? createClient(supabaseUrl, serviceKey, {
+        auth: { persistSession: false, autoRefreshToken: false },
+      })
+    : null;
+  if (admin) {
+    try {
+      const { data: status } = await admin.rpc('ai_quota_check', {
+        p_user_id: uid,
+        p_feature: FEATURE,
+        p_user_limit: USER_MONTHLY_LIMIT,
+        p_global_limit: GLOBAL_DAILY_LIMIT,
+      });
+      if (status === 'user_limit') {
+        return json({ ok: false, error: "You have reached this month's journal limit. It resets on the 1st." });
+      }
+      if (status === 'global_limit') {
+        return json({ ok: false, error: 'The journal writer is taking a breather right now — please try again later.' });
+      }
+    } catch {
+      // Fail open on a metering hiccup: identity is already verified above.
+    }
+  }
+
   let trip: unknown;
   try {
     const body = await req.json();
@@ -96,6 +154,13 @@ Deno.serve(async (req) => {
 
   const block = (data.content || []).find((b) => b && b.type === 'text');
   if (!block || !block.text) return json({ ok: false, error: 'The AI returned no journal.' });
+
+  // Successful call — count it against the quotas (best effort).
+  if (admin) {
+    try {
+      await admin.rpc('ai_quota_increment', { p_user_id: uid, p_feature: FEATURE });
+    } catch { /* metering is best-effort */ }
+  }
 
   return json({ ok: true, markdown: block.text });
 });
