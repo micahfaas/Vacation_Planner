@@ -3944,3 +3944,39 @@ a.vp-res-link-title:hover span { text-decoration: underline; }
 }
 .vp-place-popup-actions button:hover,
 .vp-place-popup-link:hover { background: var(--surface-2); }
+
+/* Auth screen: "or" divider + social sign-in button. */
+.vp-auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0;
+  color: var(--text-3);
+  font-size: var(--text-xs);
+}
+.vp-auth-divider::before,
+.vp-auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 0.5px;
+  background: var(--border);
+}
+.vp-auth-oauth {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  font-family: inherit;
+  font-size: var(--text-sm);
+  color: var(--text);
+  background: var(--surface);
+  border: 0.5px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.vp-auth-oauth:hover { background: var(--surface-2); }
+.vp-auth-oauth:disabled { opacity: 0.6; cursor: default; }
+.vp-auth-oauth i { font-size: var(--text-lg); }
