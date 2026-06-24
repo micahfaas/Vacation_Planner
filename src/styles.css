@@ -4008,3 +4008,21 @@ a.vp-res-link-title:hover span { text-decoration: underline; }
 .vp-auth-oauth:hover { background: var(--surface-2); }
 .vp-auth-oauth:disabled { opacity: 0.6; cursor: default; }
 .vp-auth-oauth i { font-size: var(--text-lg); }
+
+/* Inline points-coverage advisor under the card editor's points fields. */
+.vp-points-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: var(--text-xs);
+  line-height: 1.4;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text-2);
+}
+.vp-points-hint i { font-size: 14px; flex: none; margin-top: 1px; }
+.vp-points-hint-good { background: var(--booked-bg); color: var(--booked); }
+.vp-points-hint-warn { background: var(--warning-bg); color: var(--warning); }
+.vp-points-hint-muted { background: var(--surface-2); color: var(--text-3); }

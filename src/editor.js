@@ -2,6 +2,7 @@
 import { activeTrip } from './state.js';
 import { TYPES, CITY_STAY_COLORS } from './constants.js';
 import { getPointsBalances, getProfile } from './profile.js';
+import { matchProgram, matchCurrency, transfersInto, ratioLabel } from './transfers.js';
 import { el, collapsible } from './dom.js';
 import { addCard, removeCard, duplicateCard } from './cards.js';
 import { save } from './storage.js';
@@ -98,6 +99,26 @@ export function openEditor(id, addTarget) {
     });
     return dl;
   }
+
+  // Live "can I cover this?" hint under the points fields: checks the entered
+  // points cost + program against the user's saved balances and the transfer
+  // graph, so they see at the point of entry whether they can pay this leg and,
+  // if not directly, which flexible currency to transfer from. Reuses
+  // transfers.js. The inputs persist across type switches, so the listeners are
+  // attached once here; the hint element is re-parented into the points section
+  // each time renderDynamic rebuilds it.
+  const pointsHint = el('div', { class: 'vp-points-hint', style: { display: 'none' } });
+  function updatePointsHint() {
+    pointsHint.innerHTML = '';
+    const hint = buildCoverageHint(pointsCostIn.value, pointsProgramIn.value);
+    if (!hint) { pointsHint.style.display = 'none'; return; }
+    pointsHint.style.display = '';
+    pointsHint.className = 'vp-points-hint vp-points-hint-' + hint.tone;
+    pointsHint.appendChild(el('i', { class: 'ti ' + HINT_ICON[hint.tone], 'aria-hidden': 'true' }));
+    pointsHint.appendChild(el('span', {}, hint.text));
+  }
+  pointsCostIn.addEventListener('input', updatePointsHint);
+  pointsProgramIn.addEventListener('input', updatePointsHint);
 
   const notesIn = el('textarea', { placeholder: 'Confirmation #, address, links, anything else…' });
   notesIn.value = c.notes || '';
@@ -204,6 +225,8 @@ export function openEditor(id, addTarget) {
         field('Program', pointsProgramIn)
       ));
       ptsSec.body.appendChild(buildPointsDatalist());
+      ptsSec.body.appendChild(pointsHint);
+      updatePointsHint();
       dynamic.appendChild(ptsSec.el);
     } else {
       dynamic.appendChild(cityLabel);
@@ -387,5 +410,91 @@ function renderLoungeBlock(card) {
     });
   });
   return block;
+}
+
+// ---- Inline points-coverage advisor ----
+const HINT_ICON = { good: 'ti-check', warn: 'ti-alert-triangle', muted: 'ti-info-circle' };
+
+// Compact points formatting: 75000 -> "75k", 1500 -> "1.5k", 800 -> "800".
+function fmtK(n) {
+  n = Math.round(n);
+  if (n >= 1000) {
+    const k = n / 1000;
+    return (Number.isInteger(k) ? k : k.toFixed(1)) + 'k';
+  }
+  return n.toLocaleString();
+}
+
+// Transfers move in 1,000-point blocks, so round any required amount up.
+function roundUp1000(n) { return Math.ceil(n / 1000) * 1000; }
+
+// Instant transfers first when choosing the best source currency.
+function speedRank(s) { return /instant/i.test(s || '') ? 0 : 1; }
+
+// Given the points cost and program a leg is paid with, decide whether the
+// user can cover it from their saved balances (directly or via a transfer) and
+// return { tone, text } for the inline hint, or null when there is nothing
+// useful to say. Pure read of getPointsBalances() + the transfers.js graph.
+function buildCoverageHint(pointsCostVal, programText) {
+  const need = parseFloat(pointsCostVal) || 0;
+  const progTxt = (programText || '').trim();
+  if (!(need > 0) || !progTxt) return null;
+
+  const balances = getPointsBalances()
+    .filter(b => b && b.name && (parseFloat(b.balance) || 0) > 0);
+  if (!balances.length) {
+    return { tone: 'muted', text: 'Add your points balances on the Plan tab to see whether you can cover this.' };
+  }
+
+  const prog = matchProgram(progTxt);
+  const progLabel = prog ? prog.name : progTxt;
+
+  // Points already held in the exact program this leg needs.
+  let directHave = 0;
+  balances.forEach(b => {
+    const amt = parseFloat(b.balance) || 0;
+    const bp = matchProgram(b.name);
+    if (prog && bp && bp.id === prog.id) directHave += amt;
+    else if (!prog && b.name.trim().toLowerCase() === progTxt.toLowerCase()) directHave += amt;
+  });
+
+  if (directHave >= need) {
+    return { tone: 'good', text: `You have enough ${progLabel}: ${fmtK(directHave)} of ${fmtK(need)} needed.` };
+  }
+
+  // Off-graph program (e.g. a hotel currency or an unrecognized name): we can
+  // compare a directly-held balance but cannot reason about transfers.
+  if (!prog) {
+    if (directHave > 0) {
+      return { tone: 'warn', text: `Short ${fmtK(need - directHave)} ${progLabel} (have ${fmtK(directHave)} of ${fmtK(need)}).` };
+    }
+    return { tone: 'muted', text: `Transfer options are tracked for airline programs; “${progTxt}” isn’t one I can check.` };
+  }
+
+  // Airline program in the graph: find held flexible currencies that transfer
+  // into it, and whether one can cover the shortfall.
+  const shortfall = need - directHave;
+  const held = [];
+  balances.forEach(b => {
+    const currency = matchCurrency(b.name);
+    if (currency) held.push({ balance: parseFloat(b.balance) || 0, currency });
+  });
+  const options = transfersInto(prog.id, held).map(o => {
+    const fromNeeded = roundUp1000(Math.ceil(shortfall / o.ratio));
+    return { ...o, fromNeeded, enough: o.balance >= fromNeeded };
+  }).sort((a, b) =>
+    (b.enough - a.enough) || (speedRank(a.speed) - speedRank(b.speed)) || (a.fromNeeded - b.fromNeeded)
+  );
+
+  const head = directHave > 0 ? `Short ${fmtK(shortfall)} ${progLabel}.` : `You don't hold ${progLabel}.`;
+  const best = options[0];
+  if (!best) {
+    return { tone: 'warn', text: `${head} None of your saved balances transfer in.` };
+  }
+  const speed = best.speed ? `, ${best.speed}` : '';
+  if (best.enough) {
+    return { tone: 'good', text: `${head} Transfer ${fmtK(best.fromNeeded)} from ${best.currency.name} (${ratioLabel(best.ratio)}${speed}).` };
+  }
+  return { tone: 'warn', text: `${head} ${best.currency.name} transfers in (${ratioLabel(best.ratio)}${speed}) but won’t fully cover it.` };
 }
 
