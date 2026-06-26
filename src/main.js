@@ -18,9 +18,12 @@ import { startTour, tourSeen } from './tour.js';
 import { loadProfile, openProfileDialog } from './profile.js';
 import { loadFavorites, openSavedPlaces } from './favorites.js';
 import { loadVault } from './vault.js';
+import { loadEntitlement, isPaid } from './entitlements.js';
+import { openUpgradeModal } from './upgrade.js';
+import { openBillingPortal } from './billing.js';
 import { openBenefits } from './benefits.js';
 import { openDestinationGuide } from './destination-guide.js';
-import { el } from './dom.js';
+import { el, toast } from './dom.js';
 
 // Register the service worker for offline support (production builds only,
 // so it never interferes with the Vite dev server's hot reload).
@@ -50,6 +53,10 @@ let pendingShare = [params.get('shared_title'), params.get('shared_text'), param
 // active trip loads (see showApp).
 let pendingSharedPhotoCount = parseInt(params.get('shared_photos') || '0', 10) || 0;
 
+// Stripe Checkout redirects back to /?upgraded=1 on success; we refresh the
+// plan (the webhook may land a moment later) and confirm to the user.
+let pendingUpgrade = params.get('upgraded') === '1';
+
 // Read and remove the photos the service worker stashed for a share.
 async function drainSharedPhotos() {
   const files = [];
@@ -77,7 +84,7 @@ if (shareToken) {
         'or sharing was turned off.</div>';
     });
 } else {
-  if (pendingShare || pendingSharedPhotoCount) history.replaceState({}, '', location.pathname);
+  if (pendingShare || pendingSharedPhotoCount || pendingUpgrade) history.replaceState({}, '', location.pathname);
   bootApp();
 }
 
@@ -100,14 +107,20 @@ function bootApp() {
   ]));
 
   const accountBtn = document.getElementById('vp-account-btn');
-  accountBtn.addEventListener('click', () => popupMenu(accountBtn, [
-    ['About me', 'ti-user', openProfileDialog],
-    ['Privacy policy', 'ti-shield-lock', () => window.open('privacy.html', '_blank')],
-    ['Sign out', 'ti-logout', () =>
-      confirmDialog('Sign out of Odynaut?', { confirmText: 'Sign out' })
-        .then(ok => { if (ok) signOut(); })],
-    ['Delete account', 'ti-trash', deleteAccount],
-  ]));
+  accountBtn.addEventListener('click', () => {
+    const planItem = isPaid()
+      ? ['Manage plan', 'ti-credit-card', openBillingPortal]
+      : ['Upgrade plan', 'ti-sparkles', () => openUpgradeModal()];
+    popupMenu(accountBtn, [
+      ['About me', 'ti-user', openProfileDialog],
+      planItem,
+      ['Privacy policy', 'ti-shield-lock', () => window.open('privacy.html', '_blank')],
+      ['Sign out', 'ti-logout', () =>
+        confirmDialog('Sign out of Odynaut?', { confirmText: 'Sign out' })
+          .then(ok => { if (ok) signOut(); })],
+      ['Delete account', 'ti-trash', deleteAccount],
+    ]);
+  });
 
   // Two-step destructive flow that calls the delete-account edge function.
   // Apple App Store guideline 5.1.1(v) requires in-app deletion; on the web
@@ -141,8 +154,12 @@ function bootApp() {
     document.getElementById('vp-account-email').textContent = user.email || 'Account';
     accountBtn.hidden = false;
     root.innerHTML = '<div class="vp-loading">Loading your trips…</div>';
-    await Promise.all([loadTrips(user.id), loadProfile(user.id), loadFavorites(user.id), loadVault(user.id)]);
+    await Promise.all([loadTrips(user.id), loadProfile(user.id), loadFavorites(user.id), loadVault(user.id), loadEntitlement(user.id)]);
     render();
+    if (pendingUpgrade) {
+      pendingUpgrade = false;
+      refreshEntitlementAfterCheckout(user.id);
+    }
     // First-time walk-through (skipped if a share/photo import is pending).
     if (!tourSeen() && !pendingShare && !pendingSharedPhotoCount) {
       startTour(false);
@@ -160,6 +177,23 @@ function bootApp() {
         ingestSharedPhotos(files);
       }
     }
+  }
+
+  // After a successful Stripe Checkout redirect, the subscription webhook may
+  // land a second or two later. Poll a few times so the new plan shows without
+  // a manual refresh, then confirm.
+  async function refreshEntitlementAfterCheckout(uid) {
+    for (let i = 0; i < 6; i++) {
+      const tier = await loadEntitlement(uid);
+      if (tier !== 'free') {
+        const name = tier.charAt(0).toUpperCase() + tier.slice(1);
+        toast('Welcome to ' + name + ' — your upgrade is active. Thank you!');
+        render();
+        return;
+      }
+      await new Promise(r => setTimeout(r, 1500));
+    }
+    toast('Payment received — your upgrade will activate shortly.');
   }
 
   function showSignedOut() {

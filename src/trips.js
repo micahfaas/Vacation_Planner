@@ -8,6 +8,8 @@ import { openShareDialog } from './share.js';
 import { confirmDialog, promptDialog } from './dialog.js';
 import { loadDemoTrip } from './demo.js';
 import { openTripIdeas } from './tripideas.js';
+import { gatingActive, canAdd, limitFor } from './entitlements.js';
+import { requireUpgrade } from './upgrade.js';
 
 export function openTripsMenu() {
   const bg = el('div', { class: 'vp-modal-bg', onclick: e => { if (e.target === bg) bg.remove(); } });
@@ -130,6 +132,13 @@ export function openTripsMenu() {
   right.appendChild(el('button', {
     class: 'vp-save',
     onclick: async () => {
+      const activeCount = Object.values(data.trips).filter(t => !t.archived).length;
+      if (gatingActive() && !canAdd('trips', activeCount)) {
+        bg.remove();
+        requireUpgrade('The free plan includes up to ' + limitFor('trips') +
+          ' trips. Upgrade to Plus for unlimited trips.', 'plus');
+        return;
+      }
       const name = await promptDialog('Name for new trip', 'New trip', { title: 'New trip' });
       if (!name || !name.trim()) return;
       const id = newTripId();
