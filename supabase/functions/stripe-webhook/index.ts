@@ -74,12 +74,27 @@ Deno.serve(async (req) => {
   });
 
   // deno-lint-ignore no-explicit-any
-  const sub = event.data.object as any;
+  const evtSub = event.data.object as any;
+  const subId: string = evtSub.id;
+
+  // Stripe events can arrive OUT OF ORDER, so an older 'incomplete' status can
+  // otherwise clobber a newer 'active' one. Re-fetch the subscription's current
+  // truth so the event order cannot matter. ('deleted' is terminal — trust it.)
+  // deno-lint-ignore no-explicit-any
+  let sub: any = evtSub;
+  if (event.type !== 'customer.subscription.deleted') {
+    try {
+      sub = await stripe.subscriptions.retrieve(subId);
+    } catch (_e) {
+      sub = evtSub; // fall back to the event payload if the re-fetch fails
+    }
+  }
+
   const customerId: string = typeof sub.customer === 'string' ? sub.customer : sub.customer?.id;
 
   // Resolve the user: prefer the metadata we stamped at checkout, else look the
   // customer up in our own table (the checkout flow created that row first).
-  let userId: string | undefined = sub.metadata?.user_id;
+  let userId: string | undefined = sub.metadata?.user_id ?? evtSub.metadata?.user_id;
   if (!userId && customerId) {
     const { data } = await admin
       .from('subscriptions').select('user_id').eq('stripe_customer_id', customerId).maybeSingle();
