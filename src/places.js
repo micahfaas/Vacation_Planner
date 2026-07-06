@@ -12,7 +12,7 @@ import { render } from './render.js';
 export function focusPlace(placeId) {
   const t = activeTrip();
   if (!t || !(t.places || []).some(p => p.id === placeId)) return;
-  ui.placeFilter = 'all';
+  ui.placeFilter = [];
   ui.placeCityFilter = 'all';
   ui.focusPlaceId = placeId;
   ui.view = 'places';
@@ -961,9 +961,21 @@ export function renderPlacesView() {
       .sort((a, b) => a[1].localeCompare(b[1]))
   );
   cats.forEach(([k, label]) => {
+    // "all" is on when nothing is selected; a category chip is on when it's in
+    // the selected set. Tapping a chip toggles it; tapping "all" clears the set.
+    const on = k === 'all' ? ui.placeFilter.length === 0 : ui.placeFilter.includes(k);
     filterRow.appendChild(el('button', {
-      class: 'vp-chip' + (ui.placeFilter === k ? ' vp-chip-on' : ''),
-      onclick: () => { ui.placeFilter = k; render(); }
+      class: 'vp-chip' + (on ? ' vp-chip-on' : ''),
+      onclick: () => {
+        if (k === 'all') {
+          ui.placeFilter = [];
+        } else {
+          const i = ui.placeFilter.indexOf(k);
+          if (i >= 0) ui.placeFilter.splice(i, 1);
+          else ui.placeFilter.push(k);
+        }
+        render();
+      }
     }, label));
   });
   // Favorites-only toggle — filters both the list and the map to starred places.
@@ -1010,7 +1022,7 @@ export function renderPlacesView() {
   if (all.length) panel.appendChild(searchIn);
 
   const visible = all.filter(p =>
-    (ui.placeFilter === 'all' || p.category === ui.placeFilter) &&
+    (ui.placeFilter.length === 0 || ui.placeFilter.includes(p.category)) &&
     (ui.placeCityFilter === 'all' || placeCity(p) === ui.placeCityFilter) &&
     (!ui.placeFavOnly || !!p.favoriteId)
   );
