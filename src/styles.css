@@ -1583,6 +1583,22 @@ body.vp-shared .vp-footer { display: none; }
   color: #fff;
 }
 .vp-place-marker .vp-place-marker-pin i { font-size: 16px; line-height: 1; }
+/* Hovering a place card grows + bounces its pin so it stands out in a cluster. */
+.vp-place-marker .vp-place-marker-pin { transition: transform .15s ease, box-shadow .15s ease; }
+.vp-place-marker.vp-place-marker-hover .vp-place-marker-pin {
+  transform: scale(1.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  animation: vp-pin-bounce .5s ease;
+}
+@keyframes vp-pin-bounce {
+  0%   { transform: scale(1) translateY(0); }
+  35%  { transform: scale(1.55) translateY(-5px); }
+  65%  { transform: scale(1.3) translateY(2px); }
+  100% { transform: scale(1.4) translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vp-place-marker.vp-place-marker-hover .vp-place-marker-pin { animation: none; }
+}
 
 /* current-location dot + per-place distance */
 .vp-user-marker { background: transparent; border: 0; }

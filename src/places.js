@@ -503,6 +503,10 @@ function renderPlaceCard(p) {
     }
   });
 
+  // Hovering a card makes its pin pop on the map so it's easy to find.
+  card.addEventListener('mouseenter', () => highlightPlaceMarker(p.id, true));
+  card.addEventListener('mouseleave', () => highlightPlaceMarker(p.id, false));
+
   const top = el('div', { class: 'vp-place-top' });
   top.appendChild(el('i', { class: 'ti ' + cat.icon + ' vp-place-icon' }));
   top.appendChild(el('div', { class: 'vp-place-name' }, p.name || 'Untitled place'));
@@ -808,6 +812,17 @@ function focusPlaceOnMap(p) {
     mapDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
   return true;
+}
+
+// Pop a place's map pin (grow + bounce + raise above its neighbors) while its
+// card is hovered, so it's easy to spot in a dense cluster. No-op for places
+// without coordinates (no marker exists).
+function highlightPlaceMarker(id, on) {
+  const mk = placeMarkers[id];
+  if (!mk) return;
+  const elm = mk.getElement();
+  if (elm) elm.classList.toggle('vp-place-marker-hover', on);
+  mk.setZIndexOffset(on ? 1000 : 0);
 }
 
 function userMarkerIcon() {
