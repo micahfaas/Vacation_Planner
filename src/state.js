@@ -15,7 +15,8 @@ export function activeTrip() { return data.trips[data.activeTripId]; }
 // over the Calendar as a non-destructive overlay.
 export const ui = {
   view: 'calendar',
-  placeFilter: 'all',
+  // Selected place categories (multi-select). Empty array = show all categories.
+  placeFilter: [],
   placeCityFilter: 'all',
   dayDate: null,
   planSelectedDraftId: null,
