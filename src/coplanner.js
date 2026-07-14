@@ -11,6 +11,7 @@ import { TYPES } from './constants.js';
 import { aiCardToCandidate } from './import-ai.js';
 import { addPlace } from './places.js';
 import { profileSummary } from './profile.js';
+import { allowAiCall, noteAiCall } from './aiusage.js';
 import { geocodePlace } from './geocoding.js';
 
 // ---------- trip context sent to the model ----------
@@ -249,6 +250,8 @@ export function openCoPlanner() {
   async function ask() {
     const prompt = ta.value.trim();
     if (!prompt) { ta.focus(); return; }
+    if (!allowAiCall('co-planner',
+      { reason: "You've used this month's free co-planner questions. Upgrade to Plus for more." })) return;
     askBtn.disabled = true;
     out.innerHTML = '';
     out.appendChild(el('div', { class: 'vp-coplan-status' }, 'Thinking — this can take a moment…'));
@@ -261,6 +264,7 @@ export function openCoPlanner() {
       if (!data || data.ok !== true) {
         throw new Error((data && data.error) || 'The co-planner could not respond.');
       }
+      noteAiCall('co-planner');
       renderResult(out, data);
     } catch (e) {
       out.innerHTML = '';

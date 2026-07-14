@@ -13,6 +13,7 @@
 import { supabase } from './supabase.js';
 import { alertDialog } from './dialog.js';
 import { CHECKOUT_LIVE } from './entitlements.js';
+import { track } from './analytics.js';
 
 export async function beginCheckout(tier, interval = 'year') {
   if (!CHECKOUT_LIVE) {
@@ -22,6 +23,7 @@ export async function beginCheckout(tier, interval = 'year') {
       { title: 'Almost ready' }
     );
   }
+  track('Upgrade: Checkout Started', { tier, interval });
   try {
     const { data, error } = await supabase.functions.invoke('create-checkout-session', {
       body: { tier, interval },
@@ -31,6 +33,23 @@ export async function beginCheckout(tier, interval = 'year') {
     window.location.assign(data.url);
   } catch (err) {
     alertDialog(err?.message || 'Something went wrong starting checkout.', { title: 'Checkout error' });
+  }
+}
+
+// Redeem a comp / invite code. Unlike checkout, this does NOT depend on
+// CHECKOUT_LIVE -- comp codes are the friends/family seeding mechanism and must
+// work before Stripe is live. Returns { ok, tier } on success or { ok:false,
+// error } with a user-facing message. The caller refreshes the entitlement.
+export async function redeemCompCode(code) {
+  try {
+    const { data, error } = await supabase.functions.invoke('redeem-comp-code', {
+      body: { code },
+    });
+    if (error) throw error;
+    if (!data?.ok) return { ok: false, error: data?.error || 'That code could not be redeemed.' };
+    return { ok: true, tier: data.tier };
+  } catch (err) {
+    return { ok: false, error: err?.message || 'Something went wrong redeeming the code.' };
   }
 }
 

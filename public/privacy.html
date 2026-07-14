@@ -62,7 +62,7 @@
     <img src="odynaut-globe.png" alt="" />
     <h1>Odynaut — Privacy Policy</h1>
   </header>
-  <p class="meta">Last updated: May 27, 2026</p>
+  <p class="meta">Last updated: July 14, 2026</p>
 
   <p>
     Odynaut is a trip-planning app available as a website and as a native iOS app. This
@@ -77,13 +77,15 @@
     <li><strong>Notes you write for the AI co-planner and trip-ideas tools</strong> — sent to the AI model so it can answer you. Not used for training.</li>
     <li><strong>Push-notification token</strong> — if you allow notifications, we store the device token issued by Apple Push or the equivalent web push endpoint so we can send you alerts you have asked for (e.g. award-flight availability).</li>
     <li><strong>Approximate location</strong> — only when you use the “Near me” feature, and only while you are using it. Location is sent to find nearby venues and is not stored.</li>
+    <li><strong>Payment information</strong> — if you subscribe to a paid plan, our payment processor (Stripe) collects and processes your payment details directly. We never see or store your full card number; we store only a Stripe customer / subscription identifier and your plan status so we know which features to unlock.</li>
   </ul>
 
   <h2>What we do <em>not</em> collect</h2>
   <ul>
-    <li>We do not run analytics or ad tracking.</li>
-    <li>We do not sell your data, and there is no third-party advertising in the app.</li>
+    <li>We do not show ads or do cross-site / behavioral ad tracking.</li>
+    <li>We do not sell your data.</li>
     <li>We do not access your contacts, photos, calendar, or microphone.</li>
+    <li>We never see or store your full payment-card number — that stays with our payment processor (see “Payments &amp; analytics”).</li>
   </ul>
 
   <h2>Where your data lives</h2>
@@ -97,11 +99,29 @@
   <h3>Third-party services we use</h3>
   <ul>
     <li><strong>Supabase</strong> — authentication, database, push delivery.</li>
+    <li><strong>Stripe</strong> — processes subscription payments. Your card details go directly to Stripe; we receive only your plan status and identifiers, never your full card number.</li>
+    <li><strong>Plausible Analytics</strong> (if enabled) — a privacy-friendly, cookieless analytics service that counts aggregate events (e.g. how many people open the pricing screen) with no cookies and no personal data.</li>
     <li><strong>Anthropic</strong> — powers the AI co-planner and trip-ideas features. Requests you send are processed by Anthropic to generate a response and are not used to train models.</li>
     <li><strong>Google Places</strong> — only used when you use “Near me” or autocomplete an address; we forward your search to Google and return the result.</li>
     <li><strong>Apple Push Notification service</strong> and <strong>Web Push (VAPID)</strong> — delivery channels for the alerts you opt into.</li>
     <li><strong>Sign in with Apple</strong> / <strong>Sign in with Google</strong> — optional sign-in providers. They tell us only the identifier and (if you choose) your email address.</li>
   </ul>
+
+  <h2>Payments &amp; analytics</h2>
+  <p>
+    When you buy a paid plan, payment is handled by
+    <a href="https://stripe.com/privacy" target="_blank" rel="noopener">Stripe</a>. Your card
+    details are entered on Stripe's secure checkout and go directly to Stripe — Odynaut never
+    receives or stores your full card number. We keep only the information needed to manage your
+    subscription (a Stripe customer / subscription id, your plan, and its status).
+  </p>
+  <p>
+    To understand how Odynaut is used and improve it, we may use
+    <a href="https://plausible.io/data-policy" target="_blank" rel="noopener">Plausible Analytics</a>,
+    a privacy-friendly service that is <strong>cookieless</strong> and collects only aggregate,
+    anonymous usage counts (for example, how many people viewed the pricing screen). It does not
+    use cookies, does not collect personal data, and does not track you across other websites.
+  </p>
 
   <h2>How to delete your account</h2>
   <p>
@@ -135,7 +155,7 @@
   <p>
     If you have any questions, want to request your data, or want us to delete your
     account on your behalf, email
-    <a href="mailto:micahfaas@gmail.com">micahfaas@gmail.com</a>.
+    <a href="mailto:getodynaut@gmail.com">getodynaut@gmail.com</a>.
   </p>
 
   <h2>Changes</h2>

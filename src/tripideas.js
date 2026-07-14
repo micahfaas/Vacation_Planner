@@ -12,6 +12,7 @@ import { addCard } from './cards.js';
 import { supabase } from './supabase.js';
 import { getPointsBalances, profileSummary } from './profile.js';
 import { expandBalance, LAST_VERIFIED } from './transfers.js';
+import { allowAiCall, noteAiCall } from './aiusage.js';
 
 const ORIGIN_KEY = 'trip_ideas_origin';
 
@@ -181,6 +182,8 @@ export function openTripIdeas() {
     // (e.g. RDM) authoritatively instead of the model guessing it.
     const context = parts.join('\n');
 
+    if (!allowAiCall('trip-ideas',
+      { reason: "You've used this month's free trip-ideas requests. Upgrade to Plus for more." })) return;
     goBtn.disabled = true;
     out.innerHTML = '';
     out.appendChild(el('div', { class: 'vp-coplan-status' }, 'Dreaming up ideas — this can take a moment…'));
@@ -191,6 +194,7 @@ export function openTripIdeas() {
       if (!data2 || data2.ok !== true) {
         throw new Error((data2 && data2.error) || 'Could not generate ideas.');
       }
+      noteAiCall('trip-ideas');
       out.innerHTML = '';
       if (data2.reply) out.appendChild(el('div', { class: 'vp-coplan-reply' }, data2.reply));
       const ideas = Array.isArray(data2.ideas) ? data2.ideas : [];

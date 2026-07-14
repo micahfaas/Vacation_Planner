@@ -12,6 +12,8 @@ import { getUserId } from './storage.js';
 import { parseISO } from './dates.js';
 import { alertDialog } from './dialog.js';
 import { pushReady, isSubscribed, enablePush, notificationPermission } from './push.js';
+import { gatingActive, hasFeature } from './entitlements.js';
+import { requireUpgrade } from './upgrade.js';
 
 const CACHE_KEY = 'vacation_planner_benefits_';
 const LEAD_DAYS = [30, 7, 1];
@@ -210,6 +212,13 @@ export function upcomingDeadlines(b) {
 export async function regenerateBenefitWatchers(b) {
   const uid = getUserId();
   if (!uid) return 0;
+  // Expiry reminders are a Plus feature. On the free plan the tracker is
+  // view/edit-only: clear any existing reminders and don't schedule new ones.
+  if (gatingActive() && !hasFeature('benefitsReminders')) {
+    await supabase.from('watchers').delete()
+      .eq('user_id', uid).eq('type', 'benefit').eq('status', 'pending');
+    return 0;
+  }
   const del = await supabase.from('watchers').delete()
     .eq('user_id', uid).eq('type', 'benefit').eq('status', 'pending');
   if (del.error) throw del.error;
@@ -383,11 +392,25 @@ export async function openBenefits() {
   m.appendChild(el('p', { class: 'vp-profile-sub' },
     'Track card fees, credits, certificates, and expiring points — with push reminders 30, 7, and 1 days before each deadline. Use the bell to mute any item.'));
 
+  // Expiry reminders are a Plus feature. On the free plan, show an upgrade nudge
+  // where the enable-notifications banner would go — the tracker itself stays
+  // fully usable, just without push reminders.
+  const remindersLocked = gatingActive() && !hasFeature('benefitsReminders');
+
   // Same enable-notifications banner as Booking reminders.
   const banner = el('div', { class: 'vp-watch-banner' });
   m.appendChild(banner);
   (async function refreshBanner() {
     banner.innerHTML = '';
+    if (remindersLocked) {
+      banner.appendChild(el('div', { class: 'vp-watch-note' },
+        'Expiry reminders (30, 7 & 1 days before each deadline) are a Plus feature.'));
+      const up = el('button', { class: 'vp-save' }, 'Upgrade to Plus');
+      up.addEventListener('click', () => requireUpgrade(
+        'Get push reminders before every credit, certificate, and points deadline expires.', 'plus'));
+      banner.appendChild(up);
+      return;
+    }
     const ready = await pushReady();
     if (!ready) {
       banner.appendChild(el('div', { class: 'vp-watch-note' },

@@ -3,6 +3,8 @@ import { activeTrip } from './state.js';
 import { TYPES, CITY_STAY_COLORS } from './constants.js';
 import { getPointsBalances, getProfile } from './profile.js';
 import { matchProgram, matchCurrency, transfersInto, ratioLabel } from './transfers.js';
+import { transferAdvisorLocked } from './entitlements.js';
+import { requireUpgrade } from './upgrade.js';
 import { el, collapsible } from './dom.js';
 import { addCard, removeCard, duplicateCard } from './cards.js';
 import { save } from './storage.js';
@@ -116,6 +118,14 @@ export function openEditor(id, addTarget) {
     pointsHint.className = 'vp-points-hint vp-points-hint-' + hint.tone;
     pointsHint.appendChild(el('i', { class: 'ti ' + HINT_ICON[hint.tone], 'aria-hidden': 'true' }));
     pointsHint.appendChild(el('span', {}, hint.text));
+    if (hint.tone === 'upgrade') {
+      pointsHint.style.cursor = 'pointer';
+      pointsHint.onclick = () => requireUpgrade(
+        'See whether your points cover this leg — directly or via a transfer.', 'plus');
+    } else {
+      pointsHint.style.cursor = '';
+      pointsHint.onclick = null;
+    }
   }
   pointsCostIn.addEventListener('input', updatePointsHint);
   pointsProgramIn.addEventListener('input', updatePointsHint);
@@ -413,7 +423,7 @@ function renderLoungeBlock(card) {
 }
 
 // ---- Inline points-coverage advisor ----
-const HINT_ICON = { good: 'ti-check', warn: 'ti-alert-triangle', muted: 'ti-info-circle' };
+const HINT_ICON = { good: 'ti-check', warn: 'ti-alert-triangle', muted: 'ti-info-circle', upgrade: 'ti-lock' };
 
 // Compact points formatting: 75000 -> "75k", 1500 -> "1.5k", 800 -> "800".
 function fmtK(n) {
@@ -439,6 +449,12 @@ function buildCoverageHint(pointsCostVal, programText) {
   const need = parseFloat(pointsCostVal) || 0;
   const progTxt = (programText || '').trim();
   if (!(need > 0) || !progTxt) return null;
+
+  // The balance-aware coverage advisor is a Plus feature. Once the user has
+  // entered a cost + program (where it would help), Free sees an upgrade nudge.
+  if (transferAdvisorLocked()) {
+    return { tone: 'upgrade', text: 'Upgrade to Plus for the points transfer advisor.' };
+  }
 
   const balances = getPointsBalances()
     .filter(b => b && b.name && (parseFloat(b.balance) || 0) > 0);

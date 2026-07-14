@@ -5,6 +5,13 @@
 import { el } from './dom.js';
 import { getTier } from './entitlements.js';
 import { beginCheckout } from './billing.js';
+import { track } from './analytics.js';
+
+// The redeem-code flow lives in main.js (it needs the session + a re-render);
+// it registers itself here so the upgrade modal can offer a "Have a code?" link
+// without upgrade.js importing main.js (which would be a cycle).
+let redeemHandler = null;
+export function setRedeemHandler(fn) { redeemHandler = fn; }
 
 // Display prices (the source of truth for what to CHARGE is Stripe, resolved
 // server-side from tier+interval — these are only for showing the numbers).
@@ -46,6 +53,7 @@ const PLANS = [
 ];
 
 export function openUpgradeModal({ reason = '', highlight = 'plus' } = {}) {
+  track('Upgrade: Modal Opened', { plan: highlight });
   const bg = el('div', { class: 'vp-modal-bg', onclick: e => { if (e.target === bg) bg.remove(); } });
   const m = el('div', { class: 'vp-modal vp-upgrade' });
   m.appendChild(el('h3', {}, 'Choose your plan'));
@@ -118,8 +126,34 @@ export function openUpgradeModal({ reason = '', highlight = 'plus' } = {}) {
 
   renderGrid();
 
+  // Founding offer: a one-time purchase that grants Plus forever. Only shown to
+  // free users; sold-out / almost-ready states are handled by beginCheckout.
+  if (tier === 'free') {
+    const life = el('div', { class: 'vp-upgrade-lifetime' });
+    life.appendChild(el('div', { class: 'vp-lifetime-copy' },
+      el('strong', {}, 'Founding offer — Plus for life, $79 once. '),
+      el('span', {}, 'Pay once, keep Plus forever. Limited to the first 100 members.')));
+    const lbtn = el('button', { type: 'button', class: 'vp-save' }, 'Get Lifetime');
+    lbtn.addEventListener('click', () => beginCheckout('lifetime'));
+    life.appendChild(lbtn);
+    m.appendChild(life);
+  }
+
+  m.appendChild(el('div', { class: 'vp-upgrade-legal' },
+    'By subscribing you agree to our ',
+    el('a', { href: 'terms.html', target: '_blank', rel: 'noopener' }, 'Terms'),
+    ' and ',
+    el('a', { href: 'refund.html', target: '_blank', rel: 'noopener' }, 'Refund Policy'),
+    '. Plans renew automatically; cancel anytime.'));
+
   const actions = el('div', { class: 'vp-modal-actions' });
-  actions.appendChild(el('div', {}));
+  if (redeemHandler) {
+    const codeLink = el('button', { type: 'button', class: 'vp-linklike' }, 'Have an invite code?');
+    codeLink.addEventListener('click', () => { bg.remove(); redeemHandler(); });
+    actions.appendChild(codeLink);
+  } else {
+    actions.appendChild(el('div', {}));
+  }
   const right = el('div', { class: 'vp-right' });
   right.appendChild(el('button', { type: 'button', onclick: () => bg.remove() }, 'Maybe later'));
   actions.appendChild(right);

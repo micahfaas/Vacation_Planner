@@ -9,6 +9,7 @@ import { el } from './dom.js';
 import { confirmDialog } from './dialog.js';
 import { isoDate, parseISO, addDays, fmtShort } from './dates.js';
 import { uploadTripPhoto, dayForPhoto, deleteTripPhoto, signedUrls } from './photos.js';
+import { allowAiCall, noteAiCall } from './aiusage.js';
 
 // ----- Tiny markdown renderer --------------------------------------------
 // Covers what the journal prompt produces: h1–h3, paragraphs, **bold**,
@@ -119,6 +120,7 @@ export async function generateJournal() {
     throw new Error((data && data.error) || 'Journal generation failed.');
   }
   const markdown = String(data.markdown || '');
+  noteAiCall('trip-journal');
   t.journal = {
     markdown,
     generatedAt: new Date().toISOString(),
@@ -156,6 +158,8 @@ export function renderJournalView() {
     const genBtn = el('button', { class: 'vp-btn-primary' }, 'Generate journal');
     const msg = el('span', { class: 'vp-journal-msg' });
     genBtn.addEventListener('click', async () => {
+      if (!allowAiCall('trip-journal',
+        { reason: "You've used this month's free journal generations. Upgrade to Plus for more." })) return;
       genBtn.disabled = true;
       msg.textContent = 'Writing your journal — this takes 15–30 seconds…';
       msg.classList.remove('vp-journal-msg-err');
@@ -176,6 +180,8 @@ export function renderJournalView() {
     const copyBtn = el('button', { class: 'vp-btn-ghost' }, 'Copy markdown');
     editBtn.addEventListener('click', () => openEditor());
     regenBtn.addEventListener('click', async () => {
+      if (!allowAiCall('trip-journal',
+        { reason: "You've used this month's free journal generations. Upgrade to Plus for more." })) return;
       const ok = await confirmDialog(
         'Replace the current journal with a fresh AI-generated one? Your edits will be lost.',
         { confirmText: 'Regenerate', danger: true }

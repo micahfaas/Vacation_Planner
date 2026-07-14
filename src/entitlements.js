@@ -30,7 +30,20 @@ export const CHECKOUT_LIVE = false;  // flip to true at launch (with LIVE Stripe
 export const GATING_LIVE = false;
 export function gatingActive() { return GATING_LIVE; }
 
+// Founding Lifetime Plus: a one-time $79 purchase that grants Plus forever. It
+// is NOT a distinct tier -- a lifetime buyer simply gets a subscriptions row
+// with tier='plus' and current_period_end=null (never lapses; resolveTier below
+// already treats a null period end as non-lapsing). This cap is the *sold-out*
+// ceiling; the actual enforcement (refuse checkout once the cap is reached) is
+// server-side in create-checkout-session, since the client can't be trusted to
+// count. Exported here so the number lives with the rest of the plan config.
+export const LIFETIME_PLUS_CAP = 100;
+
 // AI feature keys match the FEATURE strings in the edge functions / usage.sql.
+// The two numbers that define the tier story are 'co-planner' and 'trip-ideas'
+// (LOCKED 2026-07-11: Free 3/5, Plus 30/50, Pro 100/200). The other three AI
+// helpers are cheap Haiku calls; their caps are a conservative "taste on Free,
+// generous on paid" and can be tuned freely.
 export const TIERS = {
   free: {
     label: 'Explorer',
@@ -39,7 +52,7 @@ export const TIERS = {
     benefitsReminders: false,        // can view the tracker, can't arm reminders
     transferAdvisor: 'basic',
     awardSearch: false,
-    ai: { 'co-planner': 3, 'trip-ideas': 3, 'destination-guide': 1, 'trip-journal': 1, 'trip-check': 5 },
+    ai: { 'co-planner': 3, 'trip-ideas': 5, 'destination-guide': 1, 'trip-journal': 1, 'trip-check': 5 },
   },
   plus: {
     label: 'Plus',
@@ -48,7 +61,7 @@ export const TIERS = {
     benefitsReminders: true,
     transferAdvisor: 'full',
     awardSearch: false,
-    ai: { 'co-planner': 50, 'trip-ideas': 30, 'destination-guide': 30, 'trip-journal': 20, 'trip-check': 60 },
+    ai: { 'co-planner': 30, 'trip-ideas': 50, 'destination-guide': 30, 'trip-journal': 20, 'trip-check': 60 },
   },
   pro: {
     label: 'Pro',
@@ -57,7 +70,7 @@ export const TIERS = {
     benefitsReminders: true,
     transferAdvisor: 'full',
     awardSearch: true,
-    ai: { 'co-planner': 150, 'trip-ideas': 100, 'destination-guide': 100, 'trip-journal': 60, 'trip-check': 200 },
+    ai: { 'co-planner': 100, 'trip-ideas': 200, 'destination-guide': 100, 'trip-journal': 60, 'trip-check': 200 },
   },
 };
 
@@ -118,6 +131,13 @@ export function limitFor(resource) {
 // Boolean feature flag ('benefitsReminders' | 'awardSearch').
 export function hasFeature(flag) {
   return Boolean(tierConfig()[flag]);
+}
+
+// True when the personalized (balance-aware) points transfer advisor should be
+// hidden behind an upgrade nudge: Free is 'basic' (locked), Plus/Pro are 'full'.
+// A no-op until gating goes live, so nothing changes for current users.
+export function transferAdvisorLocked() {
+  return gatingActive() && tierConfig().transferAdvisor !== 'full';
 }
 
 // Monthly AI cap for a feature key (matches the edge-function FEATURE names).

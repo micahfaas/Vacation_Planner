@@ -10,6 +10,7 @@ import { supabase } from './supabase.js';
 import { activeTrip } from './state.js';
 import { save, markTripDirty } from './storage.js';
 import { el } from './dom.js';
+import { allowAiCall, noteAiCall } from './aiusage.js';
 
 const LAST_PASSPORT_KEY = 'vacation_planner_guide_passport';
 
@@ -104,6 +105,7 @@ async function generate(t, places, passportCountry) {
   const guides = Array.isArray(data.guides) ? data.guides : [];
   if (!guides.length) throw new Error('The AI could not produce a guide for these destinations.');
 
+  noteAiCall('destination-guide');
   t.guide = {
     generatedAt: new Date().toISOString(),
     key: guideKey(t, places),
@@ -135,6 +137,8 @@ function renderGenerateForm(body, t, places, isRefresh) {
   const status = el('div', { class: 'vp-dg-status' });
   const btn = el('button', { class: 'vp-save' }, isRefresh ? 'Refresh guide' : 'Generate guide');
   btn.addEventListener('click', async () => {
+    if (!allowAiCall('destination-guide',
+      { reason: "You've used this month's free destination guides. Upgrade to Plus for more." })) return;
     btn.disabled = true;
     status.textContent = 'Writing your guide… (10–20 seconds)';
     try {

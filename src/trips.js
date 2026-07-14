@@ -10,6 +10,7 @@ import { loadDemoTrip } from './demo.js';
 import { openTripIdeas } from './tripideas.js';
 import { gatingActive, canAdd, limitFor } from './entitlements.js';
 import { requireUpgrade } from './upgrade.js';
+import { track } from './analytics.js';
 
 export function openTripsMenu() {
   const bg = el('div', { class: 'vp-modal-bg', onclick: e => { if (e.target === bg) bg.remove(); } });
@@ -152,6 +153,7 @@ export function openTripsMenu() {
       };
       data.activeTripId = id;
       save(); render(); bg.remove();
+      track('Trip Created');
     }
   }, '+ new trip'));
   actions.appendChild(right);

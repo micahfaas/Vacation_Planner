@@ -55,6 +55,46 @@ Deno.serve(async (req) => {
     return new Response(`Signature verification failed: ${(err as Error).message}`, { status: 400 });
   }
 
+  // One-time Founding Lifetime purchase creates no subscription, so we grant it
+  // from checkout.session.completed. Subscription checkouts ALSO emit this event,
+  // but those are handled by the customer.subscription.* branch below, so we act
+  // only on a lifetime payment and ignore everything else here.
+  if (event.type === 'checkout.session.completed') {
+    // deno-lint-ignore no-explicit-any
+    const session = event.data.object as any;
+    if (session.mode !== 'payment' || session.metadata?.kind !== 'lifetime') {
+      return new Response(JSON.stringify({ received: true, ignored: 'non-lifetime checkout' }), {
+        status: 200, headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    const lifeUid: string | undefined = session.metadata?.user_id ?? session.client_reference_id ?? undefined;
+    const lifeCust: string | undefined = typeof session.customer === 'string' ? session.customer : session.customer?.id;
+    if (!lifeUid) {
+      return new Response(JSON.stringify({ received: true, unattributed: true }), {
+        status: 200, headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    const admin = createClient(supabaseUrl, serviceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    // Plus forever: active + no period end (never lapses), tagged source=lifetime
+    // so the checkout cap can count it.
+    const { error } = await admin.from('subscriptions').upsert({
+      user_id: lifeUid,
+      tier: 'plus',
+      status: 'active',
+      source: 'lifetime',
+      current_period_end: null,
+      cancel_at_period_end: false,
+      stripe_customer_id: lifeCust,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'user_id' });
+    if (error) return new Response(`DB upsert failed: ${error.message}`, { status: 500 });
+    return new Response(JSON.stringify({ received: true, lifetime: true }), {
+      status: 200, headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   // We only act on subscription lifecycle events; everything else is acked.
   if (!event.type.startsWith('customer.subscription.')) {
     return new Response(JSON.stringify({ received: true, ignored: event.type }), {

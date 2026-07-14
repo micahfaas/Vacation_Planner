@@ -11,6 +11,8 @@ import { confirmDialog, alertDialog } from './dialog.js';
 import { weatherSummary } from './weather.js';
 import { placeCity } from './places.js';
 import { getPointsBalances, setPointsBalances } from './profile.js';
+import { transferAdvisorLocked } from './entitlements.js';
+import { requireUpgrade } from './upgrade.js';
 import { CITY_STAY_COLORS } from './constants.js';
 import {
   matchCurrency, matchProgram, transfersInto, reachableFrom,
@@ -228,6 +230,9 @@ function roundTransfer(n) {
 // Hook A: given an award program a draft burns and how many points are
 // missing, suggest held flexible currencies that transfer into it.
 function transferSuggestions(programText, needed, held) {
+  // The personalized transfer advisor is a Plus feature; on Free the per-draft
+  // suggestions are replaced by a single upgrade nudge shown lower in the panel.
+  if (transferAdvisorLocked()) return null;
   const prog = matchProgram(programText);
   if (!prog) return null;
   const options = transfersInto(prog.id, held);
@@ -332,7 +337,16 @@ function renderBalancesPanel() {
   }, '+ add balance'));
 
   // Hook B: explore what each held flexible currency can become.
-  if (held.length) {
+  if (transferAdvisorLocked()) {
+    // Free plan: one nudge instead of the personalized "what can my points
+    // become?" explorer and the per-draft transfer suggestions above.
+    const up = el('button', {
+      class: 'vp-transfer-toggle',
+      onclick: () => requireUpgrade(
+        'See exactly which of your points transfer to cover an award — and what your balances can become.', 'plus')
+    }, '🔒 Points transfer advisor — Plus');
+    panel.appendChild(up);
+  } else if (held.length) {
     const open = !!ui.planShowTransfers;
     panel.appendChild(el('button', {
       class: 'vp-transfer-toggle',
