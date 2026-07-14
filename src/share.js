@@ -2,7 +2,7 @@
 // public Supabase Storage bucket; the share link (?share=<token>) loads that
 // snapshot and renders a read-only itinerary with no sign-in required.
 import { supabase } from './supabase.js';
-import { save, markTripDirty } from './storage.js';
+import { save, markTripDirty, getUserId } from './storage.js';
 import { el } from './dom.js';
 import { TYPES } from './constants.js';
 import { isoDate, parseISO, addDays, fmtShort } from './dates.js';
@@ -11,11 +11,16 @@ const BUCKET = 'shared';
 
 // Upload (or refresh) a public snapshot of a trip; resolves to the share URL.
 export async function shareTrip(trip) {
+  const uid = getUserId();
+  if (!uid) throw new Error('Please sign in to share a trip.');
   if (!trip.shareToken) {
     trip.shareToken = crypto.randomUUID();
     markTripDirty(trip.id);
     save();
   }
+  // Store under the owner's folder so no other signed-in user can list, read the
+  // object list of, overwrite, or delete this snapshot. The uid is not secret.
+  const shareId = uid + '/' + trip.shareToken;
   const snapshot = {
     version: 1,
     sharedAt: new Date().toISOString(),
@@ -30,9 +35,9 @@ export async function shareTrip(trip) {
   };
   const blob = new Blob([JSON.stringify(snapshot)], { type: 'application/json' });
   const { error } = await supabase.storage.from(BUCKET)
-    .upload(trip.shareToken + '.json', blob, { upsert: true, contentType: 'application/json' });
+    .upload(shareId + '.json', blob, { upsert: true, contentType: 'application/json' });
   if (error) throw error;
-  return location.origin + location.pathname + '?share=' + trip.shareToken;
+  return location.origin + location.pathname + '?share=' + encodeURIComponent(shareId);
 }
 
 // Fetch a published snapshot by token (no auth — the bucket is public).
