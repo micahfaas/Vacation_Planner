@@ -26,7 +26,7 @@ const DEFAULT_TIER = 'free';
 //   GATING_LIVE   — are the free-plan limits enforced? Flip true at public
 //                   launch, and first seed existing users a 'comp' subscriptions
 //                   row so they are never suddenly capped.
-export const CHECKOUT_LIVE = false;  // flip to true at launch (with LIVE Stripe keys)
+export const CHECKOUT_LIVE = true;   // LIVE since 2026-07-14 (real Stripe checkout enabled)
 export const GATING_LIVE = false;
 export function gatingActive() { return GATING_LIVE; }
 
