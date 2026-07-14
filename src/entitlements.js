@@ -27,7 +27,7 @@ const DEFAULT_TIER = 'free';
 //                   launch, and first seed existing users a 'comp' subscriptions
 //                   row so they are never suddenly capped.
 export const CHECKOUT_LIVE = true;   // LIVE since 2026-07-14 (real Stripe checkout enabled)
-export const GATING_LIVE = false;
+export const GATING_LIVE = true;    // LIVE since 2026-07-14 (free-tier limits enforced)
 export function gatingActive() { return GATING_LIVE; }
 
 // Founding Lifetime Plus: a one-time $79 purchase that grants Plus forever. It
