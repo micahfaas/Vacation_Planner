@@ -40,8 +40,12 @@ export async function openAttachment(path) {
 }
 
 // Returns { el, getValue } — getValue() yields the attachments metadata array.
-export function createAttachmentsField(initial) {
+// opts.guard, when supplied, is called before the file picker opens; if it
+// returns false the add is blocked (used by the vault to enforce the free-plan
+// item cap). Existing callers pass nothing and are unaffected.
+export function createAttachmentsField(initial, opts = {}) {
   const items = (initial || []).slice();
+  const guard = typeof opts.guard === 'function' ? opts.guard : null;
 
   const list = el('div', { class: 'vp-attach-list' });
   const status = el('div', { class: 'vp-attach-status' });
@@ -68,7 +72,7 @@ export function createAttachmentsField(initial) {
   }
   renderList();
 
-  addBtn.addEventListener('click', () => fileInput.click());
+  addBtn.addEventListener('click', () => { if (guard && !guard()) return; fileInput.click(); });
   fileInput.addEventListener('change', async () => {
     const files = [...fileInput.files];
     fileInput.value = '';
@@ -89,5 +93,5 @@ export function createAttachmentsField(initial) {
   });
 
   const wrap = el('div', { class: 'vp-attach' }, list, addBtn, status, fileInput);
-  return { el: wrap, getValue: () => items };
+  return { el: wrap, getValue: () => items, count: () => items.length };
 }

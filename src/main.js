@@ -10,7 +10,7 @@ import { exportICS } from './ics.js';
 import { openCurrencyConverter } from './currency.js';
 import { openTripsMenu } from './trips.js';
 import { loadSharedTrip, renderSharedTrip } from './share.js';
-import { confirmDialog, alertDialog } from './dialog.js';
+import { confirmDialog, alertDialog, promptDialog } from './dialog.js';
 import { openImportModal } from './importer.js';
 import { openCoPlanner } from './coplanner.js';
 import { openWatchers } from './watchers.js';
@@ -19,8 +19,9 @@ import { loadProfile, openProfileDialog } from './profile.js';
 import { loadFavorites, openSavedPlaces } from './favorites.js';
 import { loadVault } from './vault.js';
 import { loadEntitlement, isPaid } from './entitlements.js';
-import { openUpgradeModal } from './upgrade.js';
-import { openBillingPortal } from './billing.js';
+import { openUpgradeModal, setRedeemHandler } from './upgrade.js';
+import { openBillingPortal, redeemCompCode } from './billing.js';
+import { initAnalytics, track } from './analytics.js';
 import { openBenefits } from './benefits.js';
 import { openDestinationGuide } from './destination-guide.js';
 import { el, toast } from './dom.js';
@@ -114,7 +115,9 @@ function bootApp() {
     popupMenu(accountBtn, [
       ['About me', 'ti-user', openProfileDialog],
       planItem,
+      ['Redeem a code', 'ti-gift', openRedeemDialog],
       ['Privacy policy', 'ti-shield-lock', () => window.open('privacy.html', '_blank')],
+      ['Terms & refunds', 'ti-file-text', () => window.open('terms.html', '_blank')],
       ['Sign out', 'ti-logout', () =>
         confirmDialog('Sign out of Odynaut?', { confirmText: 'Sign out' })
           .then(ok => { if (ok) signOut(); })],
@@ -148,6 +151,26 @@ function bootApp() {
       alertDialog(msg, { title: 'Could not delete account' });
     }
   }
+
+  // Redeem a comp / invite code (grants a free comp plan). Shared by the account
+  // menu and the "Have an invite code?" link in the upgrade modal. Works even
+  // before Stripe is live -- this is how friends/family get seeded pre-launch.
+  async function openRedeemDialog() {
+    const code = await promptDialog('Enter your invite or access code', '', {
+      title: 'Redeem a code', confirmText: 'Redeem',
+    });
+    if (!code || !code.trim()) return;
+    const res = await redeemCompCode(code.trim());
+    if (!res.ok) { alertDialog(res.error, { title: 'Could not redeem' }); return; }
+    const { data } = await supabase.auth.getUser();
+    if (data?.user?.id) await loadEntitlement(data.user.id);
+    track('Comp Code Redeemed', { tier: res.tier });
+    const name = res.tier ? res.tier.charAt(0).toUpperCase() + res.tier.slice(1) : 'your plan';
+    toast('Code redeemed — welcome to ' + name + '! Thank you.');
+    render();
+  }
+  setRedeemHandler(openRedeemDialog);
+  initAnalytics();
 
   async function showApp(user) {
     document.body.classList.remove('vp-signed-out');
@@ -186,6 +209,7 @@ function bootApp() {
     for (let i = 0; i < 6; i++) {
       const tier = await loadEntitlement(uid);
       if (tier !== 'free') {
+        track('Upgrade: Purchase Completed', { tier });
         const name = tier.charAt(0).toUpperCase() + tier.slice(1);
         toast('Welcome to ' + name + ' — your upgrade is active. Thank you!');
         render();

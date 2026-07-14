@@ -14,6 +14,8 @@ import { supabase } from './supabase.js';
 import { el } from './dom.js';
 import { getUserId } from './storage.js';
 import { createAttachmentsField } from './attachments.js';
+import { gatingActive, canAdd, limitFor } from './entitlements.js';
+import { requireUpgrade } from './upgrade.js';
 
 const CACHE_KEY = 'vacation_planner_vault_';
 
@@ -144,6 +146,23 @@ export function createVaultSection(initial) {
   const loyaltyList = el('div', { class: 'vp-vault-loyalty-list' });
   const rows = [];
 
+  // A "vault item" (for the free-plan cap) is a saved loyalty number OR a
+  // document file; the three trusted-traveler ID fields are fixed and don't
+  // count. docsField is assigned further down; the guard reads it lazily at
+  // click time, so the forward reference is safe.
+  let docsField;
+  function vaultItemCount() {
+    return rows.length + (docsField ? docsField.count() : 0);
+  }
+  function guardVaultAdd() {
+    if (gatingActive() && !canAdd('vaultItems', vaultItemCount())) {
+      requireUpgrade('The free plan includes up to ' + limitFor('vaultItems') +
+        ' vault items (loyalty numbers + document files). Upgrade to Plus for an unlimited vault.', 'plus');
+      return false;
+    }
+    return true;
+  }
+
   function addRow(entry) {
     const row = loyaltyRow(entry, () => {
       const i = rows.indexOf(row);
@@ -155,7 +174,7 @@ export function createVaultSection(initial) {
   v.loyalty.forEach(addRow);
   wrap.appendChild(loyaltyList);
   const addBtn = el('button', { type: 'button', class: 'vp-balance-add' }, '+ Add a number');
-  addBtn.addEventListener('click', () => addRow({}));
+  addBtn.addEventListener('click', () => { if (!guardVaultAdd()) return; addRow({}); });
   wrap.appendChild(addBtn);
 
   // --- Trusted-traveler IDs ---
@@ -182,8 +201,8 @@ export function createVaultSection(initial) {
   // --- Document files (reuse the private attachments bucket) ---
   wrap.appendChild(el('h4', { class: 'vp-profile-section' }, 'Document files'));
   wrap.appendChild(el('p', { class: 'vp-profile-sub' },
-    'Passport, visa, vaccination card, insurance, ID. Files are private to your account.'));
-  const docsField = createAttachmentsField(v.documents);
+    'Booking confirmations, tickets, insurance, and other travel files. Files are private to your account.'));
+  docsField = createAttachmentsField(v.documents, { guard: guardVaultAdd });
   wrap.appendChild(docsField.el);
 
   return {

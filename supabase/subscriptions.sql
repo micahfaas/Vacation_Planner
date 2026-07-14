@@ -13,7 +13,7 @@ create table if not exists public.subscriptions (
   user_id                uuid primary key references auth.users (id) on delete cascade,
   tier                   text not null default 'free',     -- 'free' | 'plus' | 'pro'
   status                 text not null default 'inactive',  -- see check below
-  source                 text not null default 'stripe',    -- 'stripe' | 'ios' | 'android' | 'comp'
+  source                 text not null default 'stripe',    -- 'stripe' | 'ios' | 'android' | 'comp' | 'lifetime' (free text, no check)
   current_period_end     timestamptz,
   cancel_at_period_end   boolean not null default false,
   stripe_customer_id     text,

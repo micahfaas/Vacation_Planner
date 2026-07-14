@@ -201,7 +201,10 @@ async function flush() {
       }
     }
     if (toDelete.length) {
-      const { error } = await supabase.from('trips').delete().in('id', toDelete);
+      // Scope the delete to this user explicitly (defense-in-depth alongside RLS,
+      // mirroring the update path above).
+      const { error } = await supabase.from('trips').delete()
+        .eq('user_id', userId).in('id', toDelete);
       if (error) throw error;
       toDelete.forEach(id => { delete loadedVersions[id]; });
     }
