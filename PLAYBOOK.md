@@ -258,6 +258,14 @@ Console/billing setup.
 
 ## 7. Phase 6 — go-live execution checklist (Micah drives; I can't touch prod/live secrets)
 
+**LAUNCH ENTITY DECISION (2026-07-14):** Launching as a **sole proprietor (Micah Faas personally)**,
+NOT the LLC — the IRS EIN online form errored out and a mailed EIN takes ~a month, and Micah wants to
+launch now. Terms now name "Micah Faas" (not the LLC). In Stripe, set business type to **Individual /
+Sole proprietor** and verify with **SSN** (this bypasses the stuck EIN verification). **TODO ~2026-08-14:
+switch to the LLC** — get the EIN, open a business bank account, update Stripe to company/LLC, and
+change the Terms entity back to "MF Consulting, LLC dba Odynaut." Get **cyber/tech-E&O insurance** in
+the meantime (no LLC shield while sole-prop; the LLC is not retroactive). See [[project_security_review]].
+
 **A. Fill the legal placeholders** — search `[BRACKETS]` in `public/terms.html`, `public/refund.html`,
 `public/privacy.html` and replace:
 - `[LEGAL ENTITY NAME]` → your LLC or sole-prop name
