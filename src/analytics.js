@@ -16,6 +16,15 @@
 //   checkout -> purchase) still stitch. For "signed up in June, paid in July",
 //   query Supabase/Stripe -- they are the authoritative source anyway.
 //
+// DEBUGGING NOTE (read before "fixing" this): posthog BATCHES events and flushes
+// on a timer, so a capture() can take ~10-30s to reach the network. In cookieless
+// mode has_opted_out_capturing() also reports TRUE and consent reads 'pending' --
+// both are normal (nobody consented; it counts anonymously anyway), NOT a fault.
+// Check too early and you will conclude events are blocked when they are merely
+// queued, and be tempted to "fix" it with opt_in_capturing(). Don't. Verified
+// end-to-end 2026-07-16: a business event fired post-init reaches PostHog (200)
+// with zero cookies and zero localStorage.
+//
 // Completely DARK until ANALYTICS_LIVE is true AND VITE_POSTHOG_KEY is set:
 // the posthog-js chunk is never even downloaded, so no one is tracked.
 //
