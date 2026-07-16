@@ -63,6 +63,6 @@ export function allowAiCall(feature, { reason, highlight = 'plus' } = {}) {
   if (aiUsed(feature) < aiLimitFor(feature)) return true;
   requireUpgrade(reason ||
     "You've used this month's AI allowance on the free plan. Upgrade to Plus for more.",
-    highlight);
+    highlight, 'ai-limit:' + feature);
   return false;
 }

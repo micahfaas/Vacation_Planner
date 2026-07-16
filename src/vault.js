@@ -157,7 +157,8 @@ export function createVaultSection(initial) {
   function guardVaultAdd() {
     if (gatingActive() && !canAdd('vaultItems', vaultItemCount())) {
       requireUpgrade('The free plan includes up to ' + limitFor('vaultItems') +
-        ' vault items (loyalty numbers + document files). Upgrade to Plus for an unlimited vault.', 'plus');
+        ' vault items (loyalty numbers + document files). Upgrade to Plus for an unlimited vault.',
+        'plus', 'vault-limit');
       return false;
     }
     return true;

@@ -121,7 +121,8 @@ export function openEditor(id, addTarget) {
     if (hint.tone === 'upgrade') {
       pointsHint.style.cursor = 'pointer';
       pointsHint.onclick = () => requireUpgrade(
-        'See whether your points cover this leg — directly or via a transfer.', 'plus');
+        'See whether your points cover this leg — directly or via a transfer.',
+        'plus', 'points-hint');
     } else {
       pointsHint.style.cursor = '';
       pointsHint.onclick = null;

@@ -407,7 +407,8 @@ export async function openBenefits() {
         'Expiry reminders (30, 7 & 1 days before each deadline) are a Plus feature.'));
       const up = el('button', { class: 'vp-save' }, 'Upgrade to Plus');
       up.addEventListener('click', () => requireUpgrade(
-        'Get push reminders before every credit, certificate, and points deadline expires.', 'plus'));
+        'Get push reminders before every credit, certificate, and points deadline expires.',
+        'plus', 'benefits-reminders'));
       banner.appendChild(up);
       return;
     }
