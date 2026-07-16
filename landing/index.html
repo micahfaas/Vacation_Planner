@@ -176,7 +176,7 @@
       <a class="navlink" href="#features">Features</a>
       <a class="navlink" href="#pricing">Pricing</a>
       <!-- ROUTING: point this at wherever the app lives (default: odynaut.app). -->
-      <a class="btn btn-ghost" href="https://odynaut.app">Open app</a>
+      <a class="btn btn-ghost" href="https://odynaut.app" data-cta="nav">Open app</a>
     </nav>
   </div>
 </header>
@@ -191,7 +191,7 @@
         confirmation and loyalty number somewhere safe. No more digging through your inbox.
       </p>
       <div class="hero-cta">
-        <a class="btn btn-primary" href="https://odynaut.app">Start planning for free</a>
+        <a class="btn btn-primary" href="https://odynaut.app" data-cta="hero">Start planning for free</a>
         <a class="btn btn-ghost" href="#features">See what's inside</a>
       </div>
       <p class="hero-note">Free forever. No credit card needed.</p>
@@ -281,7 +281,7 @@
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg>Document vault (up to 5 items)</li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg>A taste of the AI helpers</li>
           </ul>
-          <a class="btn btn-ghost" href="https://odynaut.app">Get started</a>
+          <a class="btn btn-ghost" href="https://odynaut.app" data-cta="pricing-free">Get started</a>
         </div>
         <div class="plan featured">
           <div class="badge">Most popular</div>
@@ -295,7 +295,7 @@
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg>Full points transfer advisor</li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg>Generous AI co-planner &amp; guides</li>
           </ul>
-          <a class="btn btn-primary" href="https://odynaut.app">Choose Plus</a>
+          <a class="btn btn-primary" href="https://odynaut.app" data-cta="pricing-plus">Choose Plus</a>
         </div>
         <div class="plan">
           <div class="pname">Pro</div>
@@ -308,7 +308,7 @@
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg>Booking &amp; deadline alerts</li>
             <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg>Early access to new features</li>
           </ul>
-          <a class="btn btn-ghost" href="https://odynaut.app">Choose Pro</a>
+          <a class="btn btn-ghost" href="https://odynaut.app" data-cta="pricing-pro">Choose Pro</a>
         </div>
       </div>
       <p class="pricing-note">Monthly billing also available. Cancel anytime.</p>
@@ -328,7 +328,7 @@
   <section class="final">
     <div class="wrap">
       <h2>Ready to plan your next trip?</h2>
-      <a class="btn btn-primary" href="https://odynaut.app">Start planning for free</a>
+      <a class="btn btn-primary" href="https://odynaut.app" data-cta="final">Start planning for free</a>
     </div>
   </section>
 </main>
@@ -346,6 +346,50 @@
     </div>
   </div>
 </footer>
+
+<!-- Privacy-first analytics (PostHog), matching the app's src/analytics.js:
+     cookieless, no autocapture, no session recording, no personal data.
+     Measures landing visits + which CTA people click, so we can see
+     landing -> signup. Stays completely OFF until PH_KEY below is filled in.
+     TO GO LIVE: paste your PostHog project API key (starts with "phc_") into
+     PH_KEY. Use the SAME key as the app so both domains report to one project.
+     EU cloud: change PH_HOST to https://eu.i.posthog.com -->
+<script>
+(function () {
+  var PH_KEY  = 'phc_Bm2NTLRGocjXM8KeauHx8GDGsGLSXgKLtZ2juoQphmmm';
+  var PH_HOST = 'https://us.i.posthog.com';
+  if (PH_KEY.indexOf('phc_') !== 0) return;    // dark until the key is set
+
+  var s = document.createElement('script');
+  s.async = true;
+  s.crossOrigin = 'anonymous';
+  s.src = PH_HOST.replace('.i.posthog.com', '-assets.i.posthog.com') + '/static/array.js';
+  s.onload = function () {
+    // Keep this list in sync with src/analytics.js. Several of these fall back
+    // to PostHog's REMOTE config if left undefined, so they're set explicitly.
+    window.posthog.init(PH_KEY, {
+      api_host: PH_HOST,
+      defaults: '2026-05-30',
+      cookieless_mode: 'always',
+      autocapture: false,
+      capture_dead_clicks: false,
+      capture_heatmaps: false,
+      rageclick: false,
+      capture_performance: false,
+      disable_session_recording: true,
+      disable_surveys: true,
+      capture_pageleave: false,
+      advanced_disable_flags: true,
+      disable_external_dependency_loading: true
+    });
+    document.addEventListener('click', function (e) {
+      var a = e.target.closest && e.target.closest('a[data-cta]');
+      if (a) window.posthog.capture('Landing CTA Clicked', { cta: a.dataset.cta });
+    });
+  };
+  document.head.appendChild(s);
+})();
+</script>
 
 </body>
 </html>

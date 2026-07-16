@@ -343,7 +343,8 @@ function renderBalancesPanel() {
     const up = el('button', {
       class: 'vp-transfer-toggle',
       onclick: () => requireUpgrade(
-        'See exactly which of your points transfer to cover an award — and what your balances can become.', 'plus')
+        'See exactly which of your points transfer to cover an award — and what your balances can become.',
+        'plus', 'transfer-advisor')
     }, '🔒 Points transfer advisor — Plus');
     panel.appendChild(up);
   } else if (held.length) {

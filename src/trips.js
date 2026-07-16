@@ -137,7 +137,7 @@ export function openTripsMenu() {
       if (gatingActive() && !canAdd('trips', activeCount)) {
         bg.remove();
         requireUpgrade('The free plan includes up to ' + limitFor('trips') +
-          ' trips. Upgrade to Plus for unlimited trips.', 'plus');
+          ' trips. Upgrade to Plus for unlimited trips.', 'plus', 'trip-limit');
         return;
       }
       const name = await promptDialog('Name for new trip', 'New trip', { title: 'New trip' });

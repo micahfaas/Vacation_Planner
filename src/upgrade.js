@@ -52,8 +52,12 @@ const PLANS = [
   },
 ];
 
-export function openUpgradeModal({ reason = '', highlight = 'plus' } = {}) {
-  track('Upgrade: Modal Opened', { plan: highlight });
+// `source` records WHAT opened this modal -- which locked feature the user ran
+// into, or 'menu' when they opened the plans themselves. It is the signal that
+// tells us which limit actually drives upgrades, so keep it a short fixed
+// keyword (never free text or anything personal).
+export function openUpgradeModal({ reason = '', highlight = 'plus', source = 'menu' } = {}) {
+  track('Upgrade: Modal Opened', { plan: highlight, source });
   const bg = el('div', { class: 'vp-modal-bg', onclick: e => { if (e.target === bg) bg.remove(); } });
   const m = el('div', { class: 'vp-modal vp-upgrade' });
   m.appendChild(el('h3', {}, 'Choose your plan'));
@@ -165,6 +169,6 @@ export function openUpgradeModal({ reason = '', highlight = 'plus' } = {}) {
 
 // Contextual nudge shown when a free user hits a plan limit. `reason` explains
 // what they bumped into; `highlight` is the tier to feature (default Plus).
-export function requireUpgrade(reason, highlight = 'plus') {
-  openUpgradeModal({ reason, highlight });
+export function requireUpgrade(reason, highlight = 'plus', source = 'gate') {
+  openUpgradeModal({ reason, highlight, source });
 }

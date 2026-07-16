@@ -172,7 +172,26 @@ function bootApp() {
   setRedeemHandler(openRedeemDialog);
   initAnalytics();
 
+  // Every sign-in provider (email, Google, Apple) routes through showApp, so
+  // this is the one place that sees a brand-new account. Supabase stamps
+  // created_at at signup, so a user whose account is seconds old is a new
+  // signup rather than a returning visitor -- that's the top of the funnel.
+  // Deliberately no email or id in the event: we only count the signup.
+  const SIGNUP_WINDOW_MS = 2 * 60 * 1000;
+  function trackSignupOnce(user) {
+    try {
+      if (!user || !user.created_at) return;
+      const ageMs = Date.now() - new Date(user.created_at).getTime();
+      if (ageMs < 0 || ageMs > SIGNUP_WINDOW_MS) return;
+      const seen = 'vp-signup-tracked';
+      if (localStorage.getItem(seen) === user.id) return;  // don't double-count a reload
+      localStorage.setItem(seen, user.id);
+      track('Signed Up', { provider: (user.app_metadata && user.app_metadata.provider) || 'email' });
+    } catch { /* analytics must never break sign-in */ }
+  }
+
   async function showApp(user) {
+    trackSignupOnce(user);
     document.body.classList.remove('vp-signed-out');
     document.getElementById('vp-account-email').textContent = user.email || 'Account';
     accountBtn.hidden = false;

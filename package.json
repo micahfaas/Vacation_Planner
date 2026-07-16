@@ -20,6 +20,7 @@
     "heic2any": "^0.0.4",
     "leaflet": "^1.9.4",
     "pdfjs-dist": "^5.7.284",
+    "posthog-js": "^1.402.3",
     "tesseract.js": "^7.0.0"
   }
 }
