@@ -371,6 +371,11 @@
       api_host: PH_HOST,
       defaults: '2026-05-30',
       cookieless_mode: 'always',
+      // Off on purpose — we fire the pageview by hand below. Posthog's
+      // automatic one never fires here (we init after load, and `defaults`
+      // rewrites this to SPA-only 'history_change'), so leaving it automatic
+      // means plain visits record nothing and "visits" reads zero forever.
+      capture_pageview: false,
       autocapture: false,
       capture_dead_clicks: false,
       capture_heatmaps: false,
@@ -382,6 +387,7 @@
       advanced_disable_flags: true,
       disable_external_dependency_loading: true
     });
+    window.posthog.capture('$pageview');   // the visit count — see capture_pageview above
     document.addEventListener('click', function (e) {
       var a = e.target.closest && e.target.closest('a[data-cta]');
       if (a) window.posthog.capture('Landing CTA Clicked', { cta: a.dataset.cta });

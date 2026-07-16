@@ -63,6 +63,13 @@ function ensureLoaded() {
         // dashboard could silently switch behaviour back on. Setting them
         // explicitly here makes this file the single source of truth, so our
         // privacy claims can't drift out from under us.
+        // We fire the pageview ourselves below instead of letting posthog do
+        // it. Its automatic pageview NEVER fires here: we init lazily, after
+        // the page has loaded, and `defaults` also rewrites this to
+        // 'history_change' (SPA-navigation only). Left automatic, a plain visit
+        // records nothing and "visits" reads zero forever. Off + one explicit
+        // capture = exactly one pageview per load, with no double-count risk.
+        capture_pageview: false,
         autocapture: false,
         capture_dead_clicks: false,       // don't watch click behaviour
         capture_heatmaps: false,
@@ -77,6 +84,7 @@ function ensureLoaded() {
         disable_external_dependency_loading: true,
       });
       ph = posthog;
+      ph.capture('$pageview');   // see capture_pageview above -- this is the visit count
       for (const [event, props] of pending.splice(0)) ph.capture(event, props);
       return posthog;
     })
