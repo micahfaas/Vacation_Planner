@@ -9,6 +9,28 @@
 // app can save them directly.
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
+// COST GUARDRAIL. Unlike the AI functions, this one spends real money per call
+// on a Google API that CANNOT be capped from the Google side: Places API (New)
+// quotas are marked "Adjustable: No", so the console will not let us set a
+// daily ceiling (usage alerts only notify, they don't stop). That makes this
+// guard the ONLY hard cap standing between a traffic spike and an uncapped
+// bill -- treat it as load-bearing.
+//
+// We reuse the ai_quota_* machinery (see supabase/usage.sql): it is generic
+// over `feature`, so despite the "ai_" name it meters any per-call cost. With
+// no ai_tier_limits row for this feature, ai_quota_check falls back to the flat
+// USER_MONTHLY_LIMIT below, and allowlisted users (the owner) bypass both caps.
+//
+// Sizing: one searchNearby ~= $0.032. 80/day ~= $2.56/day ~= $77/month, which
+// keeps the worst case inside Google's $200/month free credit even if this
+// saturates every single day. Raise once real usage justifies it -- check
+// Cloud console -> Maps -> Metrics first. Tunable here + redeploy, no app update.
+// NOTE: caching Google's response instead is NOT an option -- the Maps Platform
+// terms forbid storing Places content (place IDs are the only exemption).
+const FEATURE = 'nearby-places';
+const USER_MONTHLY_LIMIT = 40;
+const GLOBAL_DAILY_LIMIT = 80;
+
 const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -24,20 +46,36 @@ function json(body: unknown, status = 200) {
 // Reject anyone who is not a signed-in Supabase user. The public anon key
 // resolves to no user, so this blocks anonymous callers (the cost-abuse
 // vector), while the signed-in app passes through untouched because
-// supabase.functions.invoke() always sends the user's JWT. Returns a Response
-// to send back on rejection, or null when the caller is authenticated.
-async function requireUser(req: Request): Promise<Response | null> {
+// supabase.functions.invoke() always sends the user's JWT. On success returns
+// the caller's id plus a service-role client for metering; on failure returns
+// a Response to send back.
+//
+// Deliberately STRICTER than the AI functions, which fall open when identity is
+// unavailable so planning never breaks on an infra hiccup. Here, failing open
+// would mean unmetered spend on an API we cannot cap at Google -- so no
+// identity means no call.
+// Return type is inferred on purpose: annotating `admin` as
+// ReturnType<typeof createClient> doesn't match the generics createClient()
+// actually infers here, and TS rejects it.
+async function resolveCaller(req: Request) {
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
   const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   const authHeader = req.headers.get('Authorization') ?? '';
-  if (supabaseUrl && anonKey && authHeader.startsWith('Bearer ')) {
+  if (supabaseUrl && anonKey && serviceKey && authHeader.startsWith('Bearer ')) {
     try {
       const userClient = createClient(supabaseUrl, anonKey, {
         global: { headers: { Authorization: authHeader } },
         auth: { persistSession: false, autoRefreshToken: false },
       });
       const { data } = await userClient.auth.getUser();
-      if (data?.user?.id) return null;
+      const uid = data?.user?.id;
+      if (uid) {
+        const admin = createClient(supabaseUrl, serviceKey, {
+          auth: { persistSession: false, autoRefreshToken: false },
+        });
+        return { uid, admin };
+      }
     } catch { /* fall through to rejection */ }
   }
   return json({ ok: false, error: 'Please sign in to use this.' });
@@ -96,8 +134,30 @@ Deno.serve(async (req) => {
   const key = Deno.env.get('GOOGLE_PLACES_KEY');
   if (!key) return json({ ok: false, error: 'Place search is not configured.' });
 
-  const denied = await requireUser(req);
-  if (denied) return denied;
+  const caller = await resolveCaller(req);
+  if (caller instanceof Response) return caller;
+  const { uid, admin } = caller;
+
+  // Enforce the spend caps BEFORE calling Google. Unlike the AI functions this
+  // does NOT fail open: if metering is unavailable we refuse, because failing
+  // open here means uncapped spend on an API Google won't let us cap.
+  try {
+    const { data: status, error } = await admin.rpc('ai_quota_check', {
+      p_user_id: uid,
+      p_feature: FEATURE,
+      p_user_limit: USER_MONTHLY_LIMIT,
+      p_global_limit: GLOBAL_DAILY_LIMIT,
+    });
+    if (error) throw error;
+    if (status === 'user_limit') {
+      return json({ ok: false, error: "You've reached this month's limit for nearby search. It resets on the 1st." });
+    }
+    if (status === 'global_limit') {
+      return json({ ok: false, error: 'Nearby search is taking a breather right now — please try again later.' });
+    }
+  } catch {
+    return json({ ok: false, error: 'Nearby search is unavailable right now — please try again later.' });
+  }
 
   let lat = 0, lng = 0, radius = 1500, category = '';
   try {
@@ -135,6 +195,12 @@ Deno.serve(async (req) => {
   } catch {
     return json({ ok: false, error: 'Could not reach Google Places.' });
   }
+  // Google has now been billed for this request, whatever it returned, so count
+  // it. Best-effort: a metering hiccup must not fail a call already paid for.
+  try {
+    await admin.rpc('ai_quota_increment', { p_user_id: uid, p_feature: FEATURE });
+  } catch { /* metering is best-effort */ }
+
   if (!res.ok) {
     const detail = await res.text().catch(() => '');
     return json({ ok: false, error: `Nearby search failed (${res.status}).`, detail: detail.slice(0, 300) });
