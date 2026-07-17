@@ -44,10 +44,10 @@ const PLANS = [
     id: 'pro', name: 'Pro', tagline: 'For the points maximizer.',
     features: [
       'Everything in Plus',
-      'Award search (coming soon)',
       'Highest AI limits',
       'Booking & deadline alerts',
       'Early access to new features',
+      'Award search when it lands (on the roadmap)',
     ],
   },
 ];
