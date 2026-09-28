@@ -865,12 +865,16 @@ function initPlacesMap(mapDiv, pts) {
   // scrollWheelZoom enables two-finger trackpad scroll-to-zoom and pinch-zoom.
   const map = L.map(mapDiv, { scrollWheelZoom: true });
   placesMap = map;
-  // CartoDB Positron — a desaturated basemap so the colored markers pop.
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-    subdomains: 'abcd',
-    maxZoom: 19
+  // Esri Light Gray Canvas — a desaturated basemap so the colored markers pop.
+  // (CARTO Positron was used before, but it started requiring an API key and
+  // served "API KEY REQUIRED" watermark tiles.) Labels are a separate layer.
+  const esri = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/';
+  const esriOpts = { maxNativeZoom: 16, maxZoom: 19 };
+  L.tileLayer(esri + 'World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+    ...esriOpts,
+    attribution: 'Tiles &copy; <a href="https://www.esri.com">Esri</a> &mdash; Esri, HERE, Garmin, &copy; OpenStreetMap contributors'
   }).addTo(map);
+  L.tileLayer(esri + 'World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}', esriOpts).addTo(map);
 
   const latlngs = [];
   placeMarkers = {};
