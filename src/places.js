@@ -82,6 +82,13 @@ function parseMapsUrl(u) {
 // Clean up a city candidate: strip leading or trailing postal codes and
 // common administrative prefixes that show up in addresses but aren't the
 // city name humans use.
+// Local shorthands Google uses in addresses for a city otherwise written out in
+// full, so both spellings land in the same city bucket.
+const CITY_ALIASES = {
+  'caba': 'Buenos Aires',
+  'capital federal': 'Buenos Aires',
+  'ciudad de buenos aires': 'Buenos Aires',
+};
 function cleanCityName(s) {
   let v = s;
   v = v.replace(/^(\d{4,7}|[A-Z]\d{3,5}[A-Z]*)\s+/, '');         // leading postal
@@ -90,7 +97,8 @@ function cleanCityName(s) {
   v = v.replace(
     /^(Cdad\.?\s+Aut[oó]noma\s+de\s+|Ciudad\s+Aut[oó]noma\s+de\s+|Provincia\s+de\s+|Comuna\s+de\s+|Distrito\s+de\s+|Regi[oó]n\s+(?:de\s+)?)/i,
     '');
-  return v.trim();
+  v = v.trim();
+  return CITY_ALIASES[v.toLowerCase()] || v;
 }
 
 // Best-effort city for a place — prefers an explicit field, otherwise picks
