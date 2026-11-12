@@ -79,26 +79,79 @@ function parseMapsUrl(u) {
   return out;
 }
 
-// Clean up a city candidate: strip leading or trailing postal codes and
-// common administrative prefixes that show up in addresses but aren't the
-// city name humans use.
-// Local shorthands Google uses in addresses for a city otherwise written out in
-// full, so both spellings land in the same city bucket.
+// Other names for the same city that show up in addresses — local shorthands
+// (CABA, CDMX) and the local-language spelling of a city usually written in
+// English — so every spelling lands in one city bucket. Keys are lowercase with
+// accents stripped (see cityKey); values are the name shown in the app.
 const CITY_ALIASES = {
   'caba': 'Buenos Aires',
   'capital federal': 'Buenos Aires',
   'ciudad de buenos aires': 'Buenos Aires',
+  'cdmx': 'Mexico City',
+  'ciudad de mexico': 'Mexico City',
+  'mexico d.f.': 'Mexico City',
+  'mexico df': 'Mexico City',
+  'nyc': 'New York',
+  'new york city': 'New York',
+  'washington d.c.': 'Washington',
+  'washington dc': 'Washington',
+  'roma': 'Rome',
+  'firenze': 'Florence',
+  'milano': 'Milan',
+  'venezia': 'Venice',
+  'napoli': 'Naples',
+  'torino': 'Turin',
+  'genova': 'Genoa',
+  'lisboa': 'Lisbon',
+  'oporto': 'Porto',
+  'sevilla': 'Seville',
+  'munchen': 'Munich',
+  'muenchen': 'Munich',
+  'koln': 'Cologne',
+  'koeln': 'Cologne',
+  'wien': 'Vienna',
+  'praha': 'Prague',
+  'warszawa': 'Warsaw',
+  'krakow': 'Kraków',
+  'kobenhavn': 'Copenhagen',
+  'bruxelles': 'Brussels',
+  'brussel': 'Brussels',
+  'den haag': 'The Hague',
+  'zurich': 'Zurich',
+  'geneve': 'Geneva',
+  'athina': 'Athens',
+  'sao paulo': 'São Paulo',
+  'bogota': 'Bogotá',
+  'saigon': 'Ho Chi Minh City',
+  'thanh pho ho chi minh': 'Ho Chi Minh City',
+  'marrakesh': 'Marrakech',
+  'kiev': 'Kyiv',
 };
+
+function cityKey(s) {
+  return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+}
+
+// A comma chunk that is nothing but a postal code ("01304-000", "10012",
+// "C1414DDK") — never the city.
+const POSTAL_ONLY = /^[A-Z]?\d{3,}(?:[- ]?\d{3,4})?[A-Z]{0,3}$/;
+
+// Clean up a city candidate: strip postal codes, state/province codes and
+// common administrative prefixes that show up in addresses but aren't the
+// city name humans use, then map known alternate names onto one spelling.
 function cleanCityName(s) {
   let v = s;
-  v = v.replace(/^(\d{4,7}|[A-Z]\d{3,5}[A-Z]*)\s+/, '');         // leading postal
-  v = v.replace(/\s+\d{4,7}$/, '');                              // trailing numeric postal
-  v = v.replace(/\s+[A-Z]\d{3,5}[A-Z]*$/, '');                   // trailing alphanumeric postal
+  v = v.replace(/^(\d{4,7}|\d{3,5}-\d{3,4}|[A-Z]\d{3,5}[A-Z]*)\s+/, '');   // leading postal
+  v = v.replace(/\s+(\d{4,7}|\d{3,5}-\d{3,4})$/, '');                     // trailing numeric postal
+  v = v.replace(/\s+[A-Z]\d{3,5}[A-Z]*$/, '');                        // trailing alphanumeric postal
+  v = v.replace(/\s+[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/, '');         // trailing UK postcode
+  v = v.replace(/\s+-\s+[A-Z]{2}$/, '');                              // Brazil "São Paulo - SP"
+  v = v.replace(/\s+[A-Z]{2,3}$/, '');                                // province "Roma RM", "Sydney NSW"
   v = v.replace(
     /^(Cdad\.?\s+Aut[oó]noma\s+de\s+|Ciudad\s+Aut[oó]noma\s+de\s+|Provincia\s+de\s+|Comuna\s+de\s+|Distrito\s+de\s+|Regi[oó]n\s+(?:de\s+)?)/i,
     '');
   v = v.trim();
-  return CITY_ALIASES[v.toLowerCase()] || v;
+  return CITY_ALIASES[cityKey(v)] || v;
 }
 
 // Best-effort city for a place — prefers an explicit field, otherwise picks
@@ -109,7 +162,11 @@ export function placeCity(p) {
   if (explicit) return cleanCityName(explicit);
   const addr = (p.address || '').trim();
   if (!addr) return '';
-  const parts = addr.split(/,\s*/).map(s => s.trim()).filter(Boolean);
+  // Drop chunks that are only a postal code (Brazil: "..., São Paulo - SP,
+  // 01304-000, Brazil") so one never lands in the city slot. The first chunk
+  // is the street and is always kept.
+  const parts = addr.split(/,\s*/).map(s => s.trim()).filter(Boolean)
+    .filter((s, i) => i === 0 || !POSTAL_ONLY.test(s));
   if (!parts.length) return '';
   // Postal-code-FIRST formats ("Z9301 El Chalten", "75001 Paris",
   // "10117 Berlin"): the chunk carrying a leading postal code is the city —
@@ -119,13 +176,13 @@ export function placeCity(p) {
   // chunks between street and country are considered, so a street number
   // ("1567 Broadway") can never false-match.
   const postalCity = parts.slice(1, -1).slice(-2).find(s =>
-    /^(\d{4,7}|[A-Z]\d{3,6}[A-Z]*)\s+\D/.test(s));
+    /^(\d{4,7}|\d{3,5}-\d{3,4}|[A-Z]\d{3,6}[A-Z]*)\s+\D/.test(s));
   if (postalCity) return cleanCityName(postalCity);
-  // Second-to-last is the typical city slot. In US-style addresses
+  // Second-to-last is the typical city slot. In US/Canada-style addresses
   // ("..., City, State ZIP, Country") the "State ZIP" lands there and the
   // city sits one further back.
   let candidate = parts.length >= 2 ? parts[parts.length - 2] : parts[0];
-  if (/^[A-Z]{2}\s+\d{5}/.test(candidate) && parts.length >= 3) {
+  if (/^[A-Z]{2}\s+(\d{5}|[A-Z]\d[A-Z]\s?\d[A-Z]\d)/.test(candidate) && parts.length >= 3) {
     candidate = parts[parts.length - 3];
   }
   return cleanCityName(candidate);
